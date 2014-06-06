@@ -31,16 +31,18 @@
 #include "utils.h"
 
 // sets errno on error
-static int socket_prepare(Socket *socket) {
+static int socket_prepare(Socket *socket, int family) {
 	BOOL no_delay = TRUE;
 	unsigned long non_blocking = 1;
 
 	// enable no-delay option
-	if (setsockopt(socket->base.handle, IPPROTO_TCP, TCP_NODELAY,
-	               (const char *)&no_delay, sizeof(no_delay)) == SOCKET_ERROR) {
-		errno = ERRNO_WINAPI_OFFSET + WSAGetLastError();
+	if (family == AF_INET || family == AF_INET6) {
+		if (setsockopt(socket->base.handle, IPPROTO_TCP, TCP_NODELAY,
+		               (const char *)&no_delay, sizeof(no_delay)) == SOCKET_ERROR) {
+			errno = ERRNO_WINAPI_OFFSET + WSAGetLastError();
 
-		return -1;
+			return -1;
+		}
 	}
 
 	// enable non-blocking operation
@@ -76,7 +78,7 @@ int socket_open(Socket *socket_, int family, int type, int protocol) {
 	}
 
 	// prepare socket
-	if (socket_prepare(socket_) < 0) {
+	if (socket_prepare(socket_, family) < 0) {
 		saved_errno = errno;
 
 		closesocket(socket_->base.handle);
@@ -104,7 +106,7 @@ int socket_accept_platform(Socket *socket, Socket *accepted_socket,
 	}
 
 	// prepare socket
-	if (socket_prepare(accepted_socket) < 0) {
+	if (socket_prepare(accepted_socket, address->sa_family) < 0) {
 		saved_errno = errno;
 
 		closesocket(accepted_socket->base.handle);
