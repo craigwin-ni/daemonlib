@@ -125,6 +125,11 @@ int socket_listen_platform(Socket *socket, int backlog) {
 }
 
 // sets errno on error
+int socket_connect(Socket *socket, struct sockaddr *address, int length) {
+	return connect(socket->base.handle, (struct sockaddr *)address, length);
+}
+
+// sets errno on error
 int socket_receive_platform(Socket *socket, void *buffer, int length) {
 	return recv(socket->base.handle, buffer, length, 0);
 }

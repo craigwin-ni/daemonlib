@@ -57,6 +57,8 @@ int socket_bind(Socket *socket, const struct sockaddr *address, socklen_t length
 int socket_listen(Socket *socket, int backlog,
                   SocketCreateAllocatedFunction create_allocated);
 
+int socket_connect(Socket *socket, struct sockaddr *address, int length);
+
 int socket_receive(Socket *socket, void *buffer, int length);
 int socket_send(Socket *socket, void *buffer, int length);
 

@@ -142,6 +142,18 @@ int socket_listen_platform(Socket *socket, int backlog) {
 }
 
 // sets errno on error
+int socket_connect(Socket *socket, struct sockaddr *address, int length) {
+	int rc = connect(socket->base.handle, (struct sockaddr *)address, length);
+
+	if (rc == SOCKET_ERROR) {
+		rc = -1;
+		errno = ERRNO_WINAPI_OFFSET + WSAGetLastError();
+	}
+
+	return rc;
+}
+
+// sets errno on error
 int socket_receive_platform(Socket *socket, void *buffer, int length) {
 	length = recv(socket->base.handle, (char *)buffer, length, 0);
 
