@@ -36,10 +36,11 @@ typedef enum {
 	LOG_CATEGORY_HARDWARE,
 	LOG_CATEGORY_WEBSOCKET,
 	LOG_CATEGORY_OTHER,
+	LOG_CATEGORY_API,
 	LOG_CATEGORY_LIBUSB = 255 // special case, just for LogPipeMessage (WinAPI)
 } LogCategory;
 
-#define MAX_LOG_CATEGORIES 7
+#define MAX_LOG_CATEGORIES 8
 
 typedef enum {
 	LOG_LEVEL_NONE = 0,
