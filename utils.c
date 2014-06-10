@@ -25,6 +25,7 @@
 	#include <netdb.h>
 	#include <unistd.h>
 #endif
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #ifndef _MSC_VER
@@ -505,3 +506,47 @@ char *strcasestr(char *haystack, char *needle) {
 }
 
 #endif
+
+#define RED_BRICK_UID_FILENAME "/proc/red_brick_uid"
+
+// sets errno on error
+int red_brick_uid(uint32_t *uid /* always little endian */) {
+	FILE *fp;
+	char base58[BASE58_MAX_LENGTH + 1]; // +1 for the \n
+	int rc;
+	int saved_errno;
+
+	// read UID from /proc/red_brick_uid
+	fp = fopen(RED_BRICK_UID_FILENAME, "rb");
+
+	if (fp == NULL) {
+		return -1;
+	}
+
+	rc = fread(base58, 1, sizeof(base58), fp);
+	saved_errno = errno;
+
+	fclose(fp);
+
+	errno = saved_errno;
+
+	if (rc < 1) {
+		return -1;
+	}
+
+	if (base58[rc - 1] != '\n') {
+		errno = EINVAL;
+
+		return -1;
+	}
+
+	base58[rc - 1] = '\0';
+
+	if (base58_decode(uid, base58) < 0) {
+		return -1;
+	}
+
+	*uid = uint32_to_le(*uid);
+
+	return 0;
+}

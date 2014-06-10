@@ -58,4 +58,6 @@ uint64_t microseconds(void);
 char *strcasestr(char *haystack, char *needle);
 #endif
 
+int red_brick_uid(uint32_t *uid /* always little endian */);
+
 #endif // DAEMONLIB_UTILS_H
