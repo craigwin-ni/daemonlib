@@ -91,8 +91,9 @@ static void log_handler(struct timeval *timestamp, LogCategory category,
 	case LOG_CATEGORY_HOTPLUG:   category_name = "hotplug";   break;
 	case LOG_CATEGORY_HARDWARE:  category_name = "hardware";  break;
 	case LOG_CATEGORY_WEBSOCKET: category_name = "websocket"; break;
-	case LOG_CATEGORY_OTHER:     category_name = "other";     break;
+	case LOG_CATEGORY_RED_BRICK: category_name = "red-brick"; break;
 	case LOG_CATEGORY_API:       category_name = "api";       break;
+	case LOG_CATEGORY_OTHER:     category_name = "other";     break;
 	case LOG_CATEGORY_LIBUSB:    category_name = "libusb";    break;
 	}
 
