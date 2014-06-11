@@ -26,7 +26,8 @@
 
 typedef enum {
 	FUNCTION_DISCONNECT_PROBE = 128,
-	CALLBACK_ENUMERATE = 253
+	CALLBACK_ENUMERATE = 253,
+	FUNCTION_ENUMERATE = 254
 } CommonBrickFunctionID;
 
 typedef enum {
