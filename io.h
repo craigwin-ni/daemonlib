@@ -33,9 +33,9 @@ typedef int IOHandle;
 #endif
 
 #ifdef _WIN32
-	#define IO_INVALID_HANDLE INVALID_SOCKET
+	#define IO_HANDLE_INVALID INVALID_SOCKET
 #else
-	#define IO_INVALID_HANDLE (-1)
+	#define IO_HANDLE_INVALID (-1)
 #endif
 
 #define IO_CONTINUE (-2)

@@ -40,7 +40,7 @@ int io_create(IO *io, const char *type,
               IODestroyFunction destroy,
               IOReadFunction read,
               IOWriteFunction write) {
-	io->handle = IO_INVALID_HANDLE;
+	io->handle = IO_HANDLE_INVALID;
 	io->type = type;
 	io->destroy = destroy;
 	io->read = read;

@@ -35,14 +35,14 @@
 #include "array.h"
 
 // sets errno on error
-int array_create(Array *array, int reserved, int size, int relocatable) {
-	reserved = GROW_ALLOCATION(reserved);
+int array_create(Array *array, int reserve, int size, int relocatable) {
+	reserve = GROW_ALLOCATION(reserve);
 
 	array->allocated = 0;
 	array->count = 0;
 	array->size = size;
 	array->relocatable = relocatable;
-	array->bytes = calloc(reserved, relocatable ? size : (int)sizeof(void *));
+	array->bytes = calloc(reserve, relocatable ? size : (int)sizeof(void *));
 
 	if (array->bytes == NULL) {
 		errno = ENOMEM;
@@ -50,7 +50,7 @@ int array_create(Array *array, int reserved, int size, int relocatable) {
 		return -1;
 	}
 
-	array->allocated = reserved;
+	array->allocated = reserve;
 
 	return 0;
 }

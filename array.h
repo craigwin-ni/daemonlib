@@ -34,7 +34,7 @@ typedef struct {
 	uint8_t *bytes;
 } Array;
 
-int array_create(Array *array, int reserved, int size, int relocatable);
+int array_create(Array *array, int reserve, int size, int relocatable);
 void array_destroy(Array *array, FreeFunction function);
 
 int array_reserve(Array *array, int count);

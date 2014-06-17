@@ -110,7 +110,7 @@ int socket_accept_platform(Socket *socket, Socket *accepted_socket,
 void socket_destroy(Socket *socket) {
 	// check if socket is actually open, as socket_create deviates from
 	// the common pattern of allocation the wrapped resource
-	if (socket->base.handle != IO_INVALID_HANDLE) {
+	if (socket->base.handle != IO_HANDLE_INVALID) {
 		shutdown(socket->base.handle, SHUT_RDWR);
 		close(socket->base.handle);
 	}
