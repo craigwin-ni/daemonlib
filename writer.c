@@ -29,7 +29,7 @@
 
 #define LOG_CATEGORY LOG_CATEGORY_OTHER
 
-#define MAX_QUEUED_WRITES 512
+#define MAX_QUEUED_WRITES 32768
 
 static void writer_handle_write(void *opaque) {
 	Writer *writer = opaque;
