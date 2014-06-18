@@ -40,6 +40,7 @@ typedef struct {
 	WriterRecipientSignatureFunction recipient_signature;
 	WriterRecipientDisconnectFunction recipient_disconnect;
 	void *opaque;
+	uint32_t dropped_packets;
 	Queue backlog;
 } Writer;
 

@@ -75,16 +75,21 @@ static int writer_push_packet_to_backlog(Writer *writer, Packet *packet) {
 	Packet *queued_packet;
 	char recipient_signature[WRITER_MAX_RECIPIENT_SIGNATURE_LENGTH];
 	char packet_signature[PACKET_MAX_SIGNATURE_LENGTH];
+	uint32_t packets_to_drop;
 
 	log_debug("%s is not ready to receive, pushing %s to write backlog (count: %d +1)",
 	          writer->recipient_signature(recipient_signature, 1, writer->opaque),
 	          writer->packet_type, writer->backlog.count);
 
 	if (writer->backlog.count >= MAX_QUEUED_WRITES) {
-		log_warn("Write backlog for %s is full, dropping %d queued %s(s)",
+		packets_to_drop = writer->backlog.count - MAX_QUEUED_WRITES + 1;
+
+		log_warn("Write backlog for %s is full, dropping %u queued %s(s), %u + %u dropped in total",
 		         writer->recipient_signature(recipient_signature, 0, writer->opaque),
-		         writer->backlog.count - MAX_QUEUED_WRITES + 1,
-		         writer->packet_type);
+		         packets_to_drop, writer->packet_type,
+		         writer->dropped_packets, packets_to_drop);
+
+		writer->dropped_packets += packets_to_drop;
 
 		while (writer->backlog.count >= MAX_QUEUED_WRITES) {
 			queue_pop(&writer->backlog, NULL);
@@ -132,6 +137,7 @@ int writer_create(Writer *writer, IO *io,
 	writer->recipient_signature = recipient_signature;
 	writer->recipient_disconnect = recipient_disconnect;
 	writer->opaque = opaque;
+	writer->dropped_packets = 0;
 
 	// create write queue
 	if (queue_create(&writer->backlog, sizeof(Packet)) < 0) {
