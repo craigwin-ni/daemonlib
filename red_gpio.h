@@ -97,7 +97,7 @@ typedef struct {
 
 
 int gpio_init();
-void gpio_mux_configure(GPIOPin pin, GPIOMux mux_config);
+void gpio_mux_configure(const GPIOPin pin, const GPIOMux mux_config);
 void gpio_output_set(const GPIOPin pin);
 void gpio_output_clear(const GPIOPin pin);
 uint32_t gpio_input(const GPIOPin pin);
