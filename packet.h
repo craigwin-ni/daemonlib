@@ -26,6 +26,7 @@
 
 typedef enum {
 	FUNCTION_DISCONNECT_PROBE = 128,
+	FUNCTION_STACK_ENUMERATE = 252,
 	CALLBACK_ENUMERATE = 253,
 	FUNCTION_ENUMERATE = 254
 } CommonBrickFunctionID;
@@ -44,6 +45,7 @@ typedef enum {
 } ErrorCode;
 
 #define PACKET_MAX_SIGNATURE_LENGTH 64
+#define PACKET_STACK_ENUMERATE_MAX_UIDS 16
 
 #include "packed_begin.h"
 
@@ -94,6 +96,16 @@ typedef struct {
 typedef struct {
 	PacketHeader header;
 } ATTRIBUTE_PACKED AuthenticateResponse;
+
+typedef struct {
+	PacketHeader header;
+} ATTRIBUTE_PACKED StackEnumerateRequest;
+
+typedef struct {
+	PacketHeader header;
+	uint32_t uids[PACKET_STACK_ENUMERATE_MAX_UIDS];
+} ATTRIBUTE_PACKED StackEnumerateResponse;
+
 
 #include "packed_end.h"
 
