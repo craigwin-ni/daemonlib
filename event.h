@@ -65,7 +65,7 @@ typedef struct {
 
 const char *event_get_source_type_name(EventSourceType type, int upper);
 
-int event_init(EventSIGUSR1Function function);
+int event_init(EventSIGUSR1Function sigusr1);
 void event_exit(void);
 
 int event_add_source(IOHandle handle, EventSourceType type, int events,
@@ -73,7 +73,7 @@ int event_add_source(IOHandle handle, EventSourceType type, int events,
 void event_remove_source(IOHandle handle, EventSourceType type, int events);
 void event_cleanup_sources(void);
 
-int event_run(EventCleanupFunction function);
+int event_run(EventCleanupFunction cleanup);
 void event_stop(void);
 
 #endif // DAEMONLIB_EVENT_H

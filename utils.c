@@ -319,32 +319,32 @@ const char *get_errno_name(int error_code) {
 	#undef ADDRINFO_ERROR_NAME
 }
 
-void string_copy(char *destination, const char *source, int size) {
-	if (size <= 0) {
+void string_copy(char *destination, const char *source, int destination_length) {
+	if (destination_length <= 0) {
 		return;
 	}
 
-	strncpy(destination, source, size - 1);
+	strncpy(destination, source, destination_length - 1);
 
-	destination[size - 1] = '\0';
+	destination[destination_length - 1] = '\0';
 }
 
-void string_append(char *destination, const char *source, int size) {
+void string_append(char *destination, const char *source, int destination_length) {
 	int offset;
 
-	if (size <= 0) {
+	if (destination_length <= 0) {
 		return;
 	}
 
 	offset = strlen(destination);
 
-	if (offset >= size - 1) {
+	if (offset >= destination_length - 1) {
 		return;
 	}
 
-	strncpy(destination + offset, source, size - offset - 1);
+	strncpy(destination + offset, source, destination_length - offset - 1);
 
-	destination[size - 1] = '\0';
+	destination[destination_length - 1] = '\0';
 }
 
 static const char *base58_alphabet = "123456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ";

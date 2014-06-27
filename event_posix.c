@@ -71,10 +71,10 @@ static void event_forward_signal(int signal_number) {
 	pipe_write(&_signal_pipe, &signal_number, sizeof(signal_number));
 }
 
-int event_init_platform(EventSIGUSR1Function function) {
+int event_init_platform(EventSIGUSR1Function sigusr1) {
 	int phase = 0;
 
-	_handle_sigusr1 = function;
+	_handle_sigusr1 = sigusr1;
 
 	// create pollfd array
 	if (array_create(&_pollfds, 32, sizeof(struct pollfd), 1) < 0) {
@@ -179,7 +179,7 @@ void event_exit_platform(void) {
 	array_destroy(&_pollfds, NULL);
 }
 
-int event_run_platform(Array *event_sources, int *running, EventCleanupFunction function) {
+int event_run_platform(Array *event_sources, int *running, EventCleanupFunction cleanup) {
 	int i;
 	EventSource *event_source;
 	struct pollfd *pollfd;
@@ -188,7 +188,7 @@ int event_run_platform(Array *event_sources, int *running, EventCleanupFunction 
 
 	*running = 1;
 
-	function();
+	cleanup();
 	event_cleanup_sources();
 
 	while (*running) {
@@ -279,7 +279,7 @@ int event_run_platform(Array *event_sources, int *running, EventCleanupFunction 
 
 		// now cleanup event sources that got marked as disconnected/removed
 		// during the event handling
-		function();
+		cleanup();
 		event_cleanup_sources();
 	}
 

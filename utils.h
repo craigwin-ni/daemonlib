@@ -37,8 +37,8 @@ const char *get_errno_name(int error_code);
 
 #define GROW_ALLOCATION(size) ((((size) - 1) / 16 + 1) * 16)
 
-void string_copy(char *destination, const char *source, int size);
-void string_append(char *destination, const char *source, int size);
+void string_copy(char *destination, const char *source, int destination_length);
+void string_append(char *destination, const char *source, int destination_length);
 
 #define BASE58_MAX_LENGTH 8
 

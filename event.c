@@ -34,10 +34,10 @@ static Array _event_sources;
 static int _running = 0;
 static int _stop_requested = 0;
 
-extern int event_init_platform(EventSIGUSR1Function function);
+extern int event_init_platform(EventSIGUSR1Function sigusr1);
 extern void event_exit_platform(void);
 extern int event_run_platform(Array *sources, int *running,
-                              EventCleanupFunction function);
+                              EventCleanupFunction cleanup);
 extern int event_stop_platform(void);
 
 const char *event_get_source_type_name(EventSourceType type, int upper) {
@@ -53,7 +53,7 @@ const char *event_get_source_type_name(EventSourceType type, int upper) {
 	}
 }
 
-int event_init(EventSIGUSR1Function function) {
+int event_init(EventSIGUSR1Function sigusr1) {
 	log_debug("Initializing event subsystem");
 
 	if (array_create(&_event_sources, 32, sizeof(EventSource), 1) < 0) {
@@ -63,7 +63,7 @@ int event_init(EventSIGUSR1Function function) {
 		return -1;
 	}
 
-	if (event_init_platform(function) < 0) {
+	if (event_init_platform(sigusr1) < 0) {
 		array_destroy(&_event_sources, NULL);
 
 		return -1;
@@ -217,7 +217,7 @@ void event_cleanup_sources(void) {
 	}
 }
 
-int event_run(EventCleanupFunction function) {
+int event_run(EventCleanupFunction cleanup) {
 	int rc;
 
 	if (_running) {
@@ -234,7 +234,7 @@ int event_run(EventCleanupFunction function) {
 
 	log_debug("Starting the event loop");
 
-	rc = event_run_platform(&_event_sources, &_running, function);
+	rc = event_run_platform(&_event_sources, &_running, cleanup);
 
 	if (rc < 0) {
 		log_error("Event loop aborted");
