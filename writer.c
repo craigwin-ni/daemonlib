@@ -67,7 +67,8 @@ static void writer_handle_write(void *opaque) {
 
 	if (writer->backlog.count == 0) {
 		// last queued response handled, deregister for write events
-		event_remove_source(writer->io->handle, EVENT_SOURCE_TYPE_GENERIC, EVENT_WRITE);
+		event_modify_source(writer->io->handle, EVENT_SOURCE_TYPE_GENERIC,
+		                    EVENT_WRITE, 0, NULL, NULL);
 	}
 }
 
@@ -113,8 +114,8 @@ static int writer_push_packet_to_backlog(Writer *writer, Packet *packet) {
 
 	if (writer->backlog.count == 1) {
 		// first queued packet, register for write events
-		if (event_add_source(writer->io->handle, EVENT_SOURCE_TYPE_GENERIC,
-		                     EVENT_WRITE, writer_handle_write, writer) < 0) {
+		if (event_modify_source(writer->io->handle, EVENT_SOURCE_TYPE_GENERIC,
+		                        0, EVENT_WRITE, writer_handle_write, writer) < 0) {
 			// FIXME: how to handle this error?
 			return -1;
 		}
@@ -159,7 +160,8 @@ void writer_destroy(Writer *writer) {
 		         writer->backlog.count,
 		         writer->packet_type);
 
-		event_remove_source(writer->io->handle, EVENT_SOURCE_TYPE_GENERIC, EVENT_WRITE);
+		event_modify_source(writer->io->handle, EVENT_SOURCE_TYPE_GENERIC,
+		                    0, EVENT_WRITE, NULL, NULL);
 	}
 
 	queue_destroy(&writer->backlog, NULL);

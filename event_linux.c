@@ -1,8 +1,8 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2014 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2014 Matthias Bolte <matthias@tinkerforge.com>
  *
- * event_posix.c: poll based event loop
+ * event_linux.c: epoll based event loop
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,8 +20,9 @@
  */
 
 #include <errno.h>
-#include <poll.h>
 #include <signal.h>
+#include <sys/epoll.h>
+#include <unistd.h>
 
 #include "event.h"
 
@@ -32,7 +33,8 @@
 
 #define LOG_CATEGORY LOG_CATEGORY_EVENT
 
-static Array _pollfds;
+static int _epollfd = -1;
+static int _epollfd_event_count = 0;
 static Pipe _signal_pipe;
 static EventSIGUSR1Function _handle_sigusr1 = NULL;
 
@@ -76,9 +78,11 @@ int event_init_platform(EventSIGUSR1Function sigusr1) {
 
 	_handle_sigusr1 = sigusr1;
 
-	// create pollfd array
-	if (array_create(&_pollfds, 32, sizeof(struct pollfd), 1) < 0) {
-		log_error("Could not create pollfd array: %s (%d)",
+	// create epollfd
+	_epollfd = epoll_create1(EPOLL_CLOEXEC);
+
+	if (_epollfd < 0) {
+		log_error("Could not create epollfd: %s (%d)",
 		          get_errno_name(errno), errno);
 
 		goto cleanup;
@@ -158,7 +162,7 @@ cleanup:
 		pipe_destroy(&_signal_pipe);
 
 	case 1:
-		array_destroy(&_pollfds, NULL);
+		close(_epollfd);
 
 	default:
 		break;
@@ -176,31 +180,79 @@ void event_exit_platform(void) {
 	event_remove_source(_signal_pipe.read_end, EVENT_SOURCE_TYPE_GENERIC);
 	pipe_destroy(&_signal_pipe);
 
-	array_destroy(&_pollfds, NULL);
+	// FIXME: remove events from epollfd?
+
+	close(_epollfd);
 }
 
 int event_source_added_platform(EventSource *event_source) {
-	(void)event_source;
+	struct epoll_event event;
+
+	event.events = event_source->events;
+	event.data.ptr = event_source;
+
+	if (epoll_ctl(_epollfd, EPOLL_CTL_ADD, event_source->handle, &event) < 0) {
+		log_error("Could not add %s event source (handle: %d) to epollfd: %s (%d)",
+		          event_get_source_type_name(event_source->type, 0),
+		          event_source->handle, get_errno_name(errno), errno);
+
+		return -1;
+	}
+
+	++_epollfd_event_count;
 
 	return 0;
 }
 
 int event_source_modified_platform(EventSource *event_source) {
-	(void)event_source;
+	struct epoll_event event;
+
+	event.events = event_source->events;
+	event.data.ptr = event_source;
+
+	if (epoll_ctl(_epollfd, EPOLL_CTL_MOD, event_source->handle, &event) < 0) {
+		log_error("Could not modify %s event source (handle: %d) added to epollfd: %s (%d)",
+		          event_get_source_type_name(event_source->type, 0),
+		          event_source->handle, get_errno_name(errno), errno);
+
+		return -1;
+	}
 
 	return 0;
 }
 
 void event_source_removed_platform(EventSource *event_source) {
-	(void)event_source;
+	struct epoll_event event;
+
+	event.events = event_source->events;
+	event.data.ptr = event_source;
+
+	if (epoll_ctl(_epollfd, EPOLL_CTL_DEL, event_source->handle, &event) < 0) {
+		log_error("Could not remove %s event source (handle: %d) from epollfd: %s (%d)",
+		          event_get_source_type_name(event_source->type, 0),
+		          event_source->handle, get_errno_name(errno), errno);
+
+		return;
+	}
+
+	--_epollfd_event_count;
 }
 
 int event_run_platform(Array *event_sources, int *running, EventCleanupFunction cleanup) {
 	int i;
 	EventSource *event_source;
-	struct pollfd *pollfd;
+	Array received_events;
+	struct epoll_event *received_event;
 	int ready;
-	int handled;
+
+	(void)event_sources;
+
+	if (array_create(&received_events, 32, sizeof(struct epoll_event), 1) < 0) {
+		log_error("Could not create epoll event array: %s (%d)",
+		          get_errno_name(errno), errno);
+
+		return -1;
+	}
 
 	*running = 1;
 
@@ -208,36 +260,27 @@ int event_run_platform(Array *event_sources, int *running, EventCleanupFunction 
 	event_cleanup_sources();
 
 	while (*running) {
-		// update pollfd array
-		if (array_resize(&_pollfds, event_sources->count, NULL) < 0) {
+		if (array_resize(&received_events, _epollfd_event_count, NULL) < 0) {
 			log_error("Could not resize pollfd array: %s (%d)",
 			          get_errno_name(errno), errno);
 
 			return -1;
 		}
 
-		for (i = 0; i < event_sources->count; ++i) {
-			event_source = array_get(event_sources, i);
-			pollfd = array_get(&_pollfds, i);
+		// start to epoll
+		log_debug("Starting to epoll on %d event source(s)", _epollfd_event_count);
 
-			pollfd->fd = event_source->handle;
-			pollfd->events = event_source->events;
-			pollfd->revents = 0;
-		}
-
-		// start to poll
-		log_debug("Starting to poll on %d event source(s)", _pollfds.count);
-
-		ready = poll((struct pollfd *)_pollfds.bytes, _pollfds.count, -1);
+		ready = epoll_wait(_epollfd, (struct epoll_event *)received_events.bytes,
+		                   received_events.count, -1);
 
 		if (ready < 0) {
 			if (errno_interrupted()) {
-				log_debug("Poll got interrupted");
+				log_debug("EPoll got interrupted");
 
 				continue;
 			}
 
-			log_error("Count not poll on event source(s): %s (%d)",
+			log_error("Count not epoll on event source(s): %s (%d)",
 			          get_errno_name(errno), errno);
 
 			*running = 0;
@@ -246,9 +289,7 @@ int event_run_platform(Array *event_sources, int *running, EventCleanupFunction 
 		}
 
 		// handle poll result
-		log_debug("Poll returned %d event source(s) as ready", ready);
-
-		handled = 0;
+		log_debug("EPoll returned %d event source(s) as ready", ready);
 
 		// this loop assumes that event source array and pollfd array can be
 		// matched by index. this means that the first N items of the event
@@ -256,28 +297,18 @@ int event_run_platform(Array *event_sources, int *running, EventCleanupFunction 
 		// or replaced during the iteration over the pollfd array. because
 		// of this event_remove_source only marks event sources as removed,
 		// the actual removal is done after this loop by event_cleanup_sources
-		for (i = 0; i < _pollfds.count && ready > handled; ++i) {
-			pollfd = array_get(&_pollfds, i);
+		for (i = 0; i < ready; ++i) {
+			received_event = array_get(&received_events, i);
+			event_source = received_event->data.ptr;
 
-			if (pollfd->revents == 0) {
-				continue;
-			}
-
-			event_handle_source(array_get(event_sources, i), pollfd->revents);
-
-			++handled;
+			event_handle_source(event_source, received_event->events);
 
 			if (!*running) {
 				break;
 			}
 		}
 
-		if (ready == handled) {
-			log_debug("Handled all ready event sources");
-		} else {
-			log_warn("Handled only %d of %d ready event source(s)",
-			         handled, ready);
-		}
+		log_debug("Handled all ready event sources");
 
 		// now cleanup event sources that got marked as disconnected/removed
 		// during the event handling

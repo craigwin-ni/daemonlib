@@ -22,8 +22,13 @@
 #ifndef DAEMONLIB_EVENT_H
 #define DAEMONLIB_EVENT_H
 
+#include <stdint.h>
 #ifndef _WIN32
-	#include <poll.h>
+	#ifdef __linux__
+		#include <sys/epoll.h>
+	#else
+		#include <poll.h>
+	#endif
 #endif
 
 #include "io.h"
@@ -37,8 +42,13 @@ typedef enum {
 	EVENT_READ = 1 << 0,
 	EVENT_WRITE = 1 << 2
 #else
-	EVENT_READ = POLLIN,
-	EVENT_WRITE = POLLOUT
+	#ifdef __linux__
+		EVENT_READ = EPOLLIN,
+		EVENT_WRITE = EPOLLOUT
+	#else
+		EVENT_READ = POLLIN,
+		EVENT_WRITE = POLLOUT
+	#endif
 #endif
 } Event;
 
@@ -51,16 +61,19 @@ typedef enum {
 	EVENT_SOURCE_STATE_NORMAL = 0,
 	EVENT_SOURCE_STATE_ADDED,
 	EVENT_SOURCE_STATE_REMOVED,
-	EVENT_SOURCE_STATE_READDED
+	EVENT_SOURCE_STATE_READDED,
+	EVENT_SOURCE_STATE_MODIFIED
 } EventSourceState;
 
 typedef struct {
 	IOHandle handle;
 	EventSourceType type;
-	int events;
+	uint32_t events;
 	EventSourceState state;
-	EventFunction function;
-	void *opaque;
+	EventFunction read;
+	void *read_opaque;
+	EventFunction write;
+	void *write_opaque;
 } EventSource;
 
 const char *event_get_source_type_name(EventSourceType type, int upper);
@@ -68,10 +81,14 @@ const char *event_get_source_type_name(EventSourceType type, int upper);
 int event_init(EventSIGUSR1Function sigusr1);
 void event_exit(void);
 
-int event_add_source(IOHandle handle, EventSourceType type, int events,
+int event_add_source(IOHandle handle, EventSourceType type, uint32_t events,
                      EventFunction function, void *opaque);
-void event_remove_source(IOHandle handle, EventSourceType type, int events);
+int event_modify_source(IOHandle handle, EventSourceType type, uint32_t events_to_remove,
+                        uint32_t events_to_add, EventFunction function, void *opaque);
+void event_remove_source(IOHandle handle, EventSourceType type);
 void event_cleanup_sources(void);
+
+void event_handle_source(EventSource *event_source, uint32_t received_events);
 
 int event_run(EventCleanupFunction cleanup);
 void event_stop(void);
