@@ -47,7 +47,7 @@ int gpio_init() {
 	void *mapped_base;
 
 	fd = open("/dev/mem", O_RDWR);
-	if(fd < 0) {
+	if (fd < 0) {
 		goto error;
 	}
 
@@ -64,7 +64,7 @@ int gpio_init() {
 							   fd, 
 							   address_start);
 
-	if(mapped_base == MAP_FAILED) {
+	if (mapped_base == MAP_FAILED) {
 		goto error;
 	}
 
@@ -73,12 +73,12 @@ int gpio_init() {
 	close(fd);
 	return 0;
 
-	error:
+error:
 	perror("Unable to mmap /dev/mem");
 	return -1;
 }
 
-void gpio_mux_configure(GPIOPin pin, GPIOMux mux_config) {
+void gpio_mux_configure(const GPIOPin pin, const GPIOMux mux_config) {
 	uint32_t config_index = (pin.pin_index >> 3);
 	uint32_t offset       = (pin.pin_index & 0x7) << 2;
  
