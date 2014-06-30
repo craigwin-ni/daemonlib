@@ -107,6 +107,7 @@ void event_source_removed_platform(EventSource *event_source) {
 }
 
 int event_run_platform(Array *event_sources, int *running, EventCleanupFunction cleanup) {
+	int result = -1;
 	int i;
 	EventSource *event_source;
 	Array received_events;
@@ -132,7 +133,7 @@ int event_run_platform(Array *event_sources, int *running, EventCleanupFunction 
 			log_error("Could not resize pollfd array: %s (%d)",
 			          get_errno_name(errno), errno);
 
-			return -1;
+			goto cleanup;
 		}
 
 		// start to epoll
@@ -151,29 +152,21 @@ int event_run_platform(Array *event_sources, int *running, EventCleanupFunction 
 			log_error("Count not epoll on event source(s): %s (%d)",
 			          get_errno_name(errno), errno);
 
-			*running = 0;
-
-			return -1;
+			goto cleanup;
 		}
 
 		// handle poll result
 		log_debug("EPoll returned %d event source(s) as ready", ready);
 
-		// this loop assumes that event source array and pollfd array can be
-		// matched by index. this means that the first N items of the event
-		// source array (with N = items in pollfd array) are not removed
-		// or replaced during the iteration over the pollfd array. because
-		// of this event_remove_source only marks event sources as removed,
-		// the actual removal is done after this loop by event_cleanup_sources
-		for (i = 0; i < ready; ++i) {
+		// this loop assumes that event sources stored in the epoll events
+		// are valid. because of this event_remove_source only marks event
+		// sources as removed, the actual removal is done after this loop
+		// by event_cleanup_sources
+		for (i = 0; *running && i < ready; ++i) {
 			received_event = array_get(&received_events, i);
 			event_source = received_event->data.ptr;
 
 			event_handle_source(event_source, received_event->events);
-
-			if (!*running) {
-				break;
-			}
 		}
 
 		log_debug("Handled all ready event sources");
@@ -184,7 +177,14 @@ int event_run_platform(Array *event_sources, int *running, EventCleanupFunction 
 		event_cleanup_sources();
 	}
 
-	return 0;
+	result = 0;
+
+cleanup:
+	*running = 0;
+
+	array_destroy(&received_events, NULL);
+
+	return result;
 }
 
 int event_stop_platform(void) {

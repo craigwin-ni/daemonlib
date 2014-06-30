@@ -29,22 +29,11 @@
 
 #define LOG_CATEGORY LOG_CATEGORY_EVENT
 
-static Array _pollfds;
-
 int event_init_platform(void) {
-	// create pollfd array
-	if (array_create(&_pollfds, 32, sizeof(struct pollfd), 1) < 0) {
-		log_error("Could not create pollfd array: %s (%d)",
-		          get_errno_name(errno), errno);
-
-		return -1;
-	}
-
 	return 0;
 }
 
 void event_exit_platform(void) {
-	array_destroy(&_pollfds, NULL);
 }
 
 int event_source_added_platform(EventSource *event_source) {
@@ -64,11 +53,21 @@ void event_source_removed_platform(EventSource *event_source) {
 }
 
 int event_run_platform(Array *event_sources, int *running, EventCleanupFunction cleanup) {
+	int result = -1;
+	Array pollfds;
 	int i;
 	EventSource *event_source;
 	struct pollfd *pollfd;
 	int ready;
 	int handled;
+
+	// create pollfd array
+	if (array_create(&pollfds, 32, sizeof(struct pollfd), 1) < 0) {
+		log_error("Could not create pollfd array: %s (%d)",
+		          get_errno_name(errno), errno);
+
+		return -1;
+	}
 
 	*running = 1;
 
@@ -77,16 +76,16 @@ int event_run_platform(Array *event_sources, int *running, EventCleanupFunction 
 
 	while (*running) {
 		// update pollfd array
-		if (array_resize(&_pollfds, event_sources->count, NULL) < 0) {
+		if (array_resize(&pollfds, event_sources->count, NULL) < 0) {
 			log_error("Could not resize pollfd array: %s (%d)",
 			          get_errno_name(errno), errno);
 
-			return -1;
+			goto cleanup;
 		}
 
 		for (i = 0; i < event_sources->count; ++i) {
 			event_source = array_get(event_sources, i);
-			pollfd = array_get(&_pollfds, i);
+			pollfd = array_get(&pollfds, i);
 
 			pollfd->fd = event_source->handle;
 			pollfd->events = event_source->events;
@@ -94,9 +93,9 @@ int event_run_platform(Array *event_sources, int *running, EventCleanupFunction 
 		}
 
 		// start to poll
-		log_debug("Starting to poll on %d event source(s)", _pollfds.count);
+		log_debug("Starting to poll on %d event source(s)", pollfds.count);
 
-		ready = poll((struct pollfd *)_pollfds.bytes, _pollfds.count, -1);
+		ready = poll((struct pollfd *)pollfds.bytes, pollfds.count, -1);
 
 		if (ready < 0) {
 			if (errno_interrupted()) {
@@ -108,9 +107,7 @@ int event_run_platform(Array *event_sources, int *running, EventCleanupFunction 
 			log_error("Count not poll on event source(s): %s (%d)",
 			          get_errno_name(errno), errno);
 
-			*running = 0;
-
-			return -1;
+			goto cleanup;
 		}
 
 		// handle poll result
@@ -124,8 +121,8 @@ int event_run_platform(Array *event_sources, int *running, EventCleanupFunction 
 		// or replaced during the iteration over the pollfd array. because
 		// of this event_remove_source only marks event sources as removed,
 		// the actual removal is done after this loop by event_cleanup_sources
-		for (i = 0; i < _pollfds.count && ready > handled; ++i) {
-			pollfd = array_get(&_pollfds, i);
+		for (i = 0; *running && i < pollfds.count && ready > handled; ++i) {
+			pollfd = array_get(&pollfds, i);
 
 			if (pollfd->revents == 0) {
 				continue;
@@ -134,10 +131,6 @@ int event_run_platform(Array *event_sources, int *running, EventCleanupFunction 
 			event_handle_source(array_get(event_sources, i), pollfd->revents);
 
 			++handled;
-
-			if (!*running) {
-				break;
-			}
 		}
 
 		if (ready == handled) {
@@ -153,7 +146,14 @@ int event_run_platform(Array *event_sources, int *running, EventCleanupFunction 
 		event_cleanup_sources();
 	}
 
-	return 0;
+	result = 0;
+
+cleanup:
+	*running = 0;
+
+	array_destroy(&pollfds, NULL);
+
+	return result;
 }
 
 int event_stop_platform(void) {
