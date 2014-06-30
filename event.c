@@ -35,7 +35,7 @@ static Array _event_sources;
 static int _running = 0;
 static int _stop_requested = 0;
 
-extern int event_init_platform(EventSIGUSR1Function sigusr1);
+extern int event_init_platform(void);
 extern void event_exit_platform(void);
 extern int event_source_added_platform(EventSource *event_source);
 extern int event_source_modified_platform(EventSource *event_source);
@@ -57,7 +57,7 @@ const char *event_get_source_type_name(EventSourceType type, int upper) {
 	}
 }
 
-int event_init(EventSIGUSR1Function sigusr1) {
+int event_init(void) {
 	log_debug("Initializing event subsystem");
 
 	// create event source array, the EventSource struct is not relocatable
@@ -69,7 +69,7 @@ int event_init(EventSIGUSR1Function sigusr1) {
 		return -1;
 	}
 
-	if (event_init_platform(sigusr1) < 0) {
+	if (event_init_platform() < 0) {
 		array_destroy(&_event_sources, NULL);
 
 		return -1;

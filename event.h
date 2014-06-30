@@ -34,7 +34,6 @@
 #include "io.h"
 
 typedef void (*EventFunction)(void *opaque);
-typedef void (*EventSIGUSR1Function)(void);
 typedef void (*EventCleanupFunction)(void);
 
 typedef enum {
@@ -78,7 +77,7 @@ typedef struct {
 
 const char *event_get_source_type_name(EventSourceType type, int upper);
 
-int event_init(EventSIGUSR1Function sigusr1);
+int event_init(void);
 void event_exit(void);
 
 int event_add_source(IOHandle handle, EventSourceType type, uint32_t events,

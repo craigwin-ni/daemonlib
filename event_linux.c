@@ -28,56 +28,14 @@
 
 #include "array.h"
 #include "log.h"
-#include "pipe.h"
 #include "utils.h"
 
 #define LOG_CATEGORY LOG_CATEGORY_EVENT
 
 static int _epollfd = -1;
 static int _epollfd_event_count = 0;
-static Pipe _signal_pipe;
-static EventSIGUSR1Function _handle_sigusr1 = NULL;
 
-static void event_handle_signal(void *opaque) {
-	int signal_number;
-
-	(void)opaque;
-
-	if (pipe_read(&_signal_pipe, &signal_number, sizeof(signal_number)) < 0) {
-		log_error("Could not read from signal pipe: %s (%d)",
-		          get_errno_name(errno), errno);
-
-		return;
-	}
-
-	if (signal_number == SIGINT) {
-		log_info("Received SIGINT");
-
-		event_stop();
-	} else if (signal_number == SIGTERM) {
-		log_info("Received SIGTERM");
-
-		event_stop();
-	} else if (signal_number == SIGUSR1) {
-		log_info("Received SIGUSR1");
-
-		if (_handle_sigusr1 != NULL) {
-			_handle_sigusr1();
-		}
-	} else {
-		log_warn("Received unexpected signal %d", signal_number);
-	}
-}
-
-static void event_forward_signal(int signal_number) {
-	pipe_write(&_signal_pipe, &signal_number, sizeof(signal_number));
-}
-
-int event_init_platform(EventSIGUSR1Function sigusr1) {
-	int phase = 0;
-
-	_handle_sigusr1 = sigusr1;
-
+int event_init_platform(void) {
 	// create epollfd
 	_epollfd = epoll_create1(EPOLL_CLOEXEC);
 
@@ -85,104 +43,14 @@ int event_init_platform(EventSIGUSR1Function sigusr1) {
 		log_error("Could not create epollfd: %s (%d)",
 		          get_errno_name(errno), errno);
 
-		goto cleanup;
+		return -1;
 	}
 
-	phase = 1;
-
-	// create signal pipe
-	if (pipe_create(&_signal_pipe) < 0) {
-		log_error("Could not create signal pipe: %s (%d)",
-		          get_errno_name(errno), errno);
-
-		goto cleanup;
-	}
-
-	phase = 2;
-
-	if (event_add_source(_signal_pipe.read_end, EVENT_SOURCE_TYPE_GENERIC,
-	                     EVENT_READ, event_handle_signal, NULL) < 0) {
-		goto cleanup;
-	}
-
-	phase = 3;
-
-	// setup signal handlers
-	if (signal(SIGINT, event_forward_signal) == SIG_ERR) {
-		log_error("Could not install signal handler for SIGINT: %s (%d)",
-		          get_errno_name(errno), errno);
-
-		goto cleanup;
-	}
-
-	phase = 4;
-
-	if (signal(SIGTERM, event_forward_signal) == SIG_ERR) {
-		log_error("Could not install signal handler for SIGTERM: %s (%d)",
-		          get_errno_name(errno), errno);
-
-		goto cleanup;
-	}
-
-	phase = 5;
-
-	if (signal(SIGPIPE, SIG_IGN) == SIG_ERR) {
-		log_error("Could not ignore SIGPIPE signal: %s (%d)",
-		          get_errno_name(errno), errno);
-
-		goto cleanup;
-	}
-
-	phase = 6;
-
-	if (signal(SIGUSR1, event_forward_signal) == SIG_ERR) {
-		log_error("Could not install signal handler for SIGUSR1: %s (%d)",
-		          get_errno_name(errno), errno);
-
-		goto cleanup;
-	}
-
-	phase = 7;
-
-cleanup:
-	switch (phase) { // no breaks, all cases fall through intentionally
-	case 6:
-		signal(SIGPIPE, SIG_DFL);
-
-	case 5:
-		signal(SIGTERM, SIG_DFL);
-
-	case 4:
-		signal(SIGINT, SIG_DFL);
-
-	case 3:
-		event_remove_source(_signal_pipe.read_end, EVENT_SOURCE_TYPE_GENERIC);
-
-	case 2:
-		pipe_destroy(&_signal_pipe);
-
-	case 1:
-		close(_epollfd);
-
-	default:
-		break;
-	}
-
-	return phase == 7 ? 0 : -1;
+	return 0;
 }
 
 void event_exit_platform(void) {
-	signal(SIGUSR1, SIG_DFL);
-	signal(SIGPIPE, SIG_DFL);
-	signal(SIGTERM, SIG_DFL);
-	signal(SIGINT, SIG_DFL);
-
-	event_remove_source(_signal_pipe.read_end, EVENT_SOURCE_TYPE_GENERIC);
-	pipe_destroy(&_signal_pipe);
-
-	// FIXME: remove events from epollfd?
-
-	close(_epollfd);
+	close(_epollfd); // FIXME: remove remaining events (if any) from epollfd?
 }
 
 int event_source_added_platform(EventSource *event_source) {
