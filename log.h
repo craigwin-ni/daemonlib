@@ -37,11 +37,12 @@ typedef enum {
 	LOG_CATEGORY_WEBSOCKET,
 	LOG_CATEGORY_RED_BRICK,
 	LOG_CATEGORY_API,
+	LOG_CATEGORY_OBJECT,
 	LOG_CATEGORY_OTHER,
 	LOG_CATEGORY_LIBUSB = 255 // special case, just for LogPipeMessage (WinAPI)
 } LogCategory;
 
-#define MAX_LOG_CATEGORIES 9
+#define MAX_LOG_CATEGORIES 10
 
 typedef enum {
 	LOG_LEVEL_NONE = 0,
