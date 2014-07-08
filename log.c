@@ -128,6 +128,14 @@ void log_exit(void) {
 	mutex_destroy(&_mutex);
 }
 
+void log_lock(void) {
+	mutex_lock(&_mutex);
+}
+
+void log_unlock(void) {
+	mutex_unlock(&_mutex);
+}
+
 void log_set_debug_override(int override) {
 	_debug_override = override;
 }
@@ -147,11 +155,11 @@ LogLevel log_get_effective_level(LogCategory category) {
 }
 
 void log_set_file(FILE *file) {
-	mutex_lock(&_mutex);
+	log_lock();
 
 	_file = file;
 
-	mutex_unlock(&_mutex);
+	log_unlock();
 }
 
 FILE *log_get_file(void) {
@@ -186,7 +194,7 @@ void log_message(LogCategory category, LogLevel level, const char *file, int lin
 
 	// call log handlers
 	va_start(arguments, format);
-	mutex_lock(&_mutex);
+	log_lock();
 
 	if (_debug_override || level <= _levels[category]) {
 		log_handler(&timestamp, category, level, file, line, function, format, arguments);
@@ -196,6 +204,6 @@ void log_message(LogCategory category, LogLevel level, const char *file, int lin
 		log_handler_platform(&timestamp, category, level, file, line, function, format, arguments);
 	}
 
-	mutex_unlock(&_mutex);
+	log_unlock();
 	va_end(arguments);
 }

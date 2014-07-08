@@ -92,6 +92,9 @@ typedef void (*LogHandler)(LogLevel level, const char *file, int line,
 void log_init(void);
 void log_exit(void);
 
+void log_lock(void);
+void log_unlock(void);
+
 void log_set_debug_override(int override);
 
 void log_set_level(LogCategory category, LogLevel level);
