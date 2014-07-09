@@ -175,7 +175,7 @@ int writer_write(Writer *writer, Packet *packet) {
 	if (writer->backlog.count == 0) {
 		// if there is no backlog, try to write
 		if (io_write(writer->io, packet, packet->header.length) < 0) {
-			// if write fails with an error different from EAGAIN then give up
+			// if write fails with an error different from EWOULDBLOCK then give up
 			// and disconnect recipient
 			if (!errno_would_block()) {
 				log_error("Could not send %s (%s) to %s, disconnecting %s: %s (%d)",
@@ -195,7 +195,7 @@ int writer_write(Writer *writer, Packet *packet) {
 		}
 	}
 
-	// if either there is already a backlog or a write failed with EAGAIN
+	// if either there is already a backlog or a write failed with EWOULDBLOCK
 	// then push to backlog
 	if (writer_push_packet_to_backlog(writer, packet) < 0) {
 		return -1;
