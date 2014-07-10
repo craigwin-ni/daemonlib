@@ -19,14 +19,12 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include <errno.h>
+
 // open
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-
-// perror
-#include <stdio.h>
-#include <errno.h>
 
 // sysconf
 #include <unistd.h>
@@ -36,19 +34,28 @@
 
 #include "red_gpio.h"
 
-#define GPIO_BASE         0x01c20800
+#include "log.h"
+#include "utils.h"
+
+#define LOG_CATEGORY LOG_CATEGORY_OTHER
+
+#define GPIO_BASE 0x01c20800
 
 static volatile GPIOPort *gpio_port;
 
-int gpio_init() {
+int gpio_init(void) {
 	int fd;
 	uint32_t address_start, address_offset;
 	uint32_t page_size, page_mask;
 	void *mapped_base;
 
 	fd = open("/dev/mem", O_RDWR);
+
 	if (fd < 0) {
-		goto error;
+		log_error("Could not open '/dev/mem': %s (%d)",
+		          get_errno_name(errno), errno);
+
+		return -1;
 	}
 
 	page_size = sysconf(_SC_PAGESIZE);
@@ -56,33 +63,36 @@ int gpio_init() {
 
 	address_start  = GPIO_BASE &  page_mask;
 	address_offset = GPIO_BASE & ~page_mask;
-      
-	mapped_base = (void *)mmap(0, 
-	                           page_size*2, 
-							   PROT_READ|PROT_WRITE, 
-							   MAP_SHARED, 
-							   fd, 
-							   address_start);
+
+	// FIXME: add gpio_exit() to munmap?
+	mapped_base = mmap(0,
+	                   page_size * 2,
+	                   PROT_READ | PROT_WRITE,
+	                   MAP_SHARED,
+	                   fd,
+	                   address_start);
 
 	if (mapped_base == MAP_FAILED) {
-		goto error;
+		log_error("Could not mmap '/dev/mem': %s (%d)",
+		          get_errno_name(errno), errno);
+
+		close(fd);
+
+		return -1;
 	}
 
 	gpio_port = mapped_base + address_offset;
-   
-	close(fd);
-	return 0;
 
-error:
-	perror("Unable to mmap /dev/mem");
-	return -1;
+	close(fd);
+
+	return 0;
 }
 
 void gpio_mux_configure(const GPIOPin pin, const GPIOMux mux_config) {
-	uint32_t config_index = (pin.pin_index >> 3);
+	uint32_t config_index =  pin.pin_index        >> 3;
 	uint32_t offset       = (pin.pin_index & 0x7) << 2;
- 
 	uint32_t config       = gpio_port[pin.port_index].config[config_index];
+
 	config &= ~(0xF << offset);
 	config |= mux_config << offset;
 

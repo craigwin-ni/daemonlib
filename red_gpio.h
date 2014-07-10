@@ -19,7 +19,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-
 #ifndef DAEMONLIB_RED_GPIO_H
 #define DAEMONLIB_RED_GPIO_H
 
@@ -84,22 +83,21 @@ typedef enum {
 } GPIOMux;
 
 typedef struct {
-    uint32_t config[4];
-    uint32_t value;
-    uint32_t multi_drive[2];
-    uint32_t pull[2];
+	uint32_t config[4];
+	uint32_t value;
+	uint32_t multi_drive[2];
+	uint32_t pull[2];
 } GPIOPort;
 
 typedef struct {
-    GPIOPortIndex port_index;
-    GPIOPinIndex pin_index;
+	GPIOPortIndex port_index;
+	GPIOPinIndex pin_index;
 } GPIOPin;
 
-
-int gpio_init();
+int gpio_init(void);
 void gpio_mux_configure(const GPIOPin pin, const GPIOMux mux_config);
 void gpio_output_set(const GPIOPin pin);
 void gpio_output_clear(const GPIOPin pin);
 uint32_t gpio_input(const GPIOPin pin);
 
-#endif
+#endif // DAEMONLIB_RED_GPIO_H
