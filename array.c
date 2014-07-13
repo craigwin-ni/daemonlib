@@ -79,16 +79,16 @@ void array_destroy(Array *array, ItemDestroyFunction destroy) {
 }
 
 // sets errno on error
-int array_reserve(Array *array, int count) {
+int array_reserve(Array *array, int reserve) {
 	int size = array->relocatable ? array->size : (int)sizeof(void *);
 	uint8_t *bytes;
 
-	if (array->allocated >= count) {
+	if (array->allocated >= reserve) {
 		return 0;
 	}
 
-	count = GROW_ALLOCATION(count);
-	bytes = realloc(array->bytes, count * size);
+	reserve = GROW_ALLOCATION(reserve);
+	bytes = realloc(array->bytes, reserve * size);
 
 	if (bytes == NULL) {
 		errno = ENOMEM;
@@ -96,7 +96,9 @@ int array_reserve(Array *array, int count) {
 		return -1;
 	}
 
-	array->allocated = count;
+	memset(bytes + array->allocated * size, 0, (reserve - array->allocated) * size);
+
+	array->allocated = reserve;
 	array->bytes = bytes;
 
 	return 0;
@@ -108,13 +110,13 @@ int array_resize(Array *array, int count, ItemDestroyFunction destroy) {
 	int i;
 	void *item;
 
-	if (array->count < count) {
+	if (array->count < count) { // grow
 		rc = array_reserve(array, count);
 
 		if (rc < 0) {
 			return rc;
 		}
-	} else if (array->count > count) {
+	} else if (array->count > count) { // shrink
 		if (destroy != NULL) {
 			for (i = count; i < array->count; ++i) {
 				item = array_get(array, i);
@@ -145,25 +147,21 @@ void *array_append(Array *array) {
 		return NULL;
 	}
 
-	++array->count;
-
 	if (array->relocatable) {
-		item = array_get(array, array->count - 1);
-
-		memset(item, 0, array->size);
+		item = array_get(array, array->count);
 	} else {
 		item = calloc(1, array->size);
 
 		if (item == NULL) {
-			--array->count;
-
 			errno = ENOMEM;
 
 			return NULL;
 		}
 
-		*(void **)(array->bytes + sizeof(void *) * (array->count - 1)) = item;
+		*(void **)(array->bytes + sizeof(void *) * array->count) = item;
 	}
+
+	++array->count;
 
 	return item;
 }

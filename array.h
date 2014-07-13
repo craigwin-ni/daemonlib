@@ -27,8 +27,8 @@
 #include "utils.h"
 
 typedef struct {
-	int allocated;
-	int count; // number of items in the array
+	int allocated; // number of allocated items
+	int count; // number of stored items
 	int size; // size of a single item in bytes
 	int relocatable; // true if item can be moved in memory
 	uint8_t *bytes;
