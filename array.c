@@ -20,12 +20,17 @@
  */
 
 /*
- * an Array stores items in a continuous block of memory and provides random
- * access to it. when items are added/removed from the Array then other items
- * might have to be moved in memory to keep the block of memory continuous.
- * this requires that the items are relocatable in memory. if the items do not
- * have this property then the Array will allocate extra memory per item and
- * store a pointer to this extra memory in its continuous block of memory.
+ * an Array object stores items in a continuous block of memory and provides
+ * random access to it. when items are appended/removed to/from the array then
+ * other items might have to be moved in memory to keep the block of memory
+ * continuous. this requires that the items are relocatable in memory. if the
+ * items do not have this property then the array will allocate extra memory
+ * per item and store a pointer to this extra memory in its block of memory.
+ *
+ * for relocatable items you're not allowed to keep pointers to them while
+ * performing array operations that change the array such as appending or
+ * removing items. this operations may reallocate or memmoves the underlying
+ * continuous block of memory and hence move the items in memory.
  */
 
 #include <errno.h>
@@ -34,7 +39,13 @@
 
 #include "array.h"
 
-// sets errno on error
+// creates an empty (count == 0) Array object and reserve memory for the number
+// of items specified by RESERVE (>= 0). each item is SIZE (> 0) bytes in size.
+// if the items to store can be moved in memory then set RELOCATABLE to true,
+// otherwise set it to false and the items will be at a fixed location in memory
+// over their entire lifetime.
+//
+// returns -1 on error (sets errno) or 0 on success
 int array_create(Array *array, int reserve, int size, int relocatable) {
 	reserve = GROW_ALLOCATION(reserve);
 
@@ -55,6 +66,9 @@ int array_create(Array *array, int reserve, int size, int relocatable) {
 	return 0;
 }
 
+// destroys an Array object and frees the underlying memory. if an item destroy
+// function DESTROY is given then it is called for each item in the array (with
+// a pointer to the item as the only parameter) before the memory is freed.
 void array_destroy(Array *array, ItemDestroyFunction destroy) {
 	int i;
 	void *item;
@@ -78,7 +92,13 @@ void array_destroy(Array *array, ItemDestroyFunction destroy) {
 	free(array->bytes);
 }
 
-// sets errno on error
+// ensure that an Array object's underlying memory block can store at least
+// the number of items specified by RESERVE (>= 0). this is useful if a larger
+// number of items should be appended to the array, because if enough memory
+// was reserved before appending then the append operations don't have to grow
+// the array anymore, but can just use the memory that was allocated before.
+//
+// returns -1 on error (sets errno) or 0 on success
 int array_reserve(Array *array, int reserve) {
 	int size = array->relocatable ? array->size : (int)sizeof(void *);
 	uint8_t *bytes;
@@ -104,7 +124,14 @@ int array_reserve(Array *array, int reserve) {
 	return 0;
 }
 
-// sets errno on error
+// resizes an Array object to the number of items given by COUNT (>= 0). if
+// the array grows then new items are appended to the array and their memory is
+// initialized to zero. if the array shrinks then the excess items at the end
+// of the array are removed. if an item destroy function DESTROY is given then
+// it is called for each item that is removed (with a pointer to the item as
+// the only parameter).
+//
+// returns -1 on error (sets errno) or 0 on success
 int array_resize(Array *array, int count, ItemDestroyFunction destroy) {
 	int rc;
 	int i;
@@ -157,7 +184,10 @@ int array_resize(Array *array, int count, ItemDestroyFunction destroy) {
 	return 0;
 }
 
-// sets errno on error
+// appends a new item to the end of an Array object. the memory of this item
+// is initialized to zero.
+//
+// returns NULL on error (sets errno) or a pointer to the new item on success
 void *array_append(Array *array) {
 	void *item;
 
@@ -184,8 +214,11 @@ void *array_append(Array *array) {
 	return item;
 }
 
-void array_remove(Array *array, int i, ItemDestroyFunction destroy) {
-	void *item = array_get(array, i);
+// removes the item at the given INDEX (>= 0 and < count) from an Array object.
+// if an item destroy function DESTROY is given then it is called (with a
+// pointer to the item as the only parameter) before it is removed.
+void array_remove(Array *array, int index, ItemDestroyFunction destroy) {
+	void *item = array_get(array, index);
 	int size = array->relocatable ? array->size : (int)sizeof(void *);
 	int tail;
 
@@ -197,10 +230,10 @@ void array_remove(Array *array, int i, ItemDestroyFunction destroy) {
 		free(item);
 	}
 
-	tail = (array->count - i - 1) * size;
+	tail = (array->count - index - 1) * size;
 
 	if (tail > 0) {
-		memmove(array->bytes + size * i, array->bytes + size * (i + 1), tail);
+		memmove(array->bytes + size * index, array->bytes + size * (index + 1), tail);
 	}
 
 	memset(array->bytes + size * (array->count - 1), 0, size);
@@ -208,10 +241,11 @@ void array_remove(Array *array, int i, ItemDestroyFunction destroy) {
 	--array->count;
 }
 
-void *array_get(Array *array, int i) {
+// returns a pointer to the item at the given INDEX (>= 0 and < count)
+void *array_get(Array *array, int index) {
 	if (array->relocatable) {
-		return array->bytes + array->size * i;
+		return array->bytes + array->size * index;
 	} else {
-		return *(void **)(array->bytes + sizeof(void *) * i);
+		return *(void **)(array->bytes + sizeof(void *) * index);
 	}
 }
