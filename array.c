@@ -116,6 +116,24 @@ int array_resize(Array *array, int count, ItemDestroyFunction destroy) {
 		if (rc < 0) {
 			return rc;
 		}
+
+		if (!array->relocatable) {
+			for (i = array->count; i < count; ++i) {
+				item = calloc(1, array->size);
+
+				if (item == NULL) {
+					for (--i; i >= array->count; --i) {
+						free(array_get(array, i));
+					}
+
+					errno = ENOMEM;
+
+					return -1;
+				}
+
+				*(void **)(array->bytes + sizeof(void *) * i) = item;
+			}
+		}
 	} else if (array->count > count) { // shrink
 		if (destroy != NULL) {
 			for (i = count; i < array->count; ++i) {
