@@ -182,7 +182,7 @@ int event_add_source(IOHandle handle, EventSourceType type, uint32_t events,
 	return 0;
 }
 
-// the events that an event sources was added for can be modified
+// the events that an event source was added for can be modified
 int event_modify_source(IOHandle handle, EventSourceType type, uint32_t events_to_remove,
                         uint32_t events_to_add, EventFunction function, void *opaque) {
 	int i;
