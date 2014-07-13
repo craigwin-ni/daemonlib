@@ -28,7 +28,7 @@
 #define ERRNO_WINAPI_OFFSET 71000000
 #define ERRNO_ADDRINFO_OFFSET 72000000
 
-typedef void (*FreeFunction)(void *item);
+typedef void (*ItemDestroyFunction)(void *item);
 
 int errno_interrupted(void);
 int errno_would_block(void);

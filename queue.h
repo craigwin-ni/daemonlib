@@ -40,10 +40,10 @@ typedef struct {
 } Queue;
 
 int queue_create(Queue *queue, int size);
-void queue_destroy(Queue *queue, FreeFunction function);
+void queue_destroy(Queue *queue, ItemDestroyFunction destroy);
 
 void *queue_push(Queue *queue);
-void queue_pop(Queue *queue, FreeFunction function);
+void queue_pop(Queue *queue, ItemDestroyFunction destroy);
 void *queue_peek(Queue *queue);
 
 #endif // DAEMONLIB_QUEUE_H

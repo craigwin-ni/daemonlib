@@ -55,15 +55,15 @@ int array_create(Array *array, int reserve, int size, int relocatable) {
 	return 0;
 }
 
-void array_destroy(Array *array, FreeFunction function) {
+void array_destroy(Array *array, ItemDestroyFunction destroy) {
 	int i;
 	void *item;
 
-	if (function != NULL) {
+	if (destroy != NULL) {
 		for (i = 0; i < array->count; ++i) {
 			item = array_get(array, i);
 
-			function(item);
+			destroy(item);
 
 			if (!array->relocatable) {
 				free(item);
@@ -103,7 +103,7 @@ int array_reserve(Array *array, int count) {
 }
 
 // sets errno on error
-int array_resize(Array *array, int count, FreeFunction function) {
+int array_resize(Array *array, int count, ItemDestroyFunction destroy) {
 	int rc;
 	int i;
 	void *item;
@@ -115,11 +115,11 @@ int array_resize(Array *array, int count, FreeFunction function) {
 			return rc;
 		}
 	} else if (array->count > count) {
-		if (function != NULL) {
+		if (destroy != NULL) {
 			for (i = count; i < array->count; ++i) {
 				item = array_get(array, i);
 
-				function(item);
+				destroy(item);
 
 				if (!array->relocatable) {
 					free(item);
@@ -168,7 +168,7 @@ void *array_append(Array *array) {
 	return item;
 }
 
-void array_remove(Array *array, int i, FreeFunction function) {
+void array_remove(Array *array, int i, ItemDestroyFunction destroy) {
 	void *item = array_get(array, i);
 	int size = array->relocatable ? array->size : (int)sizeof(void *);
 	int tail;
@@ -177,8 +177,8 @@ void array_remove(Array *array, int i, FreeFunction function) {
 		return;
 	}
 
-	if (function != NULL) {
-		function(item);
+	if (destroy != NULL) {
+		destroy(item);
 	}
 
 	if (!array->relocatable) {

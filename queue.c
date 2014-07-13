@@ -45,15 +45,15 @@ int queue_create(Queue *queue, int size) {
 	return 0;
 }
 
-void queue_destroy(Queue *queue, FreeFunction function) {
+void queue_destroy(Queue *queue, ItemDestroyFunction destroy) {
 	QueueNode *node;
 	QueueNode *next;
 
 	for (node = queue->head; node != NULL; node = next) {
 		next = node->next;
 
-		if (function != NULL) {
-			function(queue_node_get_item(node));
+		if (destroy != NULL) {
+			destroy(queue_node_get_item(node));
 		}
 
 		free(node);
@@ -87,7 +87,7 @@ void *queue_push(Queue *queue) {
 	return queue_node_get_item(node);
 }
 
-void queue_pop(Queue *queue, FreeFunction function) {
+void queue_pop(Queue *queue, ItemDestroyFunction destroy) {
 	QueueNode *node;
 
 	if (queue->count == 0) {
@@ -103,8 +103,8 @@ void queue_pop(Queue *queue, FreeFunction function) {
 		queue->tail = NULL;
 	}
 
-	if (function != NULL) {
-		function(queue_node_get_item(node));
+	if (destroy != NULL) {
+		destroy(queue_node_get_item(node));
 	}
 
 	free(node);

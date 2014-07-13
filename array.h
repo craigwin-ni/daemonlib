@@ -35,13 +35,13 @@ typedef struct {
 } Array;
 
 int array_create(Array *array, int reserve, int size, int relocatable);
-void array_destroy(Array *array, FreeFunction function);
+void array_destroy(Array *array, ItemDestroyFunction destroy);
 
 int array_reserve(Array *array, int count);
-int array_resize(Array *array, int count, FreeFunction function);
+int array_resize(Array *array, int count, ItemDestroyFunction destroy);
 
 void *array_append(Array *array);
-void array_remove(Array *array, int i, FreeFunction function);
+void array_remove(Array *array, int i, ItemDestroyFunction destroy);
 
 void *array_get(Array *array, int i);
 
