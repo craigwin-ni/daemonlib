@@ -45,18 +45,22 @@ static int daemon_parent(pid_t child, int status_read, const char *pid_filename)
 	while (waitpid(child, NULL, 0) < 0 && errno == EINTR) {
 	}
 
-	/*if (waitpid(pid, NULL, 0) < 0) {
+#if 0
+	// FIXME: why is this block commented out?
+	if (waitpid(child, NULL, 0) < 0) {
 		fprintf(stderr, "Could not wait for first child process to exit: %s (%d)\n",
 		        get_errno_name(errno), errno);
 
 		close(status_pipe[0]);
 
 		return -1;
-	}*/
+	}
+#endif
 
 	// wait for second child to start successfully
-	while ((rc = read(status_read, &status, 1)) < 0 && errno == EINTR) {
-	}
+	do {
+		rc = read(status_read, &status, 1);
+	} while (rc < 0 && errno == EINTR);
 
 	if (status < 0) {
 		if (rc < 0) {
