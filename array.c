@@ -173,10 +173,6 @@ void array_remove(Array *array, int i, ItemDestroyFunction destroy) {
 	int size = array->relocatable ? array->size : (int)sizeof(void *);
 	int tail;
 
-	if (item == NULL) {
-		return;
-	}
-
 	if (destroy != NULL) {
 		destroy(item);
 	}
@@ -197,10 +193,6 @@ void array_remove(Array *array, int i, ItemDestroyFunction destroy) {
 }
 
 void *array_get(Array *array, int i) {
-	if (i >= array->count) {
-		return NULL;
-	}
-
 	if (array->relocatable) {
 		return array->bytes + array->size * i;
 	} else {
