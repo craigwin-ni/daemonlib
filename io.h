@@ -42,9 +42,9 @@ typedef int IOHandle;
 
 typedef struct IO_ IO;
 
+typedef void (*IODestroyFunction)(IO *io);
 typedef int (*IOReadFunction)(IO *io, void *buffer, int length);
 typedef int (*IOWriteFunction)(IO *io, void *buffer, int length);
-typedef int (*IODestroyFunction)(IO *io);
 
 struct IO_ {
 	IOHandle handle;
