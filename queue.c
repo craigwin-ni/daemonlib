@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2013 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2013-2014 Matthias Bolte <matthias@tinkerforge.com>
  *
  * queue.c: Queue specific functions
  *
@@ -20,10 +20,10 @@
  */
 
 /*
- * a Queue stores items in a single linked list and allows to add items to its
- * tail and to remove items from its head. in contrast to an Array there is no
- * need for special handling of non-relocatable items because an item is never
- * moved in memory during Queue operations.
+ * a Queue object stores items in a single linked list and allows to add items
+ * to its tail and to remove items from its head. in contrast to an Array object
+ * there is no need for special handling of non-relocatable items because an
+ * item is never moved in memory during Queue operations.
  */
 
 #include <errno.h>
@@ -31,11 +31,15 @@
 
 #include "queue.h"
 
+// returns a pointer to the item stored at the given QueueNode
 static void *queue_node_get_item(QueueNode *node) {
 	return (uint8_t *)node + sizeof(QueueNode);
 }
 
-// sets errno on error
+// creates an empty (count == 0) Queue object. each item is SIZE (> 0) bytes
+// in size.
+//
+// returns -1 on error (sets errno) or 0 on success
 int queue_create(Queue *queue, int size) {
 	queue->count = 0;
 	queue->size = size;
@@ -45,6 +49,10 @@ int queue_create(Queue *queue, int size) {
 	return 0;
 }
 
+// destroys a Queue object and frees the underlying single linked list. if an
+// item destroy function DESTROY is given then it is called for each item in the
+// queue (with a pointer to the item as the only parameter) before the memory
+// is freed.
 void queue_destroy(Queue *queue, ItemDestroyFunction destroy) {
 	QueueNode *node;
 	QueueNode *next;
@@ -60,7 +68,10 @@ void queue_destroy(Queue *queue, ItemDestroyFunction destroy) {
 	}
 }
 
-// sets errno on error
+// adds a new item to the tail of a Queue object. the memory of this item is
+// initialized to zero.
+//
+// returns NULL on error (sets errno) or a pointer to the new item on success
 void *queue_push(Queue *queue) {
 	QueueNode *node = calloc(1, sizeof(QueueNode) + queue->size);
 
@@ -87,6 +98,9 @@ void *queue_push(Queue *queue) {
 	return queue_node_get_item(node);
 }
 
+// removes an item for the head of a Queue object. if an item destroy function
+// DESTROY is given then it is called (with a pointer to the item as the only
+// parameter) before it is removed.
 void queue_pop(Queue *queue, ItemDestroyFunction destroy) {
 	QueueNode *node;
 
@@ -110,6 +124,8 @@ void queue_pop(Queue *queue, ItemDestroyFunction destroy) {
 	free(node);
 }
 
+// returns a pointer to the item at the head of a Queue object or NULL if the
+// queue is empty
 void *queue_peek(Queue *queue) {
 	if (queue->count == 0) {
 		return NULL;
