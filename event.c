@@ -204,15 +204,15 @@ int event_modify_source(IOHandle handle, EventSourceType type, uint32_t events_t
 
 			// modify events bitmask
 			if ((event_source->events & events_to_remove) != events_to_remove) {
-				log_warn("Events to be removed for %s event source (handle: %d) at index %d were not added before",
-				         event_get_source_type_name(type, 0), handle, i);
+				log_warn("Events to be removed (0x%04X) from %s event source (handle: %d) at index %d were not added before",
+				         events_to_remove, event_get_source_type_name(type, 0), handle, i);
 			}
 
 			event_source->events &= ~events_to_remove;
 
 			if ((event_source->events & events_to_add) != 0) {
-				log_warn("Events to be added for %s event source (handle: %d) at index %d are already added",
-				         event_get_source_type_name(type, 0), handle, i);
+				log_warn("Events to be added (0x%04X) to %s event source (handle: %d) at index %d are already added",
+				         events_to_add, event_get_source_type_name(type, 0), handle, i);
 			}
 
 			event_source->events |= events_to_add;
@@ -247,7 +247,8 @@ int event_modify_source(IOHandle handle, EventSourceType type, uint32_t events_t
 				return -1;
 			}
 
-			log_debug("Modified %s event source (handle: %d) at index %d",
+			log_debug("Modified (removed: 0x%04X, added: 0x%04X) %s event source (handle: %d) at index %d",
+			          events_to_remove, events_to_add,
 			          event_get_source_type_name(type, 0), handle, i);
 
 			return 0;
