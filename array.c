@@ -92,7 +92,7 @@ void array_destroy(Array *array, ItemDestroyFunction destroy) {
 	free(array->bytes);
 }
 
-// ensure that an Array object's underlying memory block can store at least
+// ensures that an Array object's underlying memory block can store at least
 // the number of items specified by RESERVE (>= 0). this is useful if a larger
 // number of items should be appended to the array, because if enough memory
 // was reserved before appending then the append operations don't have to grow
