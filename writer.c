@@ -161,7 +161,7 @@ void writer_destroy(Writer *writer) {
 		         writer->packet_type);
 
 		event_modify_source(writer->io->handle, EVENT_SOURCE_TYPE_GENERIC,
-		                    0, EVENT_WRITE, NULL, NULL);
+		                    EVENT_WRITE, 0, NULL, NULL);
 	}
 
 	queue_destroy(&writer->backlog, NULL);
