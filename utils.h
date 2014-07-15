@@ -28,6 +28,8 @@
 #define ERRNO_WINAPI_OFFSET 71000000
 #define ERRNO_ADDRINFO_OFFSET 72000000
 
+#define BASE58_MAX_LENGTH 8
+
 typedef void (*ItemDestroyFunction)(void *item);
 
 int errno_interrupted(void);
@@ -42,8 +44,6 @@ const char *get_errno_name(int error_code);
 
 void string_copy(char *destination, const char *source, int destination_length);
 void string_append(char *destination, const char *source, int destination_length);
-
-#define BASE58_MAX_LENGTH 8
 
 char *base58_encode(char *base58, uint32_t value);
 int base58_decode(uint32_t *value, const char *base58);

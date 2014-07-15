@@ -507,8 +507,6 @@ char *strcasestr(char *haystack, char *needle) {
 
 #endif
 
-#define RED_BRICK_UID_FILENAME "/proc/red_brick_uid"
-
 // sets errno on error
 int red_brick_uid(uint32_t *uid /* always little endian */) {
 	FILE *fp;
@@ -517,7 +515,7 @@ int red_brick_uid(uint32_t *uid /* always little endian */) {
 	int saved_errno;
 
 	// read UID from /proc/red_brick_uid
-	fp = fopen(RED_BRICK_UID_FILENAME, "rb");
+	fp = fopen("/proc/red_brick_uid", "rb");
 
 	if (fp == NULL) {
 		return -1;
