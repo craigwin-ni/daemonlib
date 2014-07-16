@@ -35,7 +35,7 @@ typedef enum {
 } ConfigOptionType;
 
 typedef struct {
-	const char *string;
+	char *string;
 	int integer;
 	int boolean;
 	LogLevel log_level;

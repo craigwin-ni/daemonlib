@@ -69,7 +69,7 @@ static void config_reset(void) {
 	for (i = 0; config_options[i].name != NULL; ++i) {
 		if (config_options[i].type == CONFIG_OPTION_TYPE_STRING) {
 			if (config_options[i].value.string != config_options[i].default_value.string) {
-				free((char *)config_options[i].value.string);
+				free(config_options[i].value.string);
 			}
 		}
 
@@ -197,7 +197,7 @@ static void config_parse_line(char *string) {
 			switch (config_options[i].type) {
 			case CONFIG_OPTION_TYPE_STRING:
 				if (config_options[i].value.string != config_options[i].default_value.string) {
-					free((char *)config_options[i].value.string);
+					free(config_options[i].value.string);
 					config_options[i].value.string = NULL;
 				}
 
@@ -268,7 +268,6 @@ static void config_parse_line(char *string) {
 
 				break;
 			}
-
 		}
 	}
 }
@@ -406,7 +405,7 @@ void config_exit(void) {
 	for (i = 0; config_options[i].name != NULL; ++i) {
 		if (config_options[i].type == CONFIG_OPTION_TYPE_STRING) {
 			if (config_options[i].value.string != config_options[i].default_value.string) {
-				free((char *)config_options[i].value.string);
+				free(config_options[i].value.string);
 			}
 		}
 	}
