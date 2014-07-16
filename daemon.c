@@ -37,8 +37,15 @@
 
 #define LOG_CATEGORY LOG_CATEGORY_OTHER
 
+typedef enum {
+	DAEMON_STATUS_UNKNOWN = 0,
+	DAEMON_STATUS_OKAY,
+	DAEMON_STATUS_ALREADY_RUNNING,
+	DAEMON_STATUS_ERROR
+} DaemonStatus;
+
 static int daemon_parent(pid_t child, int status_read, const char *pid_filename) {
-	int8_t status = -1;
+	uint8_t status = DAEMON_STATUS_UNKNOWN;
 	ssize_t rc;
 
 	// wait for first child to exit
@@ -51,7 +58,7 @@ static int daemon_parent(pid_t child, int status_read, const char *pid_filename)
 		fprintf(stderr, "Could not wait for first child process to exit: %s (%d)\n",
 		        get_errno_name(errno), errno);
 
-		close(status_pipe[0]);
+		close(status_read);
 
 		return -1;
 	}
@@ -59,10 +66,10 @@ static int daemon_parent(pid_t child, int status_read, const char *pid_filename)
 
 	// wait for second child to start successfully
 	do {
-		rc = read(status_read, &status, 1);
+		rc = read(status_read, &status, sizeof(status));
 	} while (rc < 0 && errno == EINTR);
 
-	if (status < 0) {
+	if (status == DAEMON_STATUS_UNKNOWN) {
 		if (rc < 0) {
 			fprintf(stderr, "Could not read from status pipe: %s (%d)\n",
 			        get_errno_name(errno), errno);
@@ -75,12 +82,11 @@ static int daemon_parent(pid_t child, int status_read, const char *pid_filename)
 
 	close(status_read);
 
-	if (status != 1) {
-		if (status == 2) {
+	if (status != DAEMON_STATUS_OKAY) {
+		if (status == DAEMON_STATUS_ALREADY_RUNNING) {
 			fprintf(stderr, "Already running according to '%s'\n", pid_filename);
 		} else {
-			fprintf(stderr, "Second child process exited with an error (status: %d)\n",
-			        status);
+			fprintf(stderr, "Second child process exited with an error (status: %u)\n", status);
 		}
 
 		exit(EXIT_FAILURE);
@@ -94,8 +100,8 @@ int daemon_start_double_fork(const char *log_filename, const char *pid_filename)
 	int status_pipe[2];
 	pid_t pid;
 	int pid_fd = -1;
-	int8_t status = 0;
-	FILE *log_file;
+	uint8_t status = DAEMON_STATUS_ERROR;
+	FILE *log_file = NULL;
 	int stdin_fd = -1;
 	int stdout_fd = -1;
 
@@ -122,7 +128,7 @@ int daemon_start_double_fork(const char *log_filename, const char *pid_filename)
 	if (pid > 0) { // first parent
 		close(status_pipe[1]);
 
-		daemon_parent(pid, status_pipe[0], pid_filename);
+		daemon_parent(pid, status_pipe[0], pid_filename); // does not return in any case
 	}
 
 	// first child, decouple from parent environment
@@ -161,8 +167,8 @@ int daemon_start_double_fork(const char *log_filename, const char *pid_filename)
 	pid_fd = pid_file_acquire(pid_filename, getpid());
 
 	if (pid_fd < 0) {
-		if (pid_fd < -1) {
-			status = 2;
+		if (pid_fd == PID_FILE_ALREADY_ACQUIRED) {
+			status = DAEMON_STATUS_ALREADY_RUNNING;
 		}
 
 		goto cleanup;
@@ -213,10 +219,10 @@ int daemon_start_double_fork(const char *log_filename, const char *pid_filename)
 		goto cleanup;
 	}
 
-	status = 1;
+	status = DAEMON_STATUS_OKAY;
 
 cleanup:
-	if (stdin_fd > STDERR_FILENO) {
+	if (stdin_fd >= 0) {
 		close(stdin_fd);
 	}
 
@@ -225,5 +231,18 @@ cleanup:
 
 	close(status_pipe[1]);
 
-	return status == 1 ? pid_fd : -1;
+	if (status != DAEMON_STATUS_OKAY) {
+		if (log_file != NULL) {
+			log_set_file(stderr);
+			fclose(log_file);
+		}
+
+		if (pid_fd >= 0) {
+			close(pid_fd);
+		}
+
+		return -1;
+	}
+
+	return pid_fd;
 }
