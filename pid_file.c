@@ -44,6 +44,7 @@ int pid_file_acquire(const char *filename, pid_t pid) {
 	char buffer[64];
 
 	for (;;) {
+		// open pid file
 		fd = open(filename, O_WRONLY | O_CREAT, 0644);
 
 		if (fd < 0) {
@@ -53,6 +54,7 @@ int pid_file_acquire(const char *filename, pid_t pid) {
 			return -1;
 		}
 
+		// get pid file status
 		if (fstat(fd, &stat1) < 0) {
 			fprintf(stderr, "Could not get status of PID file '%s': %s (%d)\n",
 			        filename, get_errno_name(errno), errno);
@@ -62,6 +64,7 @@ int pid_file_acquire(const char *filename, pid_t pid) {
 			return -1;
 		}
 
+		// lock pid file
 		flock.l_type = F_WRLCK;
 		flock.l_whence = SEEK_SET;
 		flock.l_start = 0;
@@ -78,12 +81,15 @@ int pid_file_acquire(const char *filename, pid_t pid) {
 			return errno == EAGAIN ? PID_FILE_ALREADY_ACQUIRED : -1;
 		}
 
+		// get pid file status again
 		if (stat(filename, &stat2) < 0) {
 			close(fd);
 
 			continue;
 		}
 
+		// if the inode mismatches then the file that got locked is not the
+		// one that was opened before, try again
 		if (stat1.st_ino != stat2.st_ino) {
 			close(fd);
 
