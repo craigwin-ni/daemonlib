@@ -347,7 +347,8 @@ void string_append(char *destination, const char *source, int destination_length
 	destination[destination_length - 1] = '\0';
 }
 
-static const char *base58_alphabet = "123456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ";
+static const char *_base58_alphabet =
+	"123456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ";
 
 char *base58_encode(char *base58, uint32_t value) {
 	uint32_t digit;
@@ -357,12 +358,12 @@ char *base58_encode(char *base58, uint32_t value) {
 
 	while (value >= 58) {
 		digit = value % 58;
-		reverse[i] = base58_alphabet[digit];
+		reverse[i] = _base58_alphabet[digit];
 		value = value / 58;
 		++i;
 	}
 
-	reverse[i] = base58_alphabet[value];
+	reverse[i] = _base58_alphabet[value];
 
 	for (k = 0; k <= i; ++k) {
 		base58[k] = reverse[i - k];
@@ -392,7 +393,7 @@ int base58_decode(uint32_t *value, const char *base58) {
 	}
 
 	for (; i >= 0; --i) {
-		p = strchr(base58_alphabet, base58[i]);
+		p = strchr(_base58_alphabet, base58[i]);
 
 		if (p == NULL) {
 			errno = EINVAL;
@@ -400,7 +401,7 @@ int base58_decode(uint32_t *value, const char *base58) {
 			return -1;
 		}
 
-		k = p - base58_alphabet;
+		k = p - _base58_alphabet;
 
 		if (*value > UINT32_MAX - k * base) {
 			errno = ERANGE;
