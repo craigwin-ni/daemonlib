@@ -22,6 +22,6 @@
 #ifndef DAEMONLIB_DAEMON_H
 #define DAEMONLIB_DAEMON_H
 
-int daemon_start_double_fork(const char *log_filename, const char *pid_filename);
+int daemon_start(const char *log_filename, const char *pid_filename, int double_fork);
 
 #endif // DAEMONLIB_DAEMON_H

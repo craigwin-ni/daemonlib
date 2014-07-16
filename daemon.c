@@ -37,138 +37,110 @@
 
 #define LOG_CATEGORY LOG_CATEGORY_OTHER
 
-typedef enum {
-	DAEMON_STATUS_UNKNOWN = 0,
-	DAEMON_STATUS_OKAY,
-	DAEMON_STATUS_ALREADY_RUNNING,
-	DAEMON_STATUS_ERROR
-} DaemonStatus;
-
-static int daemon_parent(pid_t child, int status_read, const char *pid_filename) {
-	uint8_t status = DAEMON_STATUS_UNKNOWN;
-	ssize_t rc;
-
-	// wait for first child to exit
-	while (waitpid(child, NULL, 0) < 0 && errno == EINTR) {
-	}
-
-#if 0
-	// FIXME: why is this block commented out?
-	if (waitpid(child, NULL, 0) < 0) {
-		fprintf(stderr, "Could not wait for first child process to exit: %s (%d)\n",
-		        get_errno_name(errno), errno);
-
-		close(status_read);
-
-		return -1;
-	}
-#endif
-
-	// wait for second child to start successfully
-	do {
-		rc = read(status_read, &status, sizeof(status));
-	} while (rc < 0 && errno == EINTR);
-
-	if (status == DAEMON_STATUS_UNKNOWN) {
-		if (rc < 0) {
-			fprintf(stderr, "Could not read from status pipe: %s (%d)\n",
-			        get_errno_name(errno), errno);
-		}
-
-		close(status_read);
-
-		exit(EXIT_FAILURE);
-	}
-
-	close(status_read);
-
-	if (status != DAEMON_STATUS_OKAY) {
-		if (status == DAEMON_STATUS_ALREADY_RUNNING) {
-			fprintf(stderr, "Already running according to '%s'\n", pid_filename);
-		} else {
-			fprintf(stderr, "Second child process exited with an error (status: %u)\n", status);
-		}
-
-		exit(EXIT_FAILURE);
-	}
-
-	// exit first parent
-	exit(EXIT_SUCCESS);
-}
-
-int daemon_start_double_fork(const char *log_filename, const char *pid_filename) {
+int daemon_start(const char *log_filename, const char *pid_filename, int double_fork) {
 	int status_pipe[2];
 	pid_t pid;
+	int rc;
 	int pid_fd = -1;
-	uint8_t status = DAEMON_STATUS_ERROR;
+	uint8_t success = 0;
 	FILE *log_file = NULL;
 	int stdin_fd = -1;
 	int stdout_fd = -1;
 
-	// create status pipe
-	if (pipe(status_pipe) < 0) {
-		fprintf(stderr, "Could not create status pipe: %s (%d)\n",
-		        get_errno_name(errno), errno);
+	if (double_fork) {
+		// create status pipe
+		if (pipe(status_pipe) < 0) {
+			fprintf(stderr, "Could not create status pipe: %s (%d)\n",
+			        get_errno_name(errno), errno);
 
-		return -1;
-	}
+			return -1;
+		}
 
-	pid = fork();
+		// first fork
+		pid = fork();
 
-	if (pid < 0) {
-		fprintf(stderr, "Could not fork first child process: %s (%d)\n",
-		        get_errno_name(errno), errno);
+		if (pid < 0) { // error
+			fprintf(stderr, "Could not fork first child process: %s (%d)\n",
+			        get_errno_name(errno), errno);
 
+			close(status_pipe[0]);
+			close(status_pipe[1]);
+
+			return -1;
+		}
+
+		if (pid > 0) { // first parent
+			close(status_pipe[1]);
+
+			// wait for first child to exit
+			while (waitpid(pid, NULL, 0) < 0 && errno == EINTR) {
+			}
+
+			// wait for second child to start successfully
+			do {
+				rc = read(status_pipe[0], &success, sizeof(success));
+			} while (rc < 0 && errno == EINTR);
+
+			if (rc < 0) {
+				fprintf(stderr, "Could not read from status pipe: %s (%d)\n",
+				        get_errno_name(errno), errno);
+			}
+
+			close(status_pipe[0]);
+
+			// exit first parent
+			exit(success ? EXIT_SUCCESS : EXIT_FAILURE);
+		}
+
+		// first child, decouple from parent environment
 		close(status_pipe[0]);
-		close(status_pipe[1]);
 
-		return -1;
+		if (chdir("/") < 0) {
+			fprintf(stderr, "Could not change directory to '/': %s (%d)\n",
+			        get_errno_name(errno), errno);
+
+			close(status_pipe[1]);
+
+			exit(EXIT_FAILURE);
+		}
+
+		if (setsid() == (pid_t)-1) {
+			fprintf(stderr, "Could not create new session: %s (%d)\n",
+			        get_errno_name(errno), errno);
+
+			close(status_pipe[1]);
+
+			exit(EXIT_FAILURE);
+		}
+
+		umask(0);
+
+		// second fork
+		pid = fork();
+
+		if (pid < 0) {
+			fprintf(stderr, "Could not fork second child process: %s (%d)\n",
+			        get_errno_name(errno), errno);
+
+			close(status_pipe[1]);
+
+			exit(EXIT_FAILURE);
+		}
+
+		if (pid > 0) {
+			// exit second parent
+			exit(EXIT_SUCCESS);
+		}
+
+		// continue as second child
 	}
 
-	if (pid > 0) { // first parent
-		close(status_pipe[1]);
-
-		daemon_parent(pid, status_pipe[0], pid_filename); // does not return in any case
-	}
-
-	// first child, decouple from parent environment
-	close(status_pipe[0]);
-
-	if (chdir("/") < 0) {
-		fprintf(stderr, "Could not change directory to '/': %s (%d)\n",
-		        get_errno_name(errno), errno);
-
-		close(status_pipe[1]);
-
-		exit(EXIT_FAILURE);
-	}
-
-	// FIXME: check error
-	setsid();
-	umask(0);
-
-	pid = fork();
-
-	if (pid < 0) {
-		fprintf(stderr, "Could not fork second child process: %s (%d)\n",
-		        get_errno_name(errno), errno);
-
-		close(status_pipe[1]);
-
-		exit(EXIT_FAILURE);
-	}
-
-	if (pid > 0) {
-		// exit second parent
-		exit(EXIT_SUCCESS);
-	}
-
-	// second child, write pid
+	// write pid
 	pid_fd = pid_file_acquire(pid_filename, getpid());
 
 	if (pid_fd < 0) {
 		if (pid_fd == PID_FILE_ALREADY_ACQUIRED) {
-			status = DAEMON_STATUS_ALREADY_RUNNING;
+			fprintf(stderr, "Already running according to '%s'\n", pid_filename);
 		}
 
 		goto cleanup;
@@ -219,19 +191,21 @@ int daemon_start_double_fork(const char *log_filename, const char *pid_filename)
 		goto cleanup;
 	}
 
-	status = DAEMON_STATUS_OKAY;
+	success = 1;
 
 cleanup:
 	if (stdin_fd >= 0) {
 		close(stdin_fd);
 	}
 
-	while (write(status_pipe[1], &status, 1) < 0 && errno == EINTR) {
+	if (double_fork) {
+		while (write(status_pipe[1], &success, sizeof(success)) < 0 && errno == EINTR) {
+		}
+
+		close(status_pipe[1]);
 	}
 
-	close(status_pipe[1]);
-
-	if (status != DAEMON_STATUS_OKAY) {
+	if (!success) {
 		if (log_file != NULL) {
 			log_set_file(stderr);
 			fclose(log_file);
