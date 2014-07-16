@@ -22,6 +22,8 @@
 #ifndef DAEMONLIB_PID_FILE_H
 #define DAEMONLIB_PID_FILE_H
 
+#define PID_FILE_ALREADY_ACQUIRED (-2)
+
 int pid_file_acquire(const char *filename, pid_t pid);
 void pid_file_release(const char *filename, int fd);
 

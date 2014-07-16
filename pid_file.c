@@ -35,6 +35,7 @@
 
 #include "utils.h"
 
+// returns -1 on error, -2 is pid file is already acquired or pid file fd on success
 int pid_file_acquire(const char *filename, pid_t pid) {
 	int fd = -1;
 	struct stat stat1;
@@ -74,7 +75,7 @@ int pid_file_acquire(const char *filename, pid_t pid) {
 
 			close(fd);
 
-			return errno == EAGAIN ? -2 : -1;
+			return errno == EAGAIN ? PID_FILE_ALREADY_ACQUIRED : -1;
 		}
 
 		if (stat(filename, &stat2) < 0) {
