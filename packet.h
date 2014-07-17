@@ -45,7 +45,7 @@ typedef enum {
 } ErrorCode;
 
 #define PACKET_MAX_SIGNATURE_LENGTH 64
-#define PACKET_STACK_ENUMERATE_MAX_UIDS 16
+#define PACKET_MAX_STACK_ENUMERATE_UIDS 16
 
 #include "packed_begin.h"
 
@@ -103,9 +103,8 @@ typedef struct {
 
 typedef struct {
 	PacketHeader header;
-	uint32_t uids[PACKET_STACK_ENUMERATE_MAX_UIDS];
+	uint32_t uids[PACKET_MAX_STACK_ENUMERATE_UIDS];
 } ATTRIBUTE_PACKED StackEnumerateResponse;
-
 
 #include "packed_end.h"
 

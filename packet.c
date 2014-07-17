@@ -36,6 +36,8 @@ STATIC_ASSERT(sizeof(EnumerateCallback) == 34, "EnumerateCallback has invalid si
 STATIC_ASSERT(sizeof(GetAuthenticationNonceRequest) == 8, "GetAuthenticationNonceRequest has invalid size");
 STATIC_ASSERT(sizeof(GetAuthenticationNonceResponse) == 12, "GetAuthenticationNonceResponse has invalid size");
 STATIC_ASSERT(sizeof(AuthenticateRequest) == 32, "AuthenticateRequest has invalid size");
+STATIC_ASSERT(sizeof(StackEnumerateRequest) == 8, "StackEnumerateRequest has invalid size");
+STATIC_ASSERT(sizeof(StackEnumerateResponse) == 72, "StackEnumerateResponse has invalid size");
 
 int packet_header_is_valid_request(PacketHeader *header, const char **message) {
 	if (header->length < (int)sizeof(PacketHeader)) {
