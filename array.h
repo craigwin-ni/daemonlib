@@ -22,6 +22,7 @@
 #ifndef DAEMONLIB_ARRAY_H
 #define DAEMONLIB_ARRAY_H
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #include "utils.h"
@@ -30,11 +31,11 @@ typedef struct {
 	int allocated; // number of allocated items
 	int count; // number of stored items
 	int size; // size of a single item in bytes
-	int relocatable; // true if item can be moved in memory
+	bool relocatable; // true if item can be moved in memory
 	uint8_t *bytes;
 } Array;
 
-int array_create(Array *array, int reserve, int size, int relocatable);
+int array_create(Array *array, int reserve, int size, bool relocatable);
 void array_destroy(Array *array, ItemDestroyFunction destroy);
 
 int array_reserve(Array *array, int count);

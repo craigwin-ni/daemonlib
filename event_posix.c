@@ -62,7 +62,7 @@ int event_run_platform(Array *event_sources, int *running, EventCleanupFunction 
 	int handled;
 
 	// create pollfd array
-	if (array_create(&pollfds, 32, sizeof(struct pollfd), 1) < 0) {
+	if (array_create(&pollfds, 32, sizeof(struct pollfd), true) < 0) {
 		log_error("Could not create pollfd array: %s (%d)",
 		          get_errno_name(errno), errno);
 

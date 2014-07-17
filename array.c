@@ -46,7 +46,7 @@
 // over their entire lifetime.
 //
 // returns -1 on error (sets errno) or 0 on success
-int array_create(Array *array, int reserve, int size, int relocatable) {
+int array_create(Array *array, int reserve, int size, bool relocatable) {
 	reserve = GROW_ALLOCATION(reserve);
 
 	array->allocated = 0;

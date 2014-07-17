@@ -116,7 +116,7 @@ int event_run_platform(Array *event_sources, int *running, EventCleanupFunction 
 
 	(void)event_sources;
 
-	if (array_create(&received_events, 32, sizeof(struct epoll_event), 1) < 0) {
+	if (array_create(&received_events, 32, sizeof(struct epoll_event), true) < 0) {
 		log_error("Could not create epoll event array: %s (%d)",
 		          get_errno_name(errno), errno);
 
