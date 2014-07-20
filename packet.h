@@ -22,6 +22,7 @@
 #ifndef DAEMONLIB_PACKET_H
 #define DAEMONLIB_PACKET_H
 
+#include <stdbool.h>
 #include <stdint.h>
 
 typedef enum {
@@ -115,8 +116,8 @@ int packet_header_is_valid_response(PacketHeader *header, const char **message);
 uint8_t packet_header_get_sequence_number(PacketHeader *header);
 void packet_header_set_sequence_number(PacketHeader *header, uint8_t sequence_number);
 
-int packet_header_get_response_expected(PacketHeader *header);
-void packet_header_set_response_expected(PacketHeader *header, int response_expected);
+bool packet_header_get_response_expected(PacketHeader *header);
+void packet_header_set_response_expected(PacketHeader *header, bool response_expected);
 
 ErrorCode packet_header_get_error_code(PacketHeader *header);
 void packet_header_set_error_code(PacketHeader *header, ErrorCode error_code);
@@ -127,6 +128,6 @@ char *packet_get_request_signature(char *signature, Packet *packet);
 char *packet_get_response_signature(char *signature, Packet *packet);
 char *packet_get_callback_signature(char *signature, Packet *packet);
 
-int packet_is_matching_response(Packet *packet, PacketHeader *pending_request);
+bool packet_is_matching_response(Packet *packet, PacketHeader *pending_request);
 
 #endif // DAEMONLIB_PACKET_H

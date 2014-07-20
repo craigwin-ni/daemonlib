@@ -46,19 +46,19 @@
 	#endif
 #endif
 
-int errno_interrupted(void) {
+bool errno_interrupted(void) {
 #ifdef _WIN32
-	return errno == ERRNO_WINAPI_OFFSET + WSAEINTR ? 1 : 0;
+	return errno == ERRNO_WINAPI_OFFSET + WSAEINTR;
 #else
-	return errno == EINTR ? 1 : 0;
+	return errno == EINTR;
 #endif
 }
 
-int errno_would_block(void) {
+bool errno_would_block(void) {
 #ifdef _WIN32
-	return errno == ERRNO_WINAPI_OFFSET + WSAEWOULDBLOCK ? 1 : 0;
+	return errno == ERRNO_WINAPI_OFFSET + WSAEWOULDBLOCK;
 #else
-	return errno == EWOULDBLOCK || errno == EAGAIN ? 1 : 0;
+	return errno == EWOULDBLOCK || errno == EAGAIN;
 #endif
 }
 

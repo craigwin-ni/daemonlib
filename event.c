@@ -32,19 +32,19 @@
 #define LOG_CATEGORY LOG_CATEGORY_EVENT
 
 static Array _event_sources;
-static int _running = 0;
-static int _stop_requested = 0;
+static bool _running = false;
+static bool _stop_requested = false;
 
 extern int event_init_platform(void);
 extern void event_exit_platform(void);
 extern int event_source_added_platform(EventSource *event_source);
 extern int event_source_modified_platform(EventSource *event_source);
 extern void event_source_removed_platform(EventSource *event_source);
-extern int event_run_platform(Array *sources, int *running,
+extern int event_run_platform(Array *sources, bool *running,
                               EventCleanupFunction cleanup);
 extern int event_stop_platform(void);
 
-const char *event_get_source_type_name(EventSourceType type, int upper) {
+const char *event_get_source_type_name(EventSourceType type, bool upper) {
 	switch (type) {
 	case EVENT_SOURCE_TYPE_GENERIC:
 		return upper ? "Generic" : "generic";
@@ -132,13 +132,13 @@ int event_add_source(IOHandle handle, EventSourceType type, uint32_t events,
 				}
 
 				log_debug("Readded %s event source (handle: %d) at index %d",
-				          event_get_source_type_name(type, 0), handle, i);
+				          event_get_source_type_name(type, false), handle, i);
 
 				return 0;
 			}
 
 			log_error("%s event source (handle: %d) already added at index %d",
-			          event_get_source_type_name(type, 1), handle, i);
+			          event_get_source_type_name(type, true), handle, i);
 
 			return -1;
 		}
@@ -176,7 +176,7 @@ int event_add_source(IOHandle handle, EventSourceType type, uint32_t events,
 	}
 
 	log_debug("Added %s event source (handle: %d, events: %d) at index %d",
-	          event_get_source_type_name(type, 0),
+	          event_get_source_type_name(type, false),
 	          handle, events, _event_sources.count - 1);
 
 	return 0;
@@ -195,7 +195,7 @@ int event_modify_source(IOHandle handle, EventSourceType type, uint32_t events_t
 		if (event_source->handle == handle && event_source->type == type) {
 			if (event_source->state == EVENT_SOURCE_STATE_REMOVED) {
 				log_error("Cannot modify removed %s event source (handle: %d) at index %d",
-				          event_get_source_type_name(type, 0), handle, i);
+				          event_get_source_type_name(type, false), handle, i);
 
 				return -1;
 			}
@@ -205,14 +205,14 @@ int event_modify_source(IOHandle handle, EventSourceType type, uint32_t events_t
 			// modify events bitmask
 			if ((event_source->events & events_to_remove) != events_to_remove) {
 				log_warn("Events to be removed (0x%04X) from %s event source (handle: %d) at index %d were not added before",
-				         events_to_remove, event_get_source_type_name(type, 0), handle, i);
+				         events_to_remove, event_get_source_type_name(type, false), handle, i);
 			}
 
 			event_source->events &= ~events_to_remove;
 
 			if ((event_source->events & events_to_add) != 0) {
 				log_warn("Events to be added (0x%04X) to %s event source (handle: %d) at index %d are already added",
-				         events_to_add, event_get_source_type_name(type, 0), handle, i);
+				         events_to_add, event_get_source_type_name(type, false), handle, i);
 			}
 
 			event_source->events |= events_to_add;
@@ -249,14 +249,14 @@ int event_modify_source(IOHandle handle, EventSourceType type, uint32_t events_t
 
 			log_debug("Modified (removed: 0x%04X, added: 0x%04X) %s event source (handle: %d) at index %d",
 			          events_to_remove, events_to_add,
-			          event_get_source_type_name(type, 0), handle, i);
+			          event_get_source_type_name(type, false), handle, i);
 
 			return 0;
 		}
 	}
 
 	log_warn("Could not modify unknown %s event source (handle: %d)",
-	         event_get_source_type_name(type, 0), handle);
+	         event_get_source_type_name(type, false), handle);
 
 	return -1;
 }
@@ -278,7 +278,7 @@ void event_remove_source(IOHandle handle, EventSourceType type) {
 		    event_source->type == type) {
 			if (event_source->state == EVENT_SOURCE_STATE_REMOVED) {
 				log_warn("%s event source (handle: %d, events: %d) already marked as removed at index %d",
-				         event_get_source_type_name(event_source->type, 1),
+				         event_get_source_type_name(event_source->type, true),
 				         event_source->handle, event_source->events, i);
 			} else {
 				event_source->state = EVENT_SOURCE_STATE_REMOVED;
@@ -286,7 +286,7 @@ void event_remove_source(IOHandle handle, EventSourceType type) {
 				event_source_removed_platform(event_source);
 
 				log_debug("Marked %s event source (handle: %d, events: %d) as removed at index %d",
-				          event_get_source_type_name(event_source->type, 0),
+				          event_get_source_type_name(event_source->type, false),
 				          event_source->handle, event_source->events, i);
 			}
 
@@ -295,7 +295,7 @@ void event_remove_source(IOHandle handle, EventSourceType type) {
 	}
 
 	log_warn("Could not mark unknown %s event source (handle: %d) as removed",
-	         event_get_source_type_name(type, 0), handle);
+	         event_get_source_type_name(type, false), handle);
 }
 
 // remove event sources that got marked as removed and mark (re-)added event
@@ -311,7 +311,7 @@ void event_cleanup_sources(void) {
 
 		if (event_source->state == EVENT_SOURCE_STATE_REMOVED) {
 			log_debug("Removed %s event source (handle: %d, events: %d) at index %d",
-			          event_get_source_type_name(event_source->type, 0),
+			          event_get_source_type_name(event_source->type, false),
 			          event_source->handle, event_source->events, i);
 
 			array_remove(&_event_sources, i, NULL);
@@ -324,14 +324,14 @@ void event_cleanup_sources(void) {
 void event_handle_source(EventSource *event_source, uint32_t received_events) {
 	if (event_source->state != EVENT_SOURCE_STATE_NORMAL) {
 		log_debug("Ignoring %s event source (handle: %d, received events: %u) in transition",
-		          event_get_source_type_name(event_source->type, 0),
+		          event_get_source_type_name(event_source->type, false),
 		          event_source->handle, received_events);
 
 		return;
 	}
 
 	log_debug("Handling %s event source (handle: %d, received events: %u)",
-	          event_get_source_type_name(event_source->type, 0),
+	          event_get_source_type_name(event_source->type, false),
 	          event_source->handle, received_events);
 
 	if ((received_events & EVENT_READ) != 0 && event_source->read != NULL) {
@@ -372,13 +372,13 @@ int event_run(EventCleanupFunction cleanup) {
 }
 
 void event_stop(void) {
-	_stop_requested = 1;
+	_stop_requested = true;
 
 	if (!_running) {
 		return;
 	}
 
-	_running = 0;
+	_running = false;
 
 	log_debug("Stopping the event loop");
 

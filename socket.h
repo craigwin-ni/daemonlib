@@ -23,12 +23,13 @@
 #ifndef DAEMONLIB_SOCKET_H
 #define DAEMONLIB_SOCKET_H
 
+#include <stdbool.h>
+#include <stdint.h>
 #ifdef _WIN32
 	#include <ws2tcpip.h> // for socklen_t
 #else
 	#include <netinet/in.h>
 #endif
-#include <stdint.h>
 
 #include "io.h"
 
@@ -62,8 +63,8 @@ int socket_connect(Socket *socket, struct sockaddr *address, int length);
 int socket_receive(Socket *socket, void *buffer, int length);
 int socket_send(Socket *socket, void *buffer, int length);
 
-int socket_set_address_reuse(Socket *socket, int address_reuse);
-int socket_set_dual_stack(Socket *socket, int dual_stack);
+int socket_set_address_reuse(Socket *socket, bool address_reuse);
+int socket_set_dual_stack(Socket *socket, bool dual_stack);
 
 struct addrinfo *socket_hostname_to_address(const char *hostname, uint16_t port);
 int socket_address_to_hostname(struct sockaddr *address, socklen_t address_length,

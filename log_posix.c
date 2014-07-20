@@ -19,11 +19,12 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include <stdbool.h>
 #include <sys/time.h>
 
 #include "log.h"
 
-int _log_debug_override_platform = 0;
+bool _log_debug_override_platform = false;
 
 void log_init_platform(void) {
 }

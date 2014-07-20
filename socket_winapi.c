@@ -180,7 +180,7 @@ int socket_send_platform(Socket *socket, void *buffer, int length) {
 }
 
 // sets errno on error
-int socket_set_address_reuse(Socket *socket, int address_reuse) {
+int socket_set_address_reuse(Socket *socket, bool address_reuse) {
 	DWORD on = address_reuse ? TRUE : FALSE;
 	int rc = setsockopt(socket->base.handle, SOL_SOCKET, SO_REUSEADDR,
 	                    (const char *)&on, sizeof(on));
@@ -194,7 +194,7 @@ int socket_set_address_reuse(Socket *socket, int address_reuse) {
 }
 
 // sets errno on error
-int socket_set_dual_stack(Socket *socket, int dual_stack) {
+int socket_set_dual_stack(Socket *socket, bool dual_stack) {
 	DWORD on = dual_stack ? 0 : 1;
 	int rc;
 

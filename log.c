@@ -20,6 +20,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include <stdbool.h>
 #include <string.h>
 #ifndef _MSC_VER
 	#include <sys/time.h>
@@ -30,11 +31,11 @@
 #include "threads.h"
 
 static Mutex _mutex; // protects writing to _file
-static int _debug_override = 0;
+static bool _debug_override = false;
 static LogLevel _levels[MAX_LOG_CATEGORIES]; // log_init initializes this
 static FILE *_file = NULL;
 
-extern int _log_debug_override_platform;
+extern bool _log_debug_override_platform;
 
 extern void log_init_platform(void);
 extern void log_exit_platform(void);
@@ -136,7 +137,7 @@ void log_unlock(void) {
 	mutex_unlock(&_mutex);
 }
 
-void log_set_debug_override(int override) {
+void log_set_debug_override(bool override) {
 	_debug_override = override;
 }
 

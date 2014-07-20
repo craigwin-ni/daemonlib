@@ -47,7 +47,7 @@ static void writer_handle_write(void *opaque) {
 		log_error("Could not send queued %s (%s) to %s, disconnecting %s: %s (%d)",
 		          writer->packet_type,
 		          writer->packet_signature(packet_signature, packet),
-		          writer->recipient_signature(recipient_signature, 0, writer->opaque),
+		          writer->recipient_signature(recipient_signature, false, writer->opaque),
 		          writer->recipient_name,
 		          get_errno_name(errno), errno);
 
@@ -61,7 +61,7 @@ static void writer_handle_write(void *opaque) {
 	log_debug("Sent queued %s (%s) to %s, %d %s(s) left in write backlog",
 	          writer->packet_type,
 	          writer->packet_signature(packet_signature, packet),
-	          writer->recipient_signature(recipient_signature, 0, writer->opaque),
+	          writer->recipient_signature(recipient_signature, false, writer->opaque),
 	          writer->backlog.count,
 	          writer->packet_type);
 
@@ -79,14 +79,14 @@ static int writer_push_packet_to_backlog(Writer *writer, Packet *packet) {
 	uint32_t packets_to_drop;
 
 	log_debug("%s is not ready to receive, pushing %s to write backlog (count: %d +1)",
-	          writer->recipient_signature(recipient_signature, 1, writer->opaque),
+	          writer->recipient_signature(recipient_signature, true, writer->opaque),
 	          writer->packet_type, writer->backlog.count);
 
 	if (writer->backlog.count >= MAX_QUEUED_WRITES) {
 		packets_to_drop = writer->backlog.count - MAX_QUEUED_WRITES + 1;
 
 		log_warn("Write backlog for %s is full, dropping %u queued %s(s), %u +%u dropped in total",
-		         writer->recipient_signature(recipient_signature, 0, writer->opaque),
+		         writer->recipient_signature(recipient_signature, false, writer->opaque),
 		         packets_to_drop, writer->packet_type,
 		         writer->dropped_packets, packets_to_drop);
 
@@ -103,7 +103,7 @@ static int writer_push_packet_to_backlog(Writer *writer, Packet *packet) {
 		log_error("Could not push %s (%s) to write backlog for %s, discarding %s: %s (%d)",
 		          writer->packet_type,
 		          writer->packet_signature(packet_signature, packet),
-		          writer->recipient_signature(recipient_signature, 0, writer->opaque),
+		          writer->recipient_signature(recipient_signature, false, writer->opaque),
 		          writer->packet_type,
 		          get_errno_name(errno), errno);
 
@@ -156,7 +156,7 @@ void writer_destroy(Writer *writer) {
 
 	if (writer->backlog.count > 0) {
 		log_warn("Destroying writer for %s while %d %s(s) have not been send",
-		         writer->recipient_signature(recipient_signature, 0, writer->opaque),
+		         writer->recipient_signature(recipient_signature, false, writer->opaque),
 		         writer->backlog.count,
 		         writer->packet_type);
 
@@ -181,7 +181,7 @@ int writer_write(Writer *writer, Packet *packet) {
 				log_error("Could not send %s (%s) to %s, disconnecting %s: %s (%d)",
 				          writer->packet_type,
 				          writer->packet_signature(packet_signature, packet),
-				          writer->recipient_signature(recipient_signature, 0, writer->opaque),
+				          writer->recipient_signature(recipient_signature, false, writer->opaque),
 				          writer->recipient_name,
 				          get_errno_name(errno), errno);
 

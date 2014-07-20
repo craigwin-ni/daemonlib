@@ -22,6 +22,7 @@
 #ifndef DAEMONLIB_EVENT_H
 #define DAEMONLIB_EVENT_H
 
+#include <stdbool.h>
 #include <stdint.h>
 #ifndef _WIN32
 	#ifdef __linux__
@@ -75,7 +76,7 @@ typedef struct {
 	void *write_opaque;
 } EventSource;
 
-const char *event_get_source_type_name(EventSourceType type, int upper);
+const char *event_get_source_type_name(EventSourceType type, bool upper);
 
 int event_init(void);
 void event_exit(void);

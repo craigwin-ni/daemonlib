@@ -24,6 +24,7 @@
 #define DAEMONLIB_LOG_H
 
 #include <stdarg.h>
+#include <stdbool.h>
 #include <stdio.h>
 
 #include "macros.h"
@@ -95,7 +96,7 @@ void log_exit(void);
 void log_lock(void);
 void log_unlock(void);
 
-void log_set_debug_override(int override);
+void log_set_debug_override(bool override);
 
 void log_set_level(LogCategory category, LogLevel level);
 LogLevel log_get_effective_level(LogCategory category);

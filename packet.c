@@ -109,11 +109,11 @@ void packet_header_set_sequence_number(PacketHeader *header, uint8_t sequence_nu
 	header->sequence_number_and_options |= (sequence_number << 4) & 0xF0;
 }
 
-int packet_header_get_response_expected(PacketHeader *header) {
-	return ((header->sequence_number_and_options >> 3) & 0x01) ? 1 : 0;
+bool packet_header_get_response_expected(PacketHeader *header) {
+	return ((header->sequence_number_and_options >> 3) & 0x01) == 0x01;
 }
 
-void packet_header_set_response_expected(PacketHeader *header, int response_expected) {
+void packet_header_set_response_expected(PacketHeader *header, bool response_expected) {
 	header->sequence_number_and_options |= response_expected ? 0x08 : 0x00;
 }
 
@@ -184,19 +184,19 @@ char *packet_get_callback_signature(char *signature, Packet *packet) {
 	return signature;
 }
 
-int packet_is_matching_response(Packet *packet, PacketHeader *pending_request) {
+bool packet_is_matching_response(Packet *packet, PacketHeader *pending_request) {
 	if (packet->header.uid != pending_request->uid) {
-		return 0;
+		return false;
 	}
 
 	if (packet->header.function_id != pending_request->function_id) {
-		return 0;
+		return false;
 	}
 
 	if (packet_header_get_sequence_number(&packet->header) !=
 	    packet_header_get_sequence_number(pending_request)) {
-		return 0;
+		return false;
 	}
 
-	return 1;
+	return true;
 }

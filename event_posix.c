@@ -20,6 +20,7 @@
  */
 
 #include <errno.h>
+#include <stdbool.h>
 
 #include "event.h"
 
@@ -52,7 +53,7 @@ void event_source_removed_platform(EventSource *event_source) {
 	(void)event_source;
 }
 
-int event_run_platform(Array *event_sources, int *running, EventCleanupFunction cleanup) {
+int event_run_platform(Array *event_sources, bool *running, EventCleanupFunction cleanup) {
 	int result = -1;
 	Array pollfds;
 	int i;
@@ -69,7 +70,7 @@ int event_run_platform(Array *event_sources, int *running, EventCleanupFunction 
 		return -1;
 	}
 
-	*running = 1;
+	*running = true;
 
 	cleanup();
 	event_cleanup_sources();
@@ -149,7 +150,7 @@ int event_run_platform(Array *event_sources, int *running, EventCleanupFunction 
 	result = 0;
 
 cleanup:
-	*running = 0;
+	*running = false;
 
 	array_destroy(&pollfds, NULL);
 

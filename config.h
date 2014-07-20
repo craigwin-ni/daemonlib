@@ -23,6 +23,7 @@
 #ifndef DAEMONLIB_CONFIG_H
 #define DAEMONLIB_CONFIG_H
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #include "log.h"
@@ -37,7 +38,7 @@ typedef enum {
 typedef struct {
 	char *string;
 	int integer;
-	int boolean;
+	bool boolean;
 	LogLevel log_level;
 } ConfigOptionValue;
 
@@ -134,8 +135,8 @@ int config_check(const char *filename);
 void config_init(const char *filename);
 void config_exit(void);
 
-int config_has_error(void);
-int config_has_warning(void);
+bool config_has_error(void);
+bool config_has_warning(void);
 
 ConfigOption *config_get_option(const char *name);
 

@@ -148,14 +148,14 @@ int socket_send_platform(Socket *socket, void *buffer, int length) {
 }
 
 // sets errno on error
-int socket_set_address_reuse(Socket *socket, int address_reuse) {
+int socket_set_address_reuse(Socket *socket, bool address_reuse) {
 	int on = address_reuse ? 1 : 0;
 
 	return setsockopt(socket->base.handle, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
 }
 
 // sets errno on error
-int socket_set_dual_stack(Socket *socket, int dual_stack) {
+int socket_set_dual_stack(Socket *socket, bool dual_stack) {
 	int on = dual_stack ? 0 : 1;
 
 	return setsockopt(socket->base.handle, IPPROTO_IPV6, IPV6_V6ONLY, &on, sizeof(on));

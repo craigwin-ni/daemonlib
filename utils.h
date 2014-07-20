@@ -23,6 +23,7 @@
 #ifndef DAEMONLIB_UTILS_H
 #define DAEMONLIB_UTILS_H
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #define ERRNO_WINAPI_OFFSET 71000000
@@ -32,8 +33,8 @@
 
 typedef void (*ItemDestroyFunction)(void *item);
 
-int errno_interrupted(void);
-int errno_would_block(void);
+bool errno_interrupted(void);
+bool errno_would_block(void);
 
 const char *get_errno_name(int error_code);
 

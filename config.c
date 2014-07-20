@@ -30,10 +30,10 @@
 
 #include "utils.h"
 
-static int _check_only = 0;
-static int _has_error = 0;
-static int _has_warning = 0;
-static int _using_default_values = 1;
+static bool _check_only = false;
+static bool _has_error = false;
+static bool _has_warning = false;
+static bool _using_default_values = true;
 static ConfigOption _invalid = CONFIG_OPTION_STRING_INITIALIZER("<invalid>", NULL, 0, -1, "<invalid>");
 
 extern ConfigOption config_options[];
@@ -41,12 +41,12 @@ extern ConfigOption config_options[];
 #define config_error(...) config_message(&_has_error, __VA_ARGS__)
 #define config_warn(...) config_message(&_has_warning, __VA_ARGS__)
 
-static void config_message(int *has_message, const char *format, ...) ATTRIBUTE_FMT_PRINTF(2, 3);
+static void config_message(bool *has_message, const char *format, ...) ATTRIBUTE_FMT_PRINTF(2, 3);
 
-static void config_message(int *has_message, const char *format, ...) {
+static void config_message(bool *has_message, const char *format, ...) {
 	va_list arguments;
 
-	*has_message = 1;
+	*has_message = true;
 
 	if (!_check_only) {
 		return;
@@ -64,7 +64,7 @@ static void config_message(int *has_message, const char *format, ...) {
 static void config_reset(void) {
 	int i = 0;
 
-	_using_default_values = 1;
+	_using_default_values = true;
 
 	for (i = 0; config_options[i].name != NULL; ++i) {
 		if (config_options[i].type == CONFIG_OPTION_TYPE_STRING) {
@@ -248,9 +248,9 @@ static void config_parse_line(char *string) {
 				config_lower_string(value);
 
 				if (strcmp(value, "on") == 0) {
-					config_options[i].value.boolean = 1;
+					config_options[i].value.boolean = true;
 				} else if (strcmp(value, "off") == 0) {
-					config_options[i].value.boolean = 0;
+					config_options[i].value.boolean = false;
 				} else {
 					config_warn("Value '%s' for %s option is invalid", value, name);
 
@@ -275,7 +275,7 @@ static void config_parse_line(char *string) {
 int config_check(const char *filename) {
 	int i;
 
-	_check_only = 1;
+	_check_only = true;
 
 	config_init(filename);
 
@@ -348,7 +348,7 @@ void config_init(const char *filename) {
 	char c;
 	char line[256] = "";
 	int length = 0;
-	int skip = 0;
+	bool skip = false;
 
 	config_reset();
 
@@ -362,7 +362,7 @@ void config_init(const char *filename) {
 		return;
 	}
 
-	_using_default_values = 0;
+	_using_default_values = false;
 
 	while (!feof(file)) {
 		rc = fread(&c, 1, 1, file);
@@ -380,7 +380,7 @@ void config_init(const char *filename) {
 			}
 
 			length = 0;
-			skip = 0;
+			skip = false;
 		} else if (!skip) {
 			if (length < (int)sizeof(line) - 1) {
 				line[length++] = c;
@@ -391,7 +391,7 @@ void config_init(const char *filename) {
 				             filename, line);
 
 				length = 0;
-				skip = 1;
+				skip = true;
 			}
 		}
 	}
@@ -411,11 +411,11 @@ void config_exit(void) {
 	}
 }
 
-int config_has_error(void) {
+bool config_has_error(void) {
 	return _has_error;
 }
 
-int config_has_warning(void) {
+bool config_has_warning(void) {
 	return _has_warning;
 }
 

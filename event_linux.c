@@ -20,6 +20,7 @@
  */
 
 #include <errno.h>
+#include <stdbool.h>
 #include <signal.h>
 #include <sys/epoll.h>
 #include <unistd.h>
@@ -61,7 +62,7 @@ int event_source_added_platform(EventSource *event_source) {
 
 	if (epoll_ctl(_epollfd, EPOLL_CTL_ADD, event_source->handle, &event) < 0) {
 		log_error("Could not add %s event source (handle: %d) to epollfd: %s (%d)",
-		          event_get_source_type_name(event_source->type, 0),
+		          event_get_source_type_name(event_source->type, false),
 		          event_source->handle, get_errno_name(errno), errno);
 
 		return -1;
@@ -80,7 +81,7 @@ int event_source_modified_platform(EventSource *event_source) {
 
 	if (epoll_ctl(_epollfd, EPOLL_CTL_MOD, event_source->handle, &event) < 0) {
 		log_error("Could not modify %s event source (handle: %d) added to epollfd: %s (%d)",
-		          event_get_source_type_name(event_source->type, 0),
+		          event_get_source_type_name(event_source->type, false),
 		          event_source->handle, get_errno_name(errno), errno);
 
 		return -1;
@@ -97,7 +98,7 @@ void event_source_removed_platform(EventSource *event_source) {
 
 	if (epoll_ctl(_epollfd, EPOLL_CTL_DEL, event_source->handle, &event) < 0) {
 		log_error("Could not remove %s event source (handle: %d) from epollfd: %s (%d)",
-		          event_get_source_type_name(event_source->type, 0),
+		          event_get_source_type_name(event_source->type, false),
 		          event_source->handle, get_errno_name(errno), errno);
 
 		return;
@@ -106,7 +107,7 @@ void event_source_removed_platform(EventSource *event_source) {
 	--_epollfd_event_count;
 }
 
-int event_run_platform(Array *event_sources, int *running, EventCleanupFunction cleanup) {
+int event_run_platform(Array *event_sources, bool *running, EventCleanupFunction cleanup) {
 	int result = -1;
 	int i;
 	EventSource *event_source;
@@ -123,7 +124,7 @@ int event_run_platform(Array *event_sources, int *running, EventCleanupFunction 
 		return -1;
 	}
 
-	*running = 1;
+	*running = true;
 
 	cleanup();
 	event_cleanup_sources();
@@ -180,7 +181,7 @@ int event_run_platform(Array *event_sources, int *running, EventCleanupFunction 
 	result = 0;
 
 cleanup:
-	*running = 0;
+	*running = false;
 
 	array_destroy(&received_events, NULL);
 

@@ -37,7 +37,7 @@
 
 #define LOG_CATEGORY LOG_CATEGORY_OTHER
 
-int daemon_start(const char *log_filename, const char *pid_filename, int double_fork) {
+int daemon_start(const char *log_filename, const char *pid_filename, bool double_fork) {
 	int status_pipe[2];
 	pid_t pid;
 	int rc;

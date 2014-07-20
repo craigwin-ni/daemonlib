@@ -22,6 +22,8 @@
 #ifndef DAEMONLIB_WRITER_H
 #define DAEMONLIB_WRITER_H
 
+#include <stdbool.h>
+
 #include "io.h"
 #include "packet.h"
 #include "queue.h"
@@ -29,7 +31,7 @@
 #define WRITER_MAX_RECIPIENT_SIGNATURE_LENGTH 256
 
 typedef char *(*WriterPacketSignatureFunction)(char *signature, Packet *packet);
-typedef char *(*WriterRecipientSignatureFunction)(char *signature, int upper, void *opaque);
+typedef char *(*WriterRecipientSignatureFunction)(char *signature, bool upper, void *opaque);
 typedef void (*WriterRecipientDisconnectFunction)(void *opaque);
 
 typedef struct {
