@@ -549,3 +549,29 @@ int red_brick_uid(uint32_t *uid /* always little endian */) {
 
 	return 0;
 }
+
+void node_reset(Node *node) {
+	node->prev = node;
+	node->next = node;
+}
+
+void node_insert_before(Node *node, Node *insert) {
+	insert->prev = node->prev;
+	node->prev = insert;
+	insert->next = insert->prev->next;
+	insert->prev->next = insert;
+}
+
+void node_insert_after(Node *node, Node *insert) {
+	insert->next = node->next;
+	node->next = insert;
+	insert->prev = insert->next->prev;
+	insert->next->prev = insert;
+}
+
+void node_remove(Node *node) {
+	node->next->prev = node->prev;
+	node->prev->next = node->next;
+
+	node_reset(node);
+}

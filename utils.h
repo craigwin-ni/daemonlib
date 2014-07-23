@@ -33,6 +33,13 @@
 
 typedef void (*ItemDestroyFunction)(void *item);
 
+typedef struct Node_ Node;
+
+struct Node_ {
+	Node *prev;
+	Node *next;
+};
+
 bool errno_interrupted(void);
 bool errno_would_block(void);
 
@@ -58,5 +65,10 @@ char *strcasestr(char *haystack, char *needle);
 #endif
 
 int red_brick_uid(uint32_t *uid /* always little endian */);
+
+void node_reset(Node *node);
+void node_insert_before(Node *node, Node *insert);
+void node_insert_after(Node *node, Node *insert);
+void node_remove(Node *node);
 
 #endif // DAEMONLIB_UTILS_H

@@ -68,4 +68,15 @@
 // with unsigned int SIZE - 1 would overflow to a big value if size is 0.
 #define GROW_ALLOCATION(size) ((((int)(size) - 1) / 16 + 1) * 16)
 
+// this is intentinally called containerof instead of container_of to avoid
+// conflicts wtih potential other definitions of the container_of macro
+#ifdef __GNUC__
+	#define containerof(ptr, type, member) ({ \
+		const typeof(((type *)0)->member) *__ptr = ptr; \
+		(type *)((char *)__ptr - offsetof(type, member)); })
+#else
+	#define containerof(ptr, type, member) \
+		((type *)((char *)(ptr) - offsetof(type, member)))
+#endif
+
 #endif // DAEMONLIB_MACROS_H
