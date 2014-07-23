@@ -63,4 +63,9 @@
 	#define MAX(a, b) ((a) > (b) ? (a) : (b))
 #endif
 
+// round SIZE up to the next multiple of 16. the calculation relies on SIZE
+// being a signed int. with float the division would not truncate the result.
+// with unsigned int SIZE - 1 would overflow to a big value if size is 0.
+#define GROW_ALLOCATION(size) ((((int)(size) - 1) / 16 + 1) * 16)
+
 #endif // DAEMONLIB_MACROS_H

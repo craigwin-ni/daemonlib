@@ -39,6 +39,8 @@
 
 #include "array.h"
 
+#include "macros.h"
+
 // creates an empty (count == 0) Array object and reserve memory for the number
 // of items specified by RESERVE (>= 0). each item is SIZE (> 0) bytes in size.
 // if the items to store can be moved in memory then set RELOCATABLE to true,
