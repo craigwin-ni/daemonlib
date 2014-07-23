@@ -33,13 +33,13 @@
 
 #include "io.h"
 
-typedef struct Socket_ Socket;
+typedef struct _Socket Socket;
 
 typedef Socket *(*SocketCreateAllocatedFunction)(void);
 typedef int (*SocketReceiveFunction)(Socket *socket, void *buffer, int length);
 typedef int (*SocketSendFunction)(Socket *socket, void *buffer, int length);
 
-struct Socket_ {
+struct _Socket {
 	IO base;
 
 	SocketCreateAllocatedFunction create_allocated;

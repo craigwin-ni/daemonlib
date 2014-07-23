@@ -40,13 +40,13 @@ typedef int IOHandle;
 
 #define IO_CONTINUE (-2)
 
-typedef struct IO_ IO;
+typedef struct _IO IO;
 
 typedef void (*IODestroyFunction)(IO *io);
 typedef int (*IOReadFunction)(IO *io, void *buffer, int length);
 typedef int (*IOWriteFunction)(IO *io, void *buffer, int length);
 
-struct IO_ {
+struct _IO {
 	IOHandle handle;
 	const char *type; // for display purpose
 	IODestroyFunction destroy;

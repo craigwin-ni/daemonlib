@@ -33,9 +33,9 @@
 
 typedef void (*ItemDestroyFunction)(void *item);
 
-typedef struct Node_ Node;
+typedef struct _Node Node;
 
-struct Node_ {
+struct _Node {
 	Node *prev;
 	Node *next;
 };
