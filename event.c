@@ -323,7 +323,7 @@ void event_cleanup_sources(void) {
 
 void event_handle_source(EventSource *event_source, uint32_t received_events) {
 	if (event_source->state != EVENT_SOURCE_STATE_NORMAL) {
-		log_debug("Ignoring %s event source (handle: %d, received events: %u) in transition",
+		log_debug("Ignoring %s event source (handle: %d, received events: %u) in state transition",
 		          event_get_source_type_name(event_source->type, false),
 		          event_source->handle, received_events);
 
@@ -334,12 +334,32 @@ void event_handle_source(EventSource *event_source, uint32_t received_events) {
 	          event_get_source_type_name(event_source->type, false),
 	          event_source->handle, received_events);
 
-	if ((received_events & EVENT_READ) != 0 && event_source->read != NULL) {
-		event_source->read(event_source->read_opaque);
-	}
+	if (event_source->read == event_source->write &&
+	    event_source->read_opaque == event_source->write_opaque) {
+		// read and write event function are the same, don't call it twice,
+		// only call the read event function once
+		if ((received_events & (EVENT_READ | EVENT_WRITE)) != 0 &&
+		    event_source->read != NULL) {
+			event_source->read(event_source->read_opaque);
+		}
+	} else {
+		if ((received_events & EVENT_READ) != 0 && event_source->read != NULL) {
+			event_source->read(event_source->read_opaque);
+		}
 
-	if ((received_events & EVENT_WRITE) != 0 && event_source->write != NULL) {
-		event_source->write(event_source->write_opaque);
+		if ((received_events & EVENT_WRITE) != 0 && event_source->write != NULL) {
+			// if the read event function removed the event source then don't
+			// deliver the write event anymore
+			if (event_source->state == EVENT_SOURCE_STATE_REMOVED) {
+				log_debug("Ignoring removed %s event source (handle: %d, received events: %u)",
+				          event_get_source_type_name(event_source->type, false),
+				          event_source->handle, received_events);
+
+				return;
+			}
+
+			event_source->write(event_source->write_opaque);
+		}
 	}
 }
 
