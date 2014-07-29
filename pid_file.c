@@ -24,6 +24,7 @@
  */
 
 #include <errno.h>
+#include <inttypes.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -99,7 +100,7 @@ int pid_file_acquire(const char *filename, pid_t pid) {
 		break;
 	}
 
-	snprintf(buffer, sizeof(buffer), "%lld", (long long)pid);
+	snprintf(buffer, sizeof(buffer), "%"PRIi64, (int64_t)pid);
 
 	if (write(fd, buffer, strlen(buffer)) < 0) {
 		fprintf(stderr, "Could not write to PID file '%s': %s (%d)\n",
