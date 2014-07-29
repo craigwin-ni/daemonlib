@@ -28,10 +28,8 @@
 	#include "timer_winapi.h"
 #elif defined (__linux__)
 	#include "timer_linux.h"
-#elif defined (__APPLE__)
-	#include "timer_macosx.h"
 #else
-	#error unknown platform
+	#include "timer_posix.h"
 #endif
 
 int timer_create_(Timer *timer, TimerFunction function, void *opaque);

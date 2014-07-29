@@ -20,7 +20,6 @@
  */
 
 #include <errno.h>
-#include <inttypes.h>
 
 #include "timer_winapi.h"
 
