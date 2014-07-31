@@ -41,25 +41,33 @@ STATIC_ASSERT(sizeof(StackEnumerateResponse) == 72, "StackEnumerateResponse has 
 
 int packet_header_is_valid_request(PacketHeader *header, const char **message) {
 	if (header->length < (int)sizeof(PacketHeader)) {
-		*message = "Length is too small";
+		if (message != NULL) {
+			*message = "Length is too small";
+		}
 
 		return 0;
 	}
 
 	if (header->length > (int)sizeof(Packet)) {
-		*message = "Length is too big";
+		if (message != NULL) {
+			*message = "Length is too big";
+		}
 
 		return 0;
 	}
 
 	if (header->function_id == 0) {
-		*message = "Invalid function ID";
+		if (message != NULL) {
+			*message = "Invalid function ID";
+		}
 
 		return 0;
 	}
 
 	if (packet_header_get_sequence_number(header) == 0) {
-		*message = "Invalid sequence number";
+		if (message != NULL) {
+			*message = "Invalid sequence number";
+		}
 
 		return 0;
 	}
@@ -69,31 +77,41 @@ int packet_header_is_valid_request(PacketHeader *header, const char **message) {
 
 int packet_header_is_valid_response(PacketHeader *header, const char **message) {
 	if (header->length < (int)sizeof(PacketHeader)) {
-		*message = "Length is too small";
+		if (message != NULL) {
+			*message = "Length is too small";
+		}
 
 		return 0;
 	}
 
 	if (header->length > (int)sizeof(Packet)) {
-		*message = "Length is too big";
+		if (message != NULL) {
+			*message = "Length is too big";
+		}
 
 		return 0;
 	}
 
 	if (uint32_from_le(header->uid) == 0) {
-		*message = "Invalid UID";
+		if (message != NULL) {
+			*message = "Invalid UID";
+		}
 
 		return 0;
 	}
 
 	if (header->function_id == 0) {
-		*message = "Invalid function ID";
+		if (message != NULL) {
+			*message = "Invalid function ID";
+		}
 
 		return 0;
 	}
 
 	if (!packet_header_get_response_expected(header)) {
-		*message = "Invalid response expected bit";
+		if (message != NULL) {
+			*message = "Invalid response expected bit";
+		}
 
 		return 0;
 	}
