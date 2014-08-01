@@ -202,6 +202,26 @@ char *packet_get_callback_signature(char *signature, Packet *packet) {
 	return signature;
 }
 
+char *packet_get_content_dump(char *content_dump, Packet *packet, int length) {
+	int i;
+
+	if (length > (int)sizeof(Packet)) {
+		length = (int)sizeof(Packet);
+	}
+
+	for (i = 0; i < length; ++i) {
+		snprintf(content_dump + i * 3, 4, "%02X ", ((uint8_t *)packet)[i]);
+	}
+
+	if (length > 0) {
+		content_dump[length * 3 - 1] = '\0';
+	} else {
+		content_dump[0] = '\0';
+	}
+
+	return content_dump;
+}
+
 bool packet_is_matching_response(Packet *packet, PacketHeader *pending_request) {
 	if (packet->header.uid != pending_request->uid) {
 		return false;

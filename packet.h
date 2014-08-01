@@ -47,6 +47,7 @@ typedef enum {
 } ErrorCode;
 
 #define PACKET_MAX_SIGNATURE_LENGTH 64
+#define PACKET_MAX_CONTENT_DUMP_LENGTH ((int)sizeof(Packet) * 3 + 1)
 #define PACKET_MAX_STACK_ENUMERATE_UIDS 16
 
 #include "packed_begin.h"
@@ -127,6 +128,7 @@ const char *packet_get_callback_type(Packet *packet);
 char *packet_get_request_signature(char *signature, Packet *packet);
 char *packet_get_response_signature(char *signature, Packet *packet);
 char *packet_get_callback_signature(char *signature, Packet *packet);
+char *packet_get_content_dump(char *content_dump, Packet *packet, int length);
 
 bool packet_is_matching_response(Packet *packet, PacketHeader *pending_request);
 
