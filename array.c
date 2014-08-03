@@ -198,7 +198,7 @@ void *array_append(Array *array) {
 	}
 
 	if (array->relocatable) {
-		item = array_get(array, array->count);
+		item = array->bytes + array->size * array->count;
 	} else {
 		item = calloc(1, array->size);
 
