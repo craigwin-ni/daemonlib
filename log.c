@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012, 2014 Matthias Bolte <matthias@tinkerforge.com>
  * Copyright (C) 2014 Olaf Lüke <olaf@tinkerforge.com>
  *
  * log.c: Logging specific functions
@@ -37,23 +37,25 @@ static FILE *_file = NULL;
 
 extern bool _log_debug_override_platform;
 
-extern void log_init_platform(void);
+extern void log_init_platform(FILE *file);
 extern void log_exit_platform(void);
-extern void log_handler_platform(struct timeval *timestamp,
-                                 LogCategory category, LogLevel level,
-                                 const char *file, int line,
-                                 const char *function, const char *format,
-                                 va_list arguments);
+extern void log_set_file_platform(FILE *file);
+extern void log_apply_color_platform(LogLevel level, bool begin);
+extern void log_secondary_output_platform(struct timeval *timestamp,
+                                          LogCategory category, LogLevel level,
+                                          const char *file, int line,
+                                          const char *function, const char *format,
+                                          va_list arguments);
 
 // NOTE: assumes that _mutex is locked
-static void log_handler(struct timeval *timestamp, LogCategory category,
-                        LogLevel level, const char *file, int line,
-                        const char *function, const char *format,
-                        va_list arguments) {
+static void log_primary_output(struct timeval *timestamp, LogCategory category,
+                               LogLevel level, const char *file, int line,
+                               const char *function, const char *format,
+                               va_list arguments) {
 	time_t t;
 	struct tm lt;
-	char lt_str[64] = "<unknown>";
-	char level_c = 'U';
+	char lt_string[64] = "<unknown>";
+	char level_char = 'U';
 	const char *category_name = "unknown";
 
 	(void)function;
@@ -72,16 +74,16 @@ static void log_handler(struct timeval *timestamp, LogCategory category,
 
 	// format time
 	if (localtime_r(&t, &lt) != NULL) {
-		strftime(lt_str, sizeof(lt_str), "%Y-%m-%d %H:%M:%S", &lt);
+		strftime(lt_string, sizeof(lt_string), "%Y-%m-%d %H:%M:%S", &lt);
 	}
 
 	// format level
 	switch (level) {
-	case LOG_LEVEL_NONE:  level_c = 'N'; break;
-	case LOG_LEVEL_ERROR: level_c = 'E'; break;
-	case LOG_LEVEL_WARN:  level_c = 'W'; break;
-	case LOG_LEVEL_INFO:  level_c = 'I'; break;
-	case LOG_LEVEL_DEBUG: level_c = 'D'; break;
+	case LOG_LEVEL_NONE:  level_char = 'N'; break;
+	case LOG_LEVEL_ERROR: level_char = 'E'; break;
+	case LOG_LEVEL_WARN:  level_char = 'W'; break;
+	case LOG_LEVEL_INFO:  level_char = 'I'; break;
+	case LOG_LEVEL_DEBUG: level_char = 'D'; break;
 	}
 
 	// format category
@@ -99,13 +101,20 @@ static void log_handler(struct timeval *timestamp, LogCategory category,
 	case LOG_CATEGORY_LIBUSB:    category_name = "libusb";    break;
 	}
 
+	// begin color
+	log_apply_color_platform(level, true);
+
 	// print prefix
 	fprintf(_file, "%s.%06d <%c> <%s|%s:%d> ",
-	        lt_str, (int)timestamp->tv_usec, level_c, category_name, file, line);
+	        lt_string, (int)timestamp->tv_usec, level_char, category_name, file, line);
 
 	// print message
 	vfprintf(_file, format, arguments);
 	fprintf(_file, "\n");
+
+	// end color
+	log_apply_color_platform(level, false);
+
 	fflush(_file);
 }
 
@@ -120,7 +129,7 @@ void log_init(void) {
 
 	_file = stderr;
 
-	log_init_platform();
+	log_init_platform(_file);
 }
 
 void log_exit(void) {
@@ -160,6 +169,8 @@ void log_set_file(FILE *file) {
 
 	_file = file;
 
+	log_set_file_platform(file);
+
 	log_unlock();
 }
 
@@ -198,11 +209,11 @@ void log_message(LogCategory category, LogLevel level, const char *file, int lin
 	log_lock();
 
 	if (_debug_override || level <= _levels[category]) {
-		log_handler(&timestamp, category, level, file, line, function, format, arguments);
+		log_primary_output(&timestamp, category, level, file, line, function, format, arguments);
 	}
 
 	if (_debug_override || _log_debug_override_platform || level <= _levels[category]) {
-		log_handler_platform(&timestamp, category, level, file, line, function, format, arguments);
+		log_secondary_output_platform(&timestamp, category, level, file, line, function, format, arguments);
 	}
 
 	log_unlock();
