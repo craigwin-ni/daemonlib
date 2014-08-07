@@ -95,6 +95,8 @@ static void log_primary_output(struct timeval *timestamp, LogCategory category,
 	case LOG_CATEGORY_HARDWARE:  category_name = "hardware";  break;
 	case LOG_CATEGORY_WEBSOCKET: category_name = "websocket"; break;
 	case LOG_CATEGORY_RED_BRICK: category_name = "red-brick"; break;
+	case LOG_CATEGORY_SPI:       category_name = "spi";       break;
+	case LOG_CATEGORY_RS485:     category_name = "rs485";     break;
 	case LOG_CATEGORY_API:       category_name = "api";       break;
 	case LOG_CATEGORY_OBJECT:    category_name = "object";    break;
 	case LOG_CATEGORY_OTHER:     category_name = "other";     break;
