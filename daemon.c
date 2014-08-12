@@ -73,8 +73,7 @@ int daemon_start(const char *log_filename, const char *pid_filename, bool double
 			close(status_pipe[1]);
 
 			// wait for first child to exit
-			while (waitpid(pid, NULL, 0) < 0 && errno == EINTR) {
-			}
+			while (waitpid(pid, NULL, 0) < 0 && errno == EINTR);
 
 			// wait for second child to start successfully
 			do {
@@ -199,8 +198,7 @@ cleanup:
 	}
 
 	if (double_fork) {
-		while (write(status_pipe[1], &success, sizeof(success)) < 0 && errno == EINTR) {
-		}
+		while (write(status_pipe[1], &success, sizeof(success)) < 0 && errno == EINTR);
 
 		close(status_pipe[1]);
 	}
