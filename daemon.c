@@ -198,7 +198,14 @@ cleanup:
 	}
 
 	if (double_fork) {
-		while (write(status_pipe[1], &success, sizeof(success)) < 0 && errno == EINTR);
+		do {
+			rc = write(status_pipe[1], &success, sizeof(success));
+		} while (rc < 0 && errno == EINTR);
+
+		if (rc < 0) {
+			fprintf(stderr, "Could not write to status pipe: %s (%d)",
+			        get_errno_name(errno), errno);
+		}
 
 		close(status_pipe[1]);
 	}
