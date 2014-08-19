@@ -91,7 +91,7 @@ int signal_init(SIGUSR1Function sigusr1) {
 
 	phase = 2;
 
-	// setup signal handlers
+	// handle SIGINT to stop the event loop
 	if (signal(SIGINT, signal_forward) == SIG_ERR) {
 		log_error("Could not install signal handler for SIGINT: %s (%d)",
 		          get_errno_name(errno), errno);
@@ -101,6 +101,7 @@ int signal_init(SIGUSR1Function sigusr1) {
 
 	phase = 3;
 
+	// handle SIGTERM to stop the event loop
 	if (signal(SIGTERM, signal_forward) == SIG_ERR) {
 		log_error("Could not install signal handler for SIGTERM: %s (%d)",
 		          get_errno_name(errno), errno);
@@ -110,6 +111,7 @@ int signal_init(SIGUSR1Function sigusr1) {
 
 	phase = 4;
 
+	// ignore SIGPIPE to make socket functions report EPIPE in case of broken pipes
 	if (signal(SIGPIPE, SIG_IGN) == SIG_ERR) {
 		log_error("Could not ignore SIGPIPE signal: %s (%d)",
 		          get_errno_name(errno), errno);
@@ -119,6 +121,7 @@ int signal_init(SIGUSR1Function sigusr1) {
 
 	phase = 5;
 
+	// handle SIGUSR1 to call a user provided function
 	if (signal(SIGUSR1, signal_forward) == SIG_ERR) {
 		log_error("Could not install signal handler for SIGUSR1: %s (%d)",
 		          get_errno_name(errno), errno);
