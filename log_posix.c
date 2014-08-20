@@ -45,6 +45,10 @@ void log_set_file_platform(FILE *file) {
 
 	_file = NULL;
 
+	if (file == NULL) {
+		return;
+	}
+
 	if (!isatty(fileno(file))) {
 		return;
 	}
