@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2013 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2014 Matthias Bolte <matthias@tinkerforge.com>
  *
  * pipe.h: Pipe specific functions
  *
@@ -22,6 +22,8 @@
 #ifndef DAEMONLIB_PIPE_H
 #define DAEMONLIB_PIPE_H
 
+#include <stdbool.h>
+
 #include "io.h"
 
 typedef struct {
@@ -29,7 +31,7 @@ typedef struct {
 	IOHandle write_end;
 } Pipe;
 
-int pipe_create(Pipe *pipe);
+int pipe_create(Pipe *pipe, bool non_blocking);
 void pipe_destroy(Pipe *pipe);
 
 int pipe_read(Pipe *pipe, void *buffer, int length);

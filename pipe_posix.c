@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2013 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2014 Matthias Bolte <matthias@tinkerforge.com>
  *
  * pipe_posix.c: POSIX based pipe implementation
  *
@@ -24,6 +24,7 @@
  * implementation is a direct wrapper of the POSIX pipe function.
  */
 
+#include <fcntl.h>
 #include <unistd.h>
 
 #include "pipe.h"
@@ -31,16 +32,32 @@
 #include "utils.h"
 
 // sets errno on error
-int pipe_create(Pipe *pipe_) {
-	int rc;
+int pipe_create(Pipe *pipe_, bool non_blocking) {
 	IOHandle handles[2];
+	int i;
+	int flags;
 
-	rc = pipe(handles);
+	if (pipe(handles) < 0) {
+		return -1;
+	}
+
+	if (non_blocking) {
+		for (i = 0; i < 2; ++i) {
+			flags = fcntl(handles[i], F_GETFL, 0);
+
+			if (flags < 0 || fcntl(handles[i], F_SETFL, flags | O_NONBLOCK) < 0) {
+				close(handles[0]);
+				close(handles[1]);
+
+				return -1;
+			}
+		}
+	}
 
 	pipe_->read_end = handles[0];
 	pipe_->write_end = handles[1];
 
-	return rc;
+	return 0;
 }
 
 void pipe_destroy(Pipe *pipe) {

@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2013 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2014 Matthias Bolte <matthias@tinkerforge.com>
  *
  * pipe_winapi.c: WinAPI based pipe implementation
  *
@@ -34,11 +34,12 @@
 
 // sets errno on error
 // FIXME: maybe use IPv6 if available
-int pipe_create(Pipe *pipe) {
+int pipe_create(Pipe *pipe, bool non_blocking) {
 	SOCKET listener;
 	struct sockaddr_in address;
 	int length = sizeof(address);
 	int rc;
+	unsigned long flag = 1;
 
 	pipe->read_end = INVALID_SOCKET;
 	pipe->write_end = INVALID_SOCKET;
@@ -77,6 +78,10 @@ int pipe_create(Pipe *pipe) {
 		goto error;
 	}
 
+	if (non_blocking && ioctlsocket(pipe->read_end, FIONBIO, &flag) == SOCKET_ERROR) {
+		goto error;
+	}
+
 	rc = connect(pipe->read_end, (const struct sockaddr *)&address, length);
 
 	if (rc == SOCKET_ERROR) {
@@ -89,6 +94,10 @@ int pipe_create(Pipe *pipe) {
 		goto error;
 	}
 
+	if (non_blocking && ioctlsocket(pipe->write_end, FIONBIO, &flag) == SOCKET_ERROR) {
+		goto error;
+	}
+
 	closesocket(listener);
 
 	return 0;
@@ -97,8 +106,14 @@ error:
 	rc = WSAGetLastError();
 
 	closesocket(listener);
-	closesocket(pipe->read_end);
-	closesocket(pipe->write_end);
+
+	if (pipe->read_end != INVALID_SOCKET) {
+		closesocket(pipe->read_end);
+	}
+
+	if (pipe->write_end != INVALID_SOCKET) {
+		closesocket(pipe->write_end);
+	}
 
 	errno = ERRNO_WINAPI_OFFSET + rc;
 
