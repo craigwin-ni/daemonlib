@@ -46,14 +46,10 @@ extern int event_stop_platform(void);
 
 const char *event_get_source_type_name(EventSourceType type, bool upper) {
 	switch (type) {
-	case EVENT_SOURCE_TYPE_GENERIC:
-		return upper ? "Generic" : "generic";
+	case EVENT_SOURCE_TYPE_GENERIC: return upper ? "Generic" : "generic";
+	case EVENT_SOURCE_TYPE_USB:     return "USB";
 
-	case EVENT_SOURCE_TYPE_USB:
-		return "USB";
-
-	default:
-		return upper ? "<Unknown>" : "<unknown>";
+	default:                        return upper ? "<Unknown>" : "<unknown>";
 	}
 }
 
