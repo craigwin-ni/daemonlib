@@ -72,14 +72,14 @@ int pid_file_acquire(const char *filename, pid_t pid) {
 		flock.l_len = 1;
 
 		if (fcntl(fd, F_SETLK, &flock) < 0) {
-			if (errno != EAGAIN) {
+			if (!errno_would_block()) {
 				fprintf(stderr, "Could not lock PID file '%s': %s (%d)\n",
 				        filename, get_errno_name(errno), errno);
 			}
 
 			close(fd);
 
-			return errno == EAGAIN ? PID_FILE_ALREADY_ACQUIRED : -1;
+			return errno_would_block() ? PID_FILE_ALREADY_ACQUIRED : -1;
 		}
 
 		// get pid file status again
