@@ -145,7 +145,7 @@ int timer_create_(Timer *timer, TimerFunction function, void *opaque) {
 	int phase = 0;
 
 	// create notification pipe
-	if (pipe_create(&timer->notification_pipe, false) < 0) {
+	if (pipe_create(&timer->notification_pipe, 0) < 0) {
 		log_error("Could not create notification pipe: %s (%d)",
 		          get_errno_name(errno), errno);
 
@@ -155,7 +155,7 @@ int timer_create_(Timer *timer, TimerFunction function, void *opaque) {
 	phase = 1;
 
 	// create interrupt pipe
-	if (pipe_create(&timer->interrupt_pipe, false) < 0) {
+	if (pipe_create(&timer->interrupt_pipe, 0) < 0) {
 		log_error("Could not create interrupt pipe: %s (%d)",
 		          get_errno_name(errno), errno);
 

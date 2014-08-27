@@ -24,6 +24,7 @@
  * implementation is a direct wrapper of the POSIX pipe function.
  */
 
+#include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>
 
@@ -32,32 +33,47 @@
 #include "utils.h"
 
 // sets errno on error
-int pipe_create(Pipe *pipe_, bool non_blocking) {
+int pipe_create(Pipe *pipe_, uint32_t flags) {
 	IOHandle handles[2];
-	int i;
-	int flags;
+	int fcntl_flags;
+	int saved_errno;
 
 	if (pipe(handles) < 0) {
 		return -1;
 	}
 
-	if (non_blocking) {
-		for (i = 0; i < 2; ++i) {
-			flags = fcntl(handles[i], F_GETFL, 0);
-
-			if (flags < 0 || fcntl(handles[i], F_SETFL, flags | O_NONBLOCK) < 0) {
-				close(handles[0]);
-				close(handles[1]);
-
-				return -1;
-			}
-		}
-	}
-
 	pipe_->read_end = handles[0];
 	pipe_->write_end = handles[1];
 
+	if ((flags & PIPE_FLAG_NON_BLOCKING_READ) != 0) {
+		fcntl_flags = fcntl(pipe_->read_end, F_GETFL, 0);
+
+		if (fcntl_flags < 0 ||
+		    fcntl(pipe_->read_end, F_SETFL, fcntl_flags | O_NONBLOCK) < 0) {
+			goto error;
+		}
+	}
+
+	if ((flags & PIPE_FLAG_NON_BLOCKING_WRITE) != 0) {
+		fcntl_flags = fcntl(pipe_->write_end, F_GETFL, 0);
+
+		if (fcntl_flags < 0 ||
+		    fcntl(pipe_->write_end, F_SETFL, fcntl_flags | O_NONBLOCK) < 0) {
+			goto error;
+		}
+	}
+
 	return 0;
+
+error:
+	saved_errno = errno;
+
+	close(pipe_->read_end);
+	close(pipe_->write_end);
+
+	errno = saved_errno;
+
+	return -1;
 }
 
 void pipe_destroy(Pipe *pipe) {

@@ -22,16 +22,21 @@
 #ifndef DAEMONLIB_PIPE_H
 #define DAEMONLIB_PIPE_H
 
-#include <stdbool.h>
+#include <stdint.h>
 
 #include "io.h"
+
+typedef enum { // bitmask
+	PIPE_FLAG_NON_BLOCKING_READ  = 0x0001,
+	PIPE_FLAG_NON_BLOCKING_WRITE = 0x0002
+} PipeFlag;
 
 typedef struct {
 	IOHandle read_end;
 	IOHandle write_end;
 } Pipe;
 
-int pipe_create(Pipe *pipe, bool non_blocking);
+int pipe_create(Pipe *pipe, uint32_t flags);
 void pipe_destroy(Pipe *pipe);
 
 int pipe_read(Pipe *pipe, void *buffer, int length);

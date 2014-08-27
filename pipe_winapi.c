@@ -34,7 +34,7 @@
 
 // sets errno on error
 // FIXME: maybe use IPv6 if available
-int pipe_create(Pipe *pipe, bool non_blocking) {
+int pipe_create(Pipe *pipe, uint32_t flags) {
 	SOCKET listener;
 	struct sockaddr_in address;
 	int length = sizeof(address);
@@ -78,7 +78,8 @@ int pipe_create(Pipe *pipe, bool non_blocking) {
 		goto error;
 	}
 
-	if (non_blocking && ioctlsocket(pipe->read_end, FIONBIO, &flag) == SOCKET_ERROR) {
+	if ((flags & PIPE_FLAG_NON_BLOCKING_READ) != 0 &&
+	    ioctlsocket(pipe->read_end, FIONBIO, &flag) == SOCKET_ERROR) {
 		goto error;
 	}
 
@@ -94,7 +95,8 @@ int pipe_create(Pipe *pipe, bool non_blocking) {
 		goto error;
 	}
 
-	if (non_blocking && ioctlsocket(pipe->write_end, FIONBIO, &flag) == SOCKET_ERROR) {
+	if ((flags & PIPE_FLAG_NON_BLOCKING_WRITE) != 0 &&
+	    ioctlsocket(pipe->write_end, FIONBIO, &flag) == SOCKET_ERROR) {
 		goto error;
 	}
 
