@@ -37,16 +37,16 @@
 typedef void (*EventFunction)(void *opaque);
 typedef void (*EventCleanupFunction)(void);
 
-typedef enum {
+typedef enum { // bitmask
 #ifdef _WIN32
-	EVENT_READ = 1 << 0,
-	EVENT_WRITE = 1 << 2
+	EVENT_READ  = 0x0001,
+	EVENT_WRITE = 0x0004
 #else
 	#ifdef __linux__
-		EVENT_READ = EPOLLIN,
+		EVENT_READ  = EPOLLIN,
 		EVENT_WRITE = EPOLLOUT
 	#else
-		EVENT_READ = POLLIN,
+		EVENT_READ  = POLLIN,
 		EVENT_WRITE = POLLOUT
 	#endif
 #endif
