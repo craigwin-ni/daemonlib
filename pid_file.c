@@ -39,9 +39,9 @@
 // returns -1 on error, -2 is pid file is already acquired or pid file fd on success
 int pid_file_acquire(const char *filename, pid_t pid) {
 	int fd = -1;
-	struct stat stat1;
-	struct stat stat2;
-	struct flock flock;
+	struct stat st1;
+	struct stat st2;
+	struct flock lk;
 	char buffer[64];
 
 	for (;;) {
@@ -56,7 +56,7 @@ int pid_file_acquire(const char *filename, pid_t pid) {
 		}
 
 		// get pid file status
-		if (fstat(fd, &stat1) < 0) {
+		if (fstat(fd, &st1) < 0) {
 			fprintf(stderr, "Could not get status of PID file '%s': %s (%d)\n",
 			        filename, get_errno_name(errno), errno);
 
@@ -66,12 +66,12 @@ int pid_file_acquire(const char *filename, pid_t pid) {
 		}
 
 		// lock pid file
-		flock.l_type = F_WRLCK;
-		flock.l_whence = SEEK_SET;
-		flock.l_start = 0;
-		flock.l_len = 1;
+		lk.l_type = F_WRLCK;
+		lk.l_whence = SEEK_SET;
+		lk.l_start = 0;
+		lk.l_len = 1;
 
-		if (fcntl(fd, F_SETLK, &flock) < 0) {
+		if (fcntl(fd, F_SETLK, &lk) < 0) {
 			if (!errno_would_block()) {
 				fprintf(stderr, "Could not lock PID file '%s': %s (%d)\n",
 				        filename, get_errno_name(errno), errno);
@@ -83,7 +83,7 @@ int pid_file_acquire(const char *filename, pid_t pid) {
 		}
 
 		// get pid file status again
-		if (stat(filename, &stat2) < 0) {
+		if (stat(filename, &st2) < 0) {
 			close(fd);
 
 			continue;
@@ -91,7 +91,7 @@ int pid_file_acquire(const char *filename, pid_t pid) {
 
 		// if the inode mismatches then the file that got locked is not the
 		// one that was opened before, try again
-		if (stat1.st_ino != stat2.st_ino) {
+		if (st1.st_ino != st2.st_ino) {
 			close(fd);
 
 			continue;
