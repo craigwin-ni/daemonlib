@@ -33,14 +33,15 @@ int _i2c_init() {
     gpio_output_set(_i2c_eeprom_address_pin);
     // i2c enable pin low (pullups)
     gpio_output_clear(_i2c_enable_pin);
-    
-    if ((_i2c_init_file = open(I2C_EEPROM_BUS, O_RDWR)) < 0) {
+
+    _i2c_init_file = open(I2C_EEPROM_BUS, O_RDWR);
+
+    if (_i2c_init_file < 0) {
         log_error("Unable to open I2C bus: %s (%d)",
                   get_errno_name(errno), errno);
         // disable I2C bus with GPIO
         gpio_output_set(_i2c_enable_pin);
         gpio_output_clear(_i2c_eeprom_address_pin);
-        close(_i2c_init_file);
         return -1;
     }
     
