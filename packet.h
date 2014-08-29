@@ -34,6 +34,11 @@ typedef enum {
 } CommonBrickFunctionID;
 
 typedef enum {
+	FUNCTION_GET_AUTHENTICATION_NONCE = 1,
+	FUNCTION_AUTHENTICATE = 2
+} BrickDaemonFunctionID;
+
+typedef enum {
 	ENUMERATION_TYPE_AVAILABLE = 0,
 	ENUMERATION_TYPE_CONNECTED = 1,
 	ENUMERATION_TYPE_DISCONNECTED = 2
