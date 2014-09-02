@@ -1,6 +1,7 @@
 /*
  * daemonlib
  * Copyright (C) 2014 Olaf Lüke <olaf@tinkerforge.com>
+ * Copyright (C) 2014 Matthias Bolte <matthias@tinkerforge.com>
  *
  * red_led.c: LED functions for RED Brick
  *
@@ -121,13 +122,14 @@ LEDTrigger led_get_trigger(LED led) {
 	char *start = strchr(buf, '[');
 	char *end = strchr(buf, ']');
 
-	if(start >= end) {
+	if(start == NULL || end == NULL || start >= end) {
 		return LED_TRIGGER_UNKNOWN;
 	}
 
-	*end = '\0';
+	++start; // skip '['
+	*end = '\0'; // overwrite ']'
 	for(i = 0; i < LED_TRIGGER_NUM; i++) {
-		if(strstr(start, trigger_str[i]) != NULL) {
+		if(strcmp(start, trigger_str[i]) == 0) {
 			return i;
 		}
 	}
