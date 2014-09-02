@@ -1,6 +1,7 @@
 /*
  * daemonlib
  * Copyright (C) 2014 Olaf Lüke <olaf@tinkerforge.com>
+ * Copyright (C) 2014 Matthias Bolte <matthias@tinkerforge.com>
  *
  * red_led.h: LED functions for RED Brick
  *
@@ -37,7 +38,7 @@ typedef enum {
 	LED_TRIGGER_OFF       =  4,
 	LED_TRIGGER_ON        =  5,
 
-	LED_TRIGGER_UNKOWN    =  -1,
+	LED_TRIGGER_UNKNOWN   =  -1,
 	LED_TRIGGER_ERROR     =  -2
 } LEDTrigger;
 

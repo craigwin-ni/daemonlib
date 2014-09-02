@@ -122,7 +122,7 @@ LEDTrigger led_get_trigger(LED led) {
 	char *end = strchr(buf, ']');
 
 	if(start >= end) {
-		return LED_TRIGGER_UNKOWN;
+		return LED_TRIGGER_UNKNOWN;
 	}
 
 	*end = '\0';
@@ -132,6 +132,6 @@ LEDTrigger led_get_trigger(LED led) {
 		}
 	}
 
-    return LED_TRIGGER_UNKOWN;
+    return LED_TRIGGER_UNKNOWN;
 }
 
