@@ -71,18 +71,18 @@ int led_set_trigger(LED led, LEDTrigger trigger) {
 	}
 
     if((f = fopen(led_path[led], "w")) == NULL) {
-		log_error("Could not open file %s\n", led_path[led]); 
+		log_error("Could not open file %s", led_path[led]);
         return -1;
     }
 
     if((length = fprintf(f, "%s\n", trigger_str[trigger])) < ((int)strlen(trigger_str[trigger]))) {
 		fclose(f);
-		log_error("Could not write to file %s\n", led_path[led]);
+		log_error("Could not write to file %s", led_path[led]);
 		return -1;
 	}
 
     if(fclose(f) < 0) {
-		log_error("Could not close file %s\n", led_path[led]);
+		log_error("Could not close file %s", led_path[led]);
 		return -1;
 	}
 
@@ -104,18 +104,18 @@ LEDTrigger led_get_trigger(LED led) {
 	}
 
     if((f = fopen(led_path[led], "r")) == NULL) {
-		log_error("Could not open file %s\n", led_path[led]); 
+		log_error("Could not open file %s", led_path[led]);
         return LED_TRIGGER_ERROR;
     }
 
     if((length = fread(buf, sizeof(char), LED_TRIGGER_MAX_LENGTH, f)) <= 0) {
 		fclose(f);
-		log_error("Could not read from file %s\n", led_path[led]);
+		log_error("Could not read from file %s", led_path[led]);
 		return LED_TRIGGER_ERROR;
 	}
 
 	if(fclose(f) < 0) {
-		log_error("Could not close file %s\n", led_path[led]);
+		log_error("Could not close file %s", led_path[led]);
 		return LED_TRIGGER_ERROR;
 	}
 
