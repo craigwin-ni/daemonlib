@@ -122,13 +122,13 @@ int event_add_source(IOHandle handle, EventSourceType type, uint32_t events,
 				}
 
 				if ((events & EVENT_PRIO) != 0) {
-					event_source->read = function;
-					event_source->read_opaque = opaque;
+					event_source->prio = function;
+					event_source->prio_opaque = opaque;
 				}
 
 				if ((events & EVENT_ERROR) != 0) {
-					event_source->write = function;
-					event_source->write_opaque = opaque;
+					event_source->error = function;
+					event_source->error_opaque = opaque;
 				}
 
 				if (event_source_added_platform(event_source) < 0) {
