@@ -38,8 +38,8 @@
 #include "utils.h"
 
 #define LOG_CATEGORY LOG_CATEGORY_OTHER
-
 #define GPIO_BASE 0x01c20800
+#define SYSFS_GPIO_DIR "/sys/class/gpio/"
 
 static volatile GPIOPort *gpio_port;
 
@@ -109,4 +109,52 @@ void gpio_output_clear(const GPIOPin pin) {
 
 uint32_t gpio_input(const GPIOPin pin) {
 	return gpio_port[pin.port_index].value & (1 << pin.pin_index);
+}
+
+
+// sysfs operations, gpio_num and gpio_name are defined in fex file
+int gpio_sysfs_export(int gpio_num) {
+	int fd, len;
+	char buf[32];
+
+	fd = open(SYSFS_GPIO_DIR "export", O_WRONLY);
+	if(fd < 0) {
+		return fd;
+	}
+
+	len = snprintf(buf, sizeof(buf), "%d", gpio_num);
+	write(fd, buf, len);
+	close(fd);
+
+	return 0;
+}
+
+int gpio_sysfs_unexport(int gpio_num) {
+	int fd, len;
+	char buf[32];
+
+	fd = open(SYSFS_GPIO_DIR "unexport", O_WRONLY);
+	if(fd < 0) {
+		return fd;
+	}
+
+	len = snprintf(buf, sizeof(buf), "%d", gpio_num);
+	write(fd, buf, len);
+	close(fd);
+
+	return 0;
+}
+
+int gpio_sysfs_get_value_fd(char *gpio_name) {
+	int fd;
+	char buf[1024];
+
+	snprintf(buf, sizeof(buf), "%s%s%s", SYSFS_GPIO_DIR, gpio_name, "/value");
+
+	fd = open(buf, O_RDONLY | O_NONBLOCK );
+	if(fd < 0) {
+		return fd;
+	}
+
+	return fd;
 }

@@ -99,5 +99,8 @@ void gpio_mux_configure(const GPIOPin pin, const GPIOMux mux_config);
 void gpio_output_set(const GPIOPin pin);
 void gpio_output_clear(const GPIOPin pin);
 uint32_t gpio_input(const GPIOPin pin);
+int gpio_sysfs_export(int gpio_num);
+int gpio_sysfs_unexport(int gpio_num);
+int gpio_sysfs_get_value_fd(char *gpio_name);
 
 #endif // DAEMONLIB_RED_GPIO_H
