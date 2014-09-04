@@ -41,8 +41,8 @@ typedef enum { // bitmask
 #ifdef _WIN32
 	EVENT_READ  = 0x0001,
 	EVENT_WRITE = 0x0004,
-	EVENT_PRIO  = 0,
-	EVENT_ERROR = 0
+	EVENT_PRIO  = 0x0002,
+	EVENT_ERROR = 0x0008
 #else
 	#ifdef __linux__
 		EVENT_READ  = EPOLLIN,
