@@ -146,10 +146,9 @@ int gpio_sysfs_unexport(int gpio_num) {
 }
 
 int gpio_sysfs_get_value_fd(char *gpio_name) {
-	int fd;
 	char buf[1024];
 
 	snprintf(buf, sizeof(buf), "%s%s%s", SYSFS_GPIO_DIR, gpio_name, "/value");
 
-	return open(buf, O_RDONLY | O_NONBLOCK );
+	return open(buf, O_RDONLY | O_NONBLOCK);
 }
