@@ -55,10 +55,6 @@ typedef enum {
 	LOG_LEVEL_DEBUG
 } LogLevel;
 
-typedef void (*LogHandler)(LogLevel level, const char *file, int line,
-                           const char *function, const char *format,
-                           va_list arguments);
-
 #ifdef DAEMONLIB_WITH_LOGGING
 	#ifdef _MSC_VER
 		#define log_message_checked(level, ...) \
