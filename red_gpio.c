@@ -1,6 +1,7 @@
 /*
  * daemonlib
  * Copyright (C) 2014 Olaf Lüke <olaf@tinkerforge.com>
+ * Copyright (C) 2014 Matthias Bolte <matthias@tinkerforge.com>
  *
  * red_gpio.c: GPIO functions for RED Brick
  *
@@ -111,38 +112,37 @@ uint32_t gpio_input(const GPIOPin pin) {
 	return gpio_port[pin.port_index].value & (1 << pin.pin_index);
 }
 
-
 // sysfs operations, gpio_num and gpio_name are defined in fex file
 int gpio_sysfs_export(int gpio_num) {
-	int fd, len;
+	int fd, len, rc;
 	char buf[32];
 
 	fd = open(SYSFS_GPIO_DIR "export", O_WRONLY);
 	if(fd < 0) {
-		return fd;
+		return -1;
 	}
 
 	len = snprintf(buf, sizeof(buf), "%d", gpio_num);
-	write(fd, buf, len);
+	rc = write(fd, buf, len);
 	close(fd);
 
-	return 0;
+	return rc < 0 ? -1 : 0;
 }
 
 int gpio_sysfs_unexport(int gpio_num) {
-	int fd, len;
+	int fd, len, rc;
 	char buf[32];
 
 	fd = open(SYSFS_GPIO_DIR "unexport", O_WRONLY);
 	if(fd < 0) {
-		return fd;
+		return -1;
 	}
 
 	len = snprintf(buf, sizeof(buf), "%d", gpio_num);
-	write(fd, buf, len);
+	rc = write(fd, buf, len);
 	close(fd);
 
-	return 0;
+	return rc < 0 ? -1 : 0;
 }
 
 int gpio_sysfs_get_value_fd(char *gpio_name) {
