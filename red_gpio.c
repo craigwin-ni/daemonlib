@@ -151,10 +151,5 @@ int gpio_sysfs_get_value_fd(char *gpio_name) {
 
 	snprintf(buf, sizeof(buf), "%s%s%s", SYSFS_GPIO_DIR, gpio_name, "/value");
 
-	fd = open(buf, O_RDONLY | O_NONBLOCK );
-	if(fd < 0) {
-		return fd;
-	}
-
-	return fd;
+	return open(buf, O_RDONLY | O_NONBLOCK );
 }
