@@ -44,10 +44,14 @@ typedef enum { // bitmask
 #else
 	#ifdef __linux__
 		EVENT_READ  = EPOLLIN,
-		EVENT_WRITE = EPOLLOUT
+		EVENT_WRITE = EPOLLOUT,
+		EVENT_PRIO  = EPOLLPRI,
+		EVENT_ERROR = EPOLLERR
 	#else
 		EVENT_READ  = POLLIN,
-		EVENT_WRITE = POLLOUT
+		EVENT_WRITE = POLLOUT,
+		EVENT_PRIO  = POLLPRI,
+		EVENT_ERROR = POLLERR
 	#endif
 #endif
 } Event;
@@ -74,6 +78,10 @@ typedef struct {
 	void *read_opaque;
 	EventFunction write;
 	void *write_opaque;
+	EventFunction prio;
+	void *prio_opaque;
+	EventFunction error;
+	void *error_opaque;
 } EventSource;
 
 const char *event_get_source_type_name(EventSourceType type, bool upper);

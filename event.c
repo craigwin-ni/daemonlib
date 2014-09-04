@@ -121,6 +121,16 @@ int event_add_source(IOHandle handle, EventSourceType type, uint32_t events,
 					event_source->write_opaque = opaque;
 				}
 
+				if ((events & EVENT_PRIO) != 0) {
+					event_source->read = function;
+					event_source->read_opaque = opaque;
+				}
+
+				if ((events & EVENT_ERROR) != 0) {
+					event_source->write = function;
+					event_source->write_opaque = opaque;
+				}
+
 				if (event_source_added_platform(event_source) < 0) {
 					memcpy(event_source, &event_source_backup, sizeof(event_source_backup));
 
@@ -163,6 +173,16 @@ int event_add_source(IOHandle handle, EventSourceType type, uint32_t events,
 	if ((events & EVENT_WRITE) != 0) {
 		event_source->write = function;
 		event_source->write_opaque = opaque;
+	}
+
+	if ((events & EVENT_PRIO) != 0) {
+		event_source->prio = function;
+		event_source->prio_opaque = opaque;
+	}
+
+	if ((events & EVENT_ERROR) != 0) {
+		event_source->error = function;
+		event_source->error_opaque = opaque;
 	}
 
 	if (event_source_added_platform(event_source) < 0) {
@@ -224,6 +244,16 @@ int event_modify_source(IOHandle handle, EventSourceType type, uint32_t events_t
 				event_source->write_opaque = NULL;
 			}
 
+			if ((events_to_remove & EVENT_PRIO) != 0) {
+				event_source->prio = NULL;
+				event_source->prio_opaque = NULL;
+			}
+
+			if ((events_to_remove & EVENT_ERROR) != 0) {
+				event_source->error = NULL;
+				event_source->error_opaque = NULL;
+			}
+
 			// set functions for added events
 			if ((events_to_add & EVENT_READ) != 0) {
 				event_source->read = function;
@@ -234,6 +264,17 @@ int event_modify_source(IOHandle handle, EventSourceType type, uint32_t events_t
 				event_source->write = function;
 				event_source->write_opaque = opaque;
 			}
+
+			if ((events_to_add & EVENT_PRIO) != 0) {
+				event_source->prio = function;
+				event_source->prio_opaque = opaque;
+			}
+
+			if ((events_to_add & EVENT_ERROR) != 0) {
+				event_source->error = function;
+				event_source->error_opaque = opaque;
+			}
+
 
 			event_source->state = EVENT_SOURCE_STATE_MODIFIED;
 
@@ -330,12 +371,25 @@ void event_handle_source(EventSource *event_source, uint32_t received_events) {
 	          event_get_source_type_name(event_source->type, false),
 	          event_source->handle, received_events);
 
-	if (event_source->read == event_source->write &&
-	    event_source->read_opaque == event_source->write_opaque) {
+	// Here we currently only check if prio and error or read and write
+	// have the same functions. Currently read/write and prio/error are not mixed.
+	// It is probably OK to leave it this way since they never seem to be used together.
+	// For example: On a sysfs gpio value file you can only use prio/error, while on an
+	// eventfd or similar prio/error can't be used.
+	if (event_source->prio != NULL &&
+	    event_source->prio == event_source->error &&
+	    event_source->prio_opaque == event_source->error_opaque) {
+		// prio and error event function are the same, don't call it twice,
+		// only call the read event function once
+		if ((received_events & (EVENT_PRIO | EVENT_ERROR)) != 0) {
+			event_source->prio(event_source->prio_opaque);
+		}
+	} else if (event_source->read != NULL &&
+	           event_source->read == event_source->write &&
+	           event_source->read_opaque == event_source->write_opaque) {
 		// read and write event function are the same, don't call it twice,
 		// only call the read event function once
-		if ((received_events & (EVENT_READ | EVENT_WRITE)) != 0 &&
-		    event_source->read != NULL) {
+		if ((received_events & (EVENT_READ | EVENT_WRITE)) != 0) {
 			event_source->read(event_source->read_opaque);
 		}
 	} else {
@@ -355,6 +409,14 @@ void event_handle_source(EventSource *event_source, uint32_t received_events) {
 			}
 
 			event_source->write(event_source->write_opaque);
+		}
+
+		if ((received_events & EVENT_PRIO) != 0 && event_source->prio != NULL) {
+			event_source->prio(event_source->prio_opaque);
+		}
+
+		if ((received_events & EVENT_ERROR) != 0 && event_source->error != NULL) {
+			event_source->error(event_source->error_opaque);
 		}
 	}
 }
