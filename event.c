@@ -275,7 +275,6 @@ int event_modify_source(IOHandle handle, EventSourceType type, uint32_t events_t
 				event_source->error_opaque = opaque;
 			}
 
-
 			event_source->state = EVENT_SOURCE_STATE_MODIFIED;
 
 			if (event_source_modified_platform(event_source) < 0) {
@@ -371,16 +370,16 @@ void event_handle_source(EventSource *event_source, uint32_t received_events) {
 	          event_get_source_type_name(event_source->type, false),
 	          event_source->handle, received_events);
 
-	// Here we currently only check if prio and error or read and write
-	// have the same functions. Currently read/write and prio/error are not mixed.
-	// It is probably OK to leave it this way since they never seem to be used together.
-	// For example: On a sysfs gpio value file you can only use prio/error, while on an
-	// eventfd or similar prio/error can't be used.
+	// Here we currently only check if prio and error or read and write have
+	// the same functions. Currently read/write and prio/error are not mixed.
+	// It is probably OK to leave it this way since they never seem to be used
+	// together. For example: On a sysfs gpio value file you can only use
+	// prio/error, while on an eventfd or similar prio/error can't be used.
 	if (event_source->prio != NULL &&
 	    event_source->prio == event_source->error &&
 	    event_source->prio_opaque == event_source->error_opaque) {
 		// prio and error event function are the same, don't call it twice,
-		// only call the read event function once
+		// only call the prio event function once
 		if ((received_events & (EVENT_PRIO | EVENT_ERROR)) != 0) {
 			event_source->prio(event_source->prio_opaque);
 		}
@@ -398,8 +397,8 @@ void event_handle_source(EventSource *event_source, uint32_t received_events) {
 		}
 
 		if ((received_events & EVENT_WRITE) != 0 && event_source->write != NULL) {
-			// if the read event function removed the event source then don't
-			// deliver the write event anymore
+			// if the event source got removed in the meantime then don't deliver
+			// the write event anymore
 			if (event_source->state == EVENT_SOURCE_STATE_REMOVED) {
 				log_debug("Ignoring removed %s event source (handle: %d, received events: %u)",
 				          event_get_source_type_name(event_source->type, false),
@@ -412,10 +411,30 @@ void event_handle_source(EventSource *event_source, uint32_t received_events) {
 		}
 
 		if ((received_events & EVENT_PRIO) != 0 && event_source->prio != NULL) {
+			// if the event source got removed in the meantime then don't deliver
+			// the write event anymore
+			if (event_source->state == EVENT_SOURCE_STATE_REMOVED) {
+				log_debug("Ignoring removed %s event source (handle: %d, received events: %u)",
+				          event_get_source_type_name(event_source->type, false),
+				          event_source->handle, received_events);
+
+				return;
+			}
+
 			event_source->prio(event_source->prio_opaque);
 		}
 
 		if ((received_events & EVENT_ERROR) != 0 && event_source->error != NULL) {
+			// if the event source got removed in the meantime then don't deliver
+			// the write event anymore
+			if (event_source->state == EVENT_SOURCE_STATE_REMOVED) {
+				log_debug("Ignoring removed %s event source (handle: %d, received events: %u)",
+				          event_get_source_type_name(event_source->type, false),
+				          event_source->handle, received_events);
+
+				return;
+			}
+
 			event_source->error(event_source->error_opaque);
 		}
 	}
