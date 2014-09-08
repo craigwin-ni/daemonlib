@@ -204,14 +204,14 @@ static void config_parse_line(char *string) {
 				length = strlen(value);
 
 				if (length < config_options[i].string_min_length) {
-					config_error("Value '%s' for %s option is too short (minimum: %d chars)",
-					             value, name, config_options[i].string_min_length);
+					config_warn("Value '%s' for %s option is too short (minimum: %d chars)",
+					            value, name, config_options[i].string_min_length);
 
 					return;
 				} else if (config_options[i].string_max_length >= 0 &&
 				           length > config_options[i].string_max_length) {
-					config_error("Value '%s' for %s option is too long (maximum: %d chars)",
-					             value, name, config_options[i].string_max_length);
+					config_warn("Value '%s' for %s option is too long (maximum: %d chars)",
+					            value, name, config_options[i].string_max_length);
 
 					return;
 				} else if (length > 0) {
@@ -387,8 +387,8 @@ void config_init(const char *filename) {
 			} else {
 				line[32] = '\0';
 
-				config_error("Line in config file '%s' is too long, starting with '%s...'",
-				             filename, line);
+				config_warn("Line in config file '%s' is too long, starting with '%s...'",
+				            filename, line);
 
 				length = 0;
 				skip = true;
