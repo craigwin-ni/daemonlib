@@ -163,6 +163,9 @@ static void config_report_read_warning(ConfFileReadWarning warning, int number,
 int config_check(const char *filename) {
 	bool success = false;
 	int i;
+	int length;
+	int maximum_length = 0;
+	int k;
 
 	_check_only = true;
 
@@ -190,7 +193,21 @@ int config_check(const char *filename) {
 	printf("Using the following config values:\n");
 
 	for (i = 0; config_options[i].name != NULL; ++i) {
-		printf("  %s = ", config_options[i].name);
+		length = strlen(config_options[i].name);
+
+		if (length > maximum_length) {
+			maximum_length = length;
+		}
+	}
+
+	for (i = 0; config_options[i].name != NULL; ++i) {
+		printf("  %s ", config_options[i].name);
+
+		for (k = strlen(config_options[i].name); k < maximum_length; ++k) {
+			fputs(" ", stdout);
+		}
+
+		fputs("= ", stdout);
 
 		switch(config_options[i].type) {
 		case CONFIG_OPTION_TYPE_STRING:
