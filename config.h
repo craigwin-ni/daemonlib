@@ -3,7 +3,7 @@
  * Copyright (C) 2012, 2014 Matthias Bolte <matthias@tinkerforge.com>
  * Copyright (C) 2014 Olaf Lüke <olaf@tinkerforge.com>
  *
- * config.h: Config specific functions
+ * config.h: Config file subsystem
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -138,6 +138,6 @@ void config_exit(void);
 bool config_has_error(void);
 bool config_has_warning(void);
 
-ConfigOption *config_get_option(const char *name);
+ConfigOptionValue *config_get_option_value(const char *name);
 
 #endif // DAEMONLIB_CONFIG_H

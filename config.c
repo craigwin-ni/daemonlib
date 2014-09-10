@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2014 Matthias Bolte <matthias@tinkerforge.com>
  * Copyright (C) 2014 Olaf Lüke <olaf@tinkerforge.com>
  *
- * config.c: Config specific functions
+ * config.c: Config file subsystem
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -419,14 +419,14 @@ bool config_has_warning(void) {
 	return _has_warning;
 }
 
-ConfigOption *config_get_option(const char *name) {
+ConfigOptionValue *config_get_option_value(const char *name) {
 	int i = 0;
 
 	for (i = 0; config_options[i].name != NULL; ++i) {
 		if (strcmp(config_options[i].name, name) == 0) {
-			return &config_options[i];
+			return &config_options[i].value;
 		}
 	}
 
-	return &_invalid;
+	return &_invalid.value;
 }
