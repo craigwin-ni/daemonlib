@@ -71,4 +71,7 @@ void node_insert_before(Node *node, Node *insert);
 void node_insert_after(Node *node, Node *insert);
 void node_remove(Node *node);
 
+int robust_read(int fd, void *buffer, int length);
+int robust_write(int fd, void *buffer, int length);
+
 #endif // DAEMONLIB_UTILS_H

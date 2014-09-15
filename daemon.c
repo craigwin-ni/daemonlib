@@ -73,14 +73,10 @@ int daemon_start(const char *log_filename, const char *pid_filename, bool double
 			close(status_pipe[1]);
 
 			// wait for first child to exit
-			while (waitpid(pid, NULL, 0) < 0 && errno == EINTR);
+			while (waitpid(pid, NULL, 0) < 0 && errno_interrupted());
 
 			// wait for second child to start successfully
-			do {
-				rc = read(status_pipe[0], &success, sizeof(success));
-			} while (rc < 0 && errno == EINTR);
-
-			if (rc < 0) {
+			if (robust_read(status_pipe[0], &success, sizeof(success)) < 0) {
 				fprintf(stderr, "Could not read from status pipe: %s (%d)\n",
 				        get_errno_name(errno), errno);
 			}

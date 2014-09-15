@@ -34,6 +34,7 @@
 #ifdef _WIN32
 	#include <winsock2.h> // must be included before windows.h
 	#include <windows.h>
+	#include <io.h>
 #endif
 
 #include "utils.h"
@@ -574,4 +575,24 @@ void node_remove(Node *node) {
 	node->prev->next = node->next;
 
 	node_reset(node);
+}
+
+int robust_read(int fd, void *buffer, int length) {
+	int rc;
+
+	do {
+		rc = read(fd, buffer, length);
+	} while (rc < 0 && errno_interrupted());
+
+	return rc;
+}
+
+int robust_write(int fd, void *buffer, int length) {
+	int rc;
+
+	do {
+		rc = write(fd, buffer, length);
+	} while (rc < 0 && errno_interrupted());
+
+	return rc;
 }

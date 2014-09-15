@@ -34,13 +34,8 @@
 static void timer_handle_read(void *opaque) {
 	Timer *timer = opaque;
 	uint64_t value;
-	int rc;
 
-	do {
-		rc = read(timer->handle, &value, sizeof(value));
-	} while (rc < 0 && errno_interrupted());
-
-	if (rc < 0) {
+	if (robust_read(timer->handle, &value, sizeof(value)) < 0) {
 		if (errno_would_block()) {
 			return;
 		}
