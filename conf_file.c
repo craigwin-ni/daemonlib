@@ -162,6 +162,8 @@ int conf_file_read(ConfFile *conf_file, const char *filename,
 	bool skip = false;
 	int number = 1;
 	char *tmp;
+	int i;
+	ConfFileLine *line;
 	int saved_errno;
 
 	// allocate buffer
@@ -253,6 +255,17 @@ int conf_file_read(ConfFile *conf_file, const char *filename,
 				buffer[length] = '\0';
 			}
 		}
+	}
+
+	// remove trailing empty lines
+	for (i = conf_file->lines.count - 1; i >= 0; --i) {
+		line = array_get(&conf_file->lines, i);
+
+		if (line->raw == NULL || *line->raw != '\0') {
+			break;
+		}
+
+		array_remove(&conf_file->lines, i, conf_file_line_destroy);
 	}
 
 	success = true;
