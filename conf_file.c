@@ -26,6 +26,12 @@
 
 #include "conf_file.h"
 
+#ifdef _WIN32
+	#define END_OF_LINE "\r\n"
+#else
+	#define END_OF_LINE "\n"
+#endif
+
 // sets errno on error, abuses ERANGE to indicate escape sequence errors
 static int conf_file_unescape_string(char *string) {
 	char *p = string;
@@ -100,7 +106,7 @@ static int conf_file_unescape_string(char *string) {
 			goto error;
 		}
 
-		*d++ = tmp;
+		*d++ = (char)tmp;
 	}
 
 	*d = '\0';
@@ -111,6 +117,75 @@ error:
 	errno = ERANGE;
 
 	return -1;
+}
+
+static int conf_file_write_escaped(FILE *fp, const char *string, bool name) {
+	const char *p;
+	bool printable;
+	bool comment;
+	bool whitespace;
+	const char *start = NULL;
+	char *escape;
+	char buffer[16];
+
+	for (p = string; *p != '\0'; ++p) {
+		// check if printable ASCII character has to be encoded
+		printable = *p >= ' ' && *p <= '~'; // is printable ASCII character?
+		comment = *p == '#' && p == string; // is comment start?
+		whitespace = *p == ' ' && (p == string || *(p + 1) == '\0'); // has leading/trailing whitespace?
+
+		if (printable && !comment && !(*p == '=' && name) && !whitespace) {
+			if (start == NULL) {
+				start = p;
+			}
+
+			continue;
+		}
+
+		if (start != NULL) {
+			if (robust_fwrite(fp, start, p - start) < 0) {
+				return -1;
+			}
+
+			start = NULL;
+		}
+
+		// check for ASCII character with special escape sequence
+		switch (*p) {
+		case '\a': escape = "\\a";  break;
+		case '\b': escape = "\\b";  break;
+		case '\f': escape = "\\f";  break;
+		case '\n': escape = "\\n";  break;
+		case '\r': escape = "\\r";  break;
+		case '\t': escape = "\\t";  break;
+		case '\v': escape = "\\v";  break;
+		case '\\': escape = "\\\\"; break;
+		default:   escape = NULL;   break;
+		}
+
+		if (escape != NULL) {
+			if (robust_fwrite(fp, escape, strlen(escape)) < 0) {
+				return -1;
+			}
+
+			continue;
+		}
+
+		// represent everything else as \x escape sequence
+		snprintf(buffer, sizeof(buffer), "\\x%02X", (uint8_t)*p);
+
+		if (robust_fwrite(fp, buffer, strlen(buffer)) < 0) {
+			return -1;
+		}
+	}
+
+	if (start != NULL) {
+		if (robust_fwrite(fp, start, p - start) < 0) {
+			return -1;
+		}
+	}
+
+	return 0;
 }
 
 static void conf_file_line_destroy(void *item) {
@@ -374,6 +449,176 @@ cleanup:
 	errno = saved_errno;
 
 	return success ? 0 : -1;
+}
+
+// sets errno on error
+int conf_file_write(ConfFile *conf_file, const char *filename) {
+	bool success = false;
+	int length;
+	char filename_new[1024];
+	char filename_old[1024];
+	FILE *fp = NULL;
+	int i;
+	ConfFileLine *line;
+	int saved_errno;
+
+	length = strlen(filename);
+
+	if (length + strlen(".new") + 1 > sizeof(filename_new)) {
+		errno = ENAMETOOLONG;
+
+		goto cleanup;
+	}
+
+	snprintf(filename_new, sizeof(filename_new), "%s.new", filename);
+	snprintf(filename_old, sizeof(filename_old), "%s.old", filename);
+
+	// open <filename>.new for writing
+	fp = fopen(filename_new, "wb");
+
+	if (fp == NULL) {
+		goto cleanup;
+	}
+
+	// write lines to <filename>.new
+	for (i = 0; i < conf_file->lines.count; ++i) {
+		line = array_get(&conf_file->lines, i);
+
+		// if raw is != NULL then this line does not contain a name/value pair
+		if (line->raw != NULL) {
+			if (robust_fwrite(fp, line->raw, strlen(line->raw)) < 0) {
+				goto cleanup;
+			}
+		} else {
+			if (conf_file_write_escaped(fp, line->name, true) < 0) {
+				goto cleanup;
+			}
+
+			if (robust_fwrite(fp, " =", 2) < 0) {
+				goto cleanup;
+			}
+
+			if (*line->value != '\0') {
+				if (robust_fwrite(fp, " ", 1) < 0) {
+					goto cleanup;
+				}
+
+				if (conf_file_write_escaped(fp, line->value, false) < 0) {
+					goto cleanup;
+				}
+			}
+		}
+
+		if (robust_fwrite(fp, END_OF_LINE, strlen(END_OF_LINE)) < 0) {
+			goto cleanup;
+		}
+	}
+
+	fclose(fp);
+	fp = NULL;
+
+#ifdef _WIN32
+	// remove <filename>.old, if <filename>.old exists. on Windows renaming
+	// <filename> to <filename>.old fails if <filename>.old already exists
+	if (remove(filename_old) < 0) {
+		if (errno != ENOENT) {
+			goto cleanup;
+		}
+	}
+#endif
+
+	// rename <filename> to <filename>.old, if <filename> exists
+	if (rename(filename, filename_old) < 0) {
+		if (errno != ENOENT) {
+			goto cleanup;
+		}
+	}
+
+	// rename <filename>.new to <filename>
+	if (rename(filename_new, filename) < 0) {
+		goto cleanup;
+	}
+
+	// remove <filename>.old, if <filename>.old exists
+	if (remove(filename_old) < 0) {
+		if (errno != ENOENT) {
+			goto cleanup;
+		}
+	}
+
+	success = true;
+
+cleanup:
+	saved_errno = errno;
+
+	if (fp != NULL) {
+		fclose(fp);
+	}
+
+	errno = saved_errno;
+
+	return success ? 0 : -1;
+}
+
+// sets errno on error
+int conf_file_set_option_value(ConfFile *conf_file, const char *name, const char *value) {
+	int i;
+	ConfFileLine *line;
+	char *tmp1;
+	char *tmp2;
+	int saved_errno;
+
+	// iterate backwards to always change the latest instances of the same option
+	for (i = conf_file->lines.count - 1; i >= 0; --i) {
+		line = array_get(&conf_file->lines, i);
+
+		if (line->name != NULL && strcasecmp(line->name, name) == 0) {
+			tmp1 = strdup(value);
+
+			if (tmp1 == NULL) {
+				errno = ENOMEM;
+
+				return -1;
+			}
+
+			free(line->value);
+			line->value = tmp1;
+
+			return 0;
+		}
+	}
+
+	// not found, append new line
+	tmp1 = strdup(name);
+	tmp2 = strdup(value);
+
+	if (tmp1 == NULL || tmp2 == NULL) {
+		free(tmp1);
+		free(tmp2);
+
+		errno = ENOMEM;
+
+		return -1;
+	}
+
+	line = array_append(&conf_file->lines);
+
+	if (line == NULL) {
+		saved_errno = errno;
+
+		free(tmp1);
+		free(tmp2);
+
+		errno = saved_errno;
+
+		return -1;
+	}
+
+	line->raw = NULL;
+	line->name = tmp1;
+	line->value = tmp2;
+
+	return 0;
 }
 
 const char *conf_file_get_option_value(ConfFile *conf_file, const char *name) {

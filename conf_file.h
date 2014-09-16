@@ -35,7 +35,7 @@ typedef void (*ConfFileReadWarningFunction)(ConfFileReadWarning warning,
                                             void *opaque);
 
 typedef struct {
-	char *raw; // only != NULL if there is no <name> = <value> pair in this line
+	char *raw; // only != NULL if there is no name/value pair in this line
 	char *name; // case of the name is ignored
 	char *value;
 } ConfFileLine;
@@ -49,7 +49,9 @@ void conf_file_destroy(ConfFile *conf_file);
 
 int conf_file_read(ConfFile *conf_file, const char *filename,
                    ConfFileReadWarningFunction warning, void *opaque);
+int conf_file_write(ConfFile *conf_file, const char *filename);
 
+int conf_file_set_option_value(ConfFile *conf_file, const char *name, const char *value);
 const char *conf_file_get_option_value(ConfFile *conf_file, const char *name);
 
 #endif // DAEMONLIB_CONF_FILE_H
