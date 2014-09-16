@@ -587,7 +587,7 @@ int robust_read(int fd, void *buffer, int length) {
 	return rc;
 }
 
-int robust_write(int fd, void *buffer, int length) {
+int robust_write(int fd, const void *buffer, int length) {
 	int rc;
 
 	do {
