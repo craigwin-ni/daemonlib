@@ -177,8 +177,6 @@ int conf_file_read(ConfFile *conf_file, const char *filename,
 	fp = fopen(filename, "rb");
 
 	if (fp == NULL) {
-		errno = ENOENT;
-
 		goto cleanup;
 	}
 
@@ -186,7 +184,6 @@ int conf_file_read(ConfFile *conf_file, const char *filename,
 		rc = fread(&c, 1, 1, fp);
 
 		if (rc == 0 && ferror(fp)) {
-			errno = EIO;
 
 			goto cleanup;
 		}
