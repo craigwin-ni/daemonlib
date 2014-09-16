@@ -25,6 +25,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
 
 #define ERRNO_WINAPI_OFFSET 71000000
 #define ERRNO_ADDRINFO_OFFSET 72000000
@@ -73,5 +74,8 @@ void node_remove(Node *node);
 
 int robust_read(int fd, void *buffer, int length);
 int robust_write(int fd, const void *buffer, int length);
+
+int robust_fread(FILE *fp, void *buffer, int length);
+int robust_fwrite(FILE *fp, const void *buffer, int length);
 
 #endif // DAEMONLIB_UTILS_H

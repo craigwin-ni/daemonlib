@@ -156,7 +156,7 @@ int conf_file_read(ConfFile *conf_file, const char *filename,
 	int allocated = 256;
 	char *buffer;
 	FILE *fp = NULL;
-	size_t rc;
+	int rc;
 	char c;
 	int length = 0;
 	bool skip = false;
@@ -164,6 +164,7 @@ int conf_file_read(ConfFile *conf_file, const char *filename,
 	char *tmp;
 	int saved_errno;
 
+	// allocate buffer
 	buffer = malloc(allocated);
 
 	if (buffer == NULL) {
@@ -174,21 +175,28 @@ int conf_file_read(ConfFile *conf_file, const char *filename,
 
 	*buffer = '\0';
 
+	// open file
 	fp = fopen(filename, "rb");
 
 	if (fp == NULL) {
 		goto cleanup;
 	}
 
-	while (!feof(fp)) {
-		rc = fread(&c, 1, 1, fp);
+	// read and parse lines
+	for (;;) {
+		rc = robust_fread(fp, &c, 1);
 
-		if (rc == 0 && ferror(fp)) {
-
+		if (rc < 0) {
 			goto cleanup;
 		}
 
-		if (feof(fp) || c == '\n') {
+		if (rc == 0) {
+			// use \0 to indicate end-of-file. this also ensures that parsing
+			// stops on the first \0 character in the file
+			c = '\0';
+		}
+
+		if (c == '\0' || c == '\n') {
 			// end-of-file or end-of-line found. only use \n as end-of-line
 			// marker. don't care about \r-only systems
 			if (!skip) {
@@ -201,6 +209,11 @@ int conf_file_read(ConfFile *conf_file, const char *filename,
 				                         warning, opaque) < 0) {
 					goto cleanup;
 				}
+			}
+
+			if (c == '\0') {
+				// end-of-file reached
+				break;
 			}
 
 			*buffer = '\0';

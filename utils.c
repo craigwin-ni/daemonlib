@@ -25,7 +25,6 @@
 	#include <netdb.h>
 	#include <unistd.h>
 #endif
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #ifndef _MSC_VER
@@ -595,4 +594,24 @@ int robust_write(int fd, const void *buffer, int length) {
 	} while (rc < 0 && errno_interrupted());
 
 	return rc;
+}
+
+int robust_fread(FILE *fp, void *buffer, int length) {
+	int rc;
+
+	do {
+		rc = fread(buffer, 1, length, fp);
+	} while (rc == 0 && ferror(fp) && errno_interrupted());
+
+	return rc == 0 && ferror(fp) ? -1 : rc;
+}
+
+int robust_fwrite(FILE *fp, const void *buffer, int length) {
+	int rc;
+
+	do {
+		rc = fwrite(buffer, 1, length, fp);
+	} while (rc == 0 && ferror(fp) && errno_interrupted());
+
+	return rc == 0 && ferror(fp) ? -1 : rc;
 }
