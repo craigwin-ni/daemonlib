@@ -26,6 +26,93 @@
 
 #include "conf_file.h"
 
+// sets errno on error, abuses ERANGE to indicate escape sequence errors
+static int conf_file_unescape_string(char *string) {
+	char *p = string;
+	char *d = string;
+	char x[3];
+	char *end;
+	long tmp;
+
+	while (*p != '\0') {
+		if (*p < ' ' || *p > '~') {
+			// reject any non-printable ASCII character
+			goto error;
+		}
+
+		// check for escape sequence start
+		if (*p != '\\') {
+			*d++ = *p++;
+
+			continue;
+		}
+
+		++p; // skip backslash
+
+		if (*p == '\0') {
+			// end-of-line in the middle of an escape sequence
+			goto error;
+		}
+
+		// check for common escape sequences
+		switch (*p++) {
+		case 'a':  *d++ = '\a'; continue;
+		case 'b':  *d++ = '\b'; continue;
+		case 'f':  *d++ = '\f'; continue;
+		case 'n':  *d++ = '\n'; continue;
+		case 'r':  *d++ = '\r'; continue;
+		case 't':  *d++ = '\t'; continue;
+		case 'v':  *d++ = '\v'; continue;
+		case '\\': *d++ = '\\'; continue;
+		case '\'': *d++ = '\''; continue;
+		case '"':  *d++ = '"';  continue;
+		case 'x':               break;
+		default:                goto error; // invalid escape sequence
+		}
+
+		if (*p == '\0' || *(p + 1) == '\0') {
+			// end-of-line in the middle of an \x escape sequence
+			goto error;
+		}
+
+		// unescape \x escape sequence. accept [\x01..\xFF] but explicitly
+		// forbid \x00 (\0), because strings are NULL-terminated and cannot
+		// contain a \0 character
+		x[0] = *p++;
+		x[1] = *p++;
+		x[2] = '\0';
+
+		errno = 0;
+		tmp = strtol(x, &end, 16);
+
+		if (errno != 0) {
+			// invalid number in \x escape sequence
+			return -1;
+		}
+
+		if (end == NULL || *end != '\0') {
+			// invalid number in \x escape sequence
+			goto error;
+		}
+
+		if (tmp < 1 || tmp > 255) {
+			// invalid number in \x escape sequence
+			goto error;
+		}
+
+		*d++ = tmp;
+	}
+
+	*d = '\0';
+
+	return 0;
+
+error:
+	errno = ERANGE;
+
+	return -1;
+}
+
 static void conf_file_line_destroy(void *item) {
 	ConfFileLine *line = item;
 
@@ -100,6 +187,11 @@ static int conf_file_parse_line(ConfFile *conf_file, int number, char *buffer,
 			if (tmp1 == NULL || tmp2 == NULL) {
 				errno = ENOMEM;
 
+				goto error;
+			}
+
+			if (conf_file_unescape_string(tmp1) < 0 ||
+			    conf_file_unescape_string(tmp2) < 0) {
 				goto error;
 			}
 
