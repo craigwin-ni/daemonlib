@@ -183,6 +183,8 @@ int conf_file_read(ConfFile *conf_file, const char *filename,
 		goto cleanup;
 	}
 
+	*buffer = '\0';
+
 	fp = fopen(filename, "rb");
 
 	if (fp == NULL) {
