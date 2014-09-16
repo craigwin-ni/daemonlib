@@ -42,23 +42,25 @@ static int conf_file_parse_line(ConfFile *conf_file, int number, char *buffer,
 	char *value = NULL;
 	char *name_end;
 	char *value_end;
+	char *tmp1 = NULL;
+	char *tmp2 = NULL;
 	ConfFileLine *line;
 	int saved_errno;
 
-	// backup line, so it can be modified in-place
+	// duplicate buffer, so it can be modified in-place
 	raw = strdup(buffer);
 
 	if (raw == NULL) {
 		errno = ENOMEM;
 
-		return -1;
+		goto error;
 	}
 
 	// strip initial whitespace. the line can contain \r because only \n is used
 	// as end-of-line marker. treat \r as regular whitespace
 	name = buffer + strspn(buffer, " \t\r");
 
-	// check for empty line and comment
+	// check for empty and comment lines
 	if (*name == '\0' || *name == '#') {
 		name = NULL;
 	} else {
@@ -81,8 +83,8 @@ static int conf_file_parse_line(ConfFile *conf_file, int number, char *buffer,
 				if (warning != NULL) {
 					warning(CONF_FILE_READ_WARNING_NAME_MISSING, number, raw, opaque);
 				}
-			} else if ((conf_file->flags & CONF_FILE_FLAG_TRIM_VALUE_ON_READ) != 0) {
-				// strip whitespace around value, if requested
+			} else {
+				// strip whitespace around value
 				value = value + strspn(value, " \t\r");
 				value_end = value + strlen(value);
 
@@ -90,6 +92,20 @@ static int conf_file_parse_line(ConfFile *conf_file, int number, char *buffer,
 					*--value_end = '\0';
 				}
 			}
+
+			// duplicate name/value and unescape them
+			tmp1 = strdup(name);
+			tmp2 = strdup(value);
+
+			if (tmp1 == NULL || tmp2 == NULL) {
+				errno = ENOMEM;
+
+				goto error;
+			}
+
+			// free raw
+			free(raw);
+			raw = NULL;
 		} else {
 			name = NULL;
 
@@ -103,46 +119,21 @@ static int conf_file_parse_line(ConfFile *conf_file, int number, char *buffer,
 	line = array_append(&conf_file->lines);
 
 	if (line == NULL) {
-		free(raw);
-		free(name);
-		free(value);
-
-		return -1;
+		goto error;
 	}
 
 	line->raw = raw;
-
-	if (name != NULL) {
-		line->name = strdup(name);
-
-		if (line->name == NULL) {
-			errno = ENOMEM;
-
-			goto error;
-		}
-	} else {
-		line->name = NULL;
-	}
-
-	if (value != NULL) {
-		line->value = strdup(value);
-
-		if (line->value == NULL) {
-			errno = ENOMEM;
-
-			goto error;
-		}
-	} else {
-		line->value = NULL;
-	}
+	line->name = tmp1;
+	line->value = tmp2;
 
 	return 0;
 
 error:
 	saved_errno = errno;
 
-	array_remove(&conf_file->lines, conf_file->lines.count - 1,
-	             conf_file_line_destroy);
+	free(raw);
+	free(tmp1);
+	free(tmp2);
 
 	errno = saved_errno;
 
@@ -150,9 +141,7 @@ error:
 }
 
 // sets errno on error
-int conf_file_create(ConfFile *conf_file, uint32_t flags) {
-	conf_file->flags = flags;
-
+int conf_file_create(ConfFile *conf_file) {
 	return array_create(&conf_file->lines, 32, sizeof(ConfFileLine), true);
 }
 

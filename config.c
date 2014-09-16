@@ -265,7 +265,7 @@ void config_init(const char *filename) {
 	config_reset();
 
 	// read config file
-	if (conf_file_create(&conf_file, CONF_FILE_FLAG_TRIM_VALUE_ON_READ) < 0) {
+	if (conf_file_create(&conf_file) < 0) {
 		config_error("Internal error occurred");
 
 		return;

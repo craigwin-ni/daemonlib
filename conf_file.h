@@ -24,10 +24,6 @@
 
 #include "array.h"
 
-typedef enum { // bitmask
-	CONF_FILE_FLAG_TRIM_VALUE_ON_READ = 0x0001
-} ConfFileFlag;
-
 typedef enum {
 	CONF_FILE_READ_WARNING_LINE_TOO_LONG = 0,
 	CONF_FILE_READ_WARNING_NAME_MISSING,
@@ -39,17 +35,16 @@ typedef void (*ConfFileReadWarningFunction)(ConfFileReadWarning warning,
                                             void *opaque);
 
 typedef struct {
-	char *raw;
+	char *raw; // only != NULL if there is no <name> = <value> pair in this line
 	char *name; // case of the name is ignored
 	char *value;
 } ConfFileLine;
 
 typedef struct {
-	uint32_t flags;
 	Array lines;
 } ConfFile;
 
-int conf_file_create(ConfFile *conf_file, uint32_t flags);
+int conf_file_create(ConfFile *conf_file);
 void conf_file_destroy(ConfFile *conf_file);
 
 int conf_file_read(ConfFile *conf_file, const char *filename,
