@@ -87,7 +87,12 @@ static int config_parse_int(const char *string, int *value) {
 		return -1;
 	}
 
+	errno = 0;
 	tmp = strtol(string, &end, 10);
+
+	if (errno != 0) {
+		return -1;
+	}
 
 	if (end == NULL || *end != '\0') {
 		return -1;
