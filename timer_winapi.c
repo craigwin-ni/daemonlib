@@ -259,6 +259,7 @@ void timer_destroy(Timer *timer) {
 	pipe_destroy(&timer->notification_pipe);
 }
 
+// setting delay and interval to 0 stops the timer
 int timer_configure(Timer *timer, uint64_t delay, uint64_t interval) { // microseconds
 	int rc;
 

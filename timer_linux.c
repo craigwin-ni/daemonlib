@@ -35,6 +35,9 @@ static void timer_handle_read(void *opaque) {
 	Timer *timer = opaque;
 	uint64_t value;
 
+	// read the timer expire count and ignore it. the timer function will only
+	// be called once per read operation, even if the timer expired more than
+	// once since the last read operation
 	if (robust_read(timer->handle, &value, sizeof(value)) < 0) {
 		if (errno_would_block()) {
 			return;
@@ -82,6 +85,7 @@ void timer_destroy(Timer *timer) {
 	close(timer->handle);
 }
 
+// setting delay and interval to 0 stops the timer
 int timer_configure(Timer *timer, uint64_t delay, uint64_t interval) { // microseconds
 	struct itimerspec itimerspec;
 
@@ -89,6 +93,13 @@ int timer_configure(Timer *timer, uint64_t delay, uint64_t interval) { // micros
 	itimerspec.it_value.tv_nsec = (delay % 1000000) * 1000;
 	itimerspec.it_interval.tv_sec = interval / 1000000;
 	itimerspec.it_interval.tv_nsec = (interval % 1000000) * 1000;
+
+	// timerfd_settime stops the timer if it_value is zero, indepentent of
+	// it_interval. this doesn't allow for a repeated timer without initial
+	// delay. detect this case and make it_value non-zero to workaround this
+	if (delay == 0 && interval > 0) {
+		itimerspec.it_value.tv_nsec = 1;
+	}
 
 	if (timerfd_settime(timer->handle, 0, &itimerspec, NULL) < 0) {
 		log_error("Could not configure timerfd (handle: %d): %s (%d)",
