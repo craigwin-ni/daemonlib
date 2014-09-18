@@ -23,6 +23,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef _WIN32
+	#include <windows.h>
+#endif
 
 #include "conf_file.h"
 
@@ -455,8 +458,7 @@ cleanup:
 int conf_file_write(ConfFile *conf_file, const char *filename) {
 	bool success = false;
 	int length;
-	char filename_new[1024];
-	char filename_old[1024];
+	char filename_tmp[1024];
 	FILE *fp = NULL;
 	int i;
 	ConfFileLine *line;
@@ -464,23 +466,22 @@ int conf_file_write(ConfFile *conf_file, const char *filename) {
 
 	length = strlen(filename);
 
-	if (length + strlen(".new") + 1 > sizeof(filename_new)) {
+	if (length + strlen(".tmp") + 1 > sizeof(filename_tmp)) {
 		errno = ENAMETOOLONG;
 
 		goto cleanup;
 	}
 
-	snprintf(filename_new, sizeof(filename_new), "%s.new", filename);
-	snprintf(filename_old, sizeof(filename_old), "%s.old", filename);
+	snprintf(filename_tmp, sizeof(filename_tmp), "%s.tmp", filename);
 
-	// open <filename>.new for writing
-	fp = fopen(filename_new, "wb");
+	// open <filename>.tmp for writing
+	fp = fopen(filename_tmp, "wb");
 
 	if (fp == NULL) {
 		goto cleanup;
 	}
 
-	// write lines to <filename>.new
+	// write lines to <filename>.tmp
 	for (i = 0; i < conf_file->lines.count; ++i) {
 		line = array_get(&conf_file->lines, i);
 
@@ -517,34 +518,19 @@ int conf_file_write(ConfFile *conf_file, const char *filename) {
 	fclose(fp);
 	fp = NULL;
 
+	// rename <filename>.tmp to <filename>. use MoveFileEx on Windows instead
+	// of rename, because rename cannot replace existing files on Windows
 #ifdef _WIN32
-	// remove <filename>.old, if <filename>.old exists. on Windows renaming
-	// <filename> to <filename>.old fails if <filename>.old already exists
-	if (remove(filename_old) < 0) {
-		if (errno != ENOENT) {
-			goto cleanup;
-		}
-	}
-#endif
+	if (!MoveFileExA(filename_tmp, filename, MOVEFILE_REPLACE_EXISTING)) {
+		errno = ERRNO_WINAPI_OFFSET + GetLastError();
 
-	// rename <filename> to <filename>.old, if <filename> exists
-	if (rename(filename, filename_old) < 0) {
-		if (errno != ENOENT) {
-			goto cleanup;
-		}
-	}
-
-	// rename <filename>.new to <filename>
-	if (rename(filename_new, filename) < 0) {
 		goto cleanup;
 	}
-
-	// remove <filename>.old, if <filename>.old exists
-	if (remove(filename_old) < 0) {
-		if (errno != ENOENT) {
-			goto cleanup;
-		}
+#else
+	if (rename(filename_tmp, filename) < 0) {
+		goto cleanup;
 	}
+#endif
 
 	success = true;
 
