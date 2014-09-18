@@ -21,10 +21,7 @@
  */
 
 #include <errno.h>
-#ifndef _WIN32
-	#include <netdb.h>
-	#include <unistd.h>
-#endif
+#include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
 #ifndef _MSC_VER
@@ -34,6 +31,9 @@
 	#include <winsock2.h> // must be included before windows.h
 	#include <windows.h>
 	#include <io.h>
+#else
+	#include <netdb.h>
+	#include <unistd.h>
 #endif
 
 #include "utils.h"
@@ -576,6 +576,7 @@ void node_remove(Node *node) {
 	node_reset(node);
 }
 
+// sets errno on error
 int robust_read(int fd, void *buffer, int length) {
 	int rc;
 
@@ -586,6 +587,7 @@ int robust_read(int fd, void *buffer, int length) {
 	return rc;
 }
 
+// sets errno on error
 int robust_write(int fd, const void *buffer, int length) {
 	int rc;
 
@@ -596,6 +598,7 @@ int robust_write(int fd, const void *buffer, int length) {
 	return rc;
 }
 
+// sets errno on error
 int robust_fread(FILE *fp, void *buffer, int length) {
 	int rc;
 
@@ -606,6 +609,7 @@ int robust_fread(FILE *fp, void *buffer, int length) {
 	return rc == 0 && ferror(fp) ? -1 : rc;
 }
 
+// sets errno on error
 int robust_fwrite(FILE *fp, const void *buffer, int length) {
 	int rc;
 
@@ -614,4 +618,35 @@ int robust_fwrite(FILE *fp, const void *buffer, int length) {
 	} while (rc == 0 && ferror(fp) && errno_interrupted());
 
 	return rc == 0 && ferror(fp) ? -1 : rc;
+}
+
+// sets errno on error
+int robust_snprintf(char *buffer, int length, const char *format, ...) {
+	va_list arguments;
+	int rc;
+
+	va_start(arguments, format);
+
+	errno = 0;
+	rc = vsnprintf(buffer, length, format, arguments);
+
+	if (rc < 0) {
+		if (errno == 0) {
+			errno = EINVAL;
+		}
+
+		rc = -1;
+	} else if (rc >= length) {
+		if (errno == 0) {
+			errno = ERANGE;
+		}
+
+		rc = -1;
+	} else {
+		rc = 0;
+	}
+
+	va_end(arguments);
+
+	return rc;
 }

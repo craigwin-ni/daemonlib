@@ -27,6 +27,8 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include "macros.h"
+
 #define ERRNO_WINAPI_OFFSET 71000000
 #define ERRNO_ADDRINFO_OFFSET 72000000
 
@@ -77,5 +79,7 @@ int robust_write(int fd, const void *buffer, int length);
 
 int robust_fread(FILE *fp, void *buffer, int length);
 int robust_fwrite(FILE *fp, const void *buffer, int length);
+
+int robust_snprintf(char *buffer, int length, const char *format, ...) ATTRIBUTE_FMT_PRINTF(3, 4);
 
 #endif // DAEMONLIB_UTILS_H
