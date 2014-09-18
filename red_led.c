@@ -114,6 +114,8 @@ LEDTrigger led_get_trigger(LED led) {
 		return LED_TRIGGER_ERROR;
 	}
 
+	buf[length] = '\0';
+
 	if(fclose(f) < 0) {
 		log_error("Could not close file %s", led_path[led]);
 		return LED_TRIGGER_ERROR;
