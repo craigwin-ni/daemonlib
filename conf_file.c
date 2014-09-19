@@ -324,8 +324,8 @@ int conf_file_read(ConfFile *conf_file, const char *filename,
                    ConfFileReadWarningFunction warning, void *opaque) {
 	bool success = false;
 	int allocated = 256;
-	char *buffer;
 	FILE *fp = NULL;
+	char *buffer = NULL;
 	int rc;
 	char c;
 	int length = 0;
@@ -335,6 +335,13 @@ int conf_file_read(ConfFile *conf_file, const char *filename,
 	int i;
 	ConfFileLine *line;
 	int saved_errno;
+
+	// open file
+	fp = fopen(filename, "rb");
+
+	if (fp == NULL) {
+		goto cleanup;
+	}
 
 	// allocate buffer
 	buffer = malloc(allocated);
@@ -346,13 +353,6 @@ int conf_file_read(ConfFile *conf_file, const char *filename,
 	}
 
 	*buffer = '\0';
-
-	// open file
-	fp = fopen(filename, "rb");
-
-	if (fp == NULL) {
-		goto cleanup;
-	}
 
 	// read and parse lines
 	for (;;) {
