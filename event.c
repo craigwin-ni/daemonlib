@@ -98,7 +98,7 @@ int event_add_source(IOHandle handle, EventSourceType type, uint32_t events,
                      EventFunction function, void *opaque) {
 	int i;
 	EventSource *event_source;
-	EventSource event_source_backup;
+	EventSource backup;
 
 	// check existing event sources
 	for (i = 0; i < _event_sources.count; ++i) {
@@ -106,7 +106,7 @@ int event_add_source(IOHandle handle, EventSourceType type, uint32_t events,
 
 		if (event_source->handle == handle && event_source->type == type) {
 			if (event_source->state == EVENT_SOURCE_STATE_REMOVED) {
-				memcpy(&event_source_backup, event_source, sizeof(event_source_backup));
+				memcpy(&backup, event_source, sizeof(backup));
 
 				event_source->events = events;
 				event_source->state = EVENT_SOURCE_STATE_READDED;
@@ -132,7 +132,7 @@ int event_add_source(IOHandle handle, EventSourceType type, uint32_t events,
 				}
 
 				if (event_source_added_platform(event_source) < 0) {
-					memcpy(event_source, &event_source_backup, sizeof(event_source_backup));
+					memcpy(event_source, &backup, sizeof(backup));
 
 					return -1;
 				}
@@ -203,7 +203,7 @@ int event_modify_source(IOHandle handle, EventSourceType type, uint32_t events_t
                         uint32_t events_to_add, EventFunction function, void *opaque) {
 	int i;
 	EventSource *event_source;
-	EventSource event_source_backup;
+	EventSource backup;
 
 	for (i = 0; i < _event_sources.count; ++i) {
 		event_source = array_get(&_event_sources, i);
@@ -216,7 +216,7 @@ int event_modify_source(IOHandle handle, EventSourceType type, uint32_t events_t
 				return -1;
 			}
 
-			memcpy(&event_source_backup, event_source, sizeof(event_source_backup));
+			memcpy(&backup, event_source, sizeof(backup));
 
 			// modify events bitmask
 			if ((event_source->events & events_to_remove) != events_to_remove) {
@@ -278,7 +278,7 @@ int event_modify_source(IOHandle handle, EventSourceType type, uint32_t events_t
 			event_source->state = EVENT_SOURCE_STATE_MODIFIED;
 
 			if (event_source_modified_platform(event_source) < 0) {
-				memcpy(event_source, &event_source_backup, sizeof(event_source_backup));
+				memcpy(event_source, &backup, sizeof(backup));
 
 				return -1;
 			}
