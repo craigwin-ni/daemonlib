@@ -143,23 +143,27 @@ void packet_header_set_error_code(PacketHeader *header, ErrorCode error_code) {
 	header->error_code_and_future_use |= (error_code << 6) & 0xC0;
 }
 
-const char *packet_get_callback_type(Packet *packet) {
+const char *packet_get_response_type(Packet *packet) {
+	if (packet_header_get_sequence_number(&packet->header) != 0) {
+		return "response";
+	}
+
 	if (packet->header.function_id != CALLBACK_ENUMERATE) {
-		return "";
+		return "callback";
 	}
 
 	switch (((EnumerateCallback *)packet)->enumeration_type) {
 	case ENUMERATION_TYPE_AVAILABLE:
-		return "enumerate-available ";
+		return "enumerate-available callback";
 
 	case ENUMERATION_TYPE_CONNECTED:
-		return "enumerate-connected ";
+		return "enumerate-connected callback";
 
 	case ENUMERATION_TYPE_DISCONNECTED:
-		return "enumerate-disconnected ";
+		return "enumerate-disconnected callback";
 
 	default:
-		return "enumerate-<unknown> ";
+		return "enumerate-<unknown> callback";
 	}
 }
 
@@ -180,24 +184,21 @@ char *packet_get_request_signature(char *signature, Packet *packet) {
 char *packet_get_response_signature(char *signature, Packet *packet) {
 	char base58[BASE58_MAX_LENGTH];
 
-	snprintf(signature, PACKET_MAX_SIGNATURE_LENGTH,
-	         "U: %s, L: %u, F: %u, S: %u, E: %u",
-	         base58_encode(base58, uint32_from_le(packet->header.uid)),
-	         packet->header.length,
-	         packet->header.function_id,
-	         packet_header_get_sequence_number(&packet->header),
-	         packet_header_get_error_code(&packet->header));
-
-	return signature;
-}
-
-char *packet_get_callback_signature(char *signature, Packet *packet) {
-	char base58[BASE58_MAX_LENGTH];
-
-	snprintf(signature, PACKET_MAX_SIGNATURE_LENGTH, "U: %s, L: %u, F: %u",
-	         base58_encode(base58, uint32_from_le(packet->header.uid)),
-	         packet->header.length,
-	         packet->header.function_id);
+	if (packet_header_get_sequence_number(&packet->header) != 0) {
+		snprintf(signature, PACKET_MAX_SIGNATURE_LENGTH,
+		         "U: %s, L: %u, F: %u, S: %u, E: %u",
+		         base58_encode(base58, uint32_from_le(packet->header.uid)),
+		         packet->header.length,
+		         packet->header.function_id,
+		         packet_header_get_sequence_number(&packet->header),
+		         packet_header_get_error_code(&packet->header));
+	} else {
+		snprintf(signature, PACKET_MAX_SIGNATURE_LENGTH,
+		         "U: %s, L: %u, F: %u",
+		         base58_encode(base58, uint32_from_le(packet->header.uid)),
+		         packet->header.length,
+		         packet->header.function_id);
+	}
 
 	return signature;
 }

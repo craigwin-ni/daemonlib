@@ -137,11 +137,10 @@ void packet_header_set_response_expected(PacketHeader *header, bool response_exp
 ErrorCode packet_header_get_error_code(PacketHeader *header);
 void packet_header_set_error_code(PacketHeader *header, ErrorCode error_code);
 
-const char *packet_get_callback_type(Packet *packet);
+const char *packet_get_response_type(Packet *packet);
 
 char *packet_get_request_signature(char *signature, Packet *packet);
 char *packet_get_response_signature(char *signature, Packet *packet);
-char *packet_get_callback_signature(char *signature, Packet *packet);
 char *packet_get_content_dump(char *content_dump, Packet *packet, int length);
 
 bool packet_is_matching_response(Packet *packet, PacketHeader *pending_request);
