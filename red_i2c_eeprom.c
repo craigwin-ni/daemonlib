@@ -68,9 +68,7 @@ int _i2c_eeprom_set_pointer(I2CEEPROM *i2c_eeprom, uint8_t* eeprom_memory_addres
         log_error("Error setting EEPROM address pointer: %s (%d)",
                   get_errno_name(errno), errno);
 
-        _i2c_eeprom_deselect(i2c_eeprom);
-        close(i2c_eeprom->file);
-        i2c_eeprom->file = -1;
+        i2c_eeprom_release(i2c_eeprom);
         return -1;
     }
     return bytes_written;
@@ -120,9 +118,7 @@ int i2c_eeprom_init(I2CEEPROM *i2c_eeprom, int extension) {
         log_error("Initialization of I2C EEPROM for extension %d failed (Unable to access I2C device on the bus: %s (%d))",
                   extension, get_errno_name(errno), errno);
 
-        _i2c_eeprom_deselect(i2c_eeprom);
-        close(i2c_eeprom->file);
-        i2c_eeprom->file = -1;
+        i2c_eeprom_release(i2c_eeprom);
         return -1;
     }
 
@@ -160,9 +156,7 @@ int i2c_eeprom_read(I2CEEPROM *i2c_eeprom, uint16_t eeprom_memory_address,
     if(bytes_read != bytes_to_read) {
         log_error("EEPROM read failed: %s (%d)", get_errno_name(errno), errno);
 
-        _i2c_eeprom_deselect(i2c_eeprom);
-        close(i2c_eeprom->file);
-        i2c_eeprom->file = -1;
+        i2c_eeprom_release(i2c_eeprom);
         return -1;
     }
 
@@ -193,9 +187,7 @@ int i2c_eeprom_write(I2CEEPROM *i2c_eeprom, uint16_t eeprom_memory_address,
             log_error("EEPROM write failed: %s (%d)",
                       get_errno_name(errno), errno);
 
-            _i2c_eeprom_deselect(i2c_eeprom);
-            close(i2c_eeprom->file);
-            i2c_eeprom->file = -1;
+            i2c_eeprom_release(i2c_eeprom);
             return -1;
         }
         bytes_written++;
