@@ -1,8 +1,10 @@
 /*
  * daemonlib
- * Copyright (C) 2014 Ishraq Ibne Ashraf <ishraq@tinkerforge.com>
  *
- * i2c_eeprom.h: I2C EEPROM specific functions
+ * Copyright (C) 2014 Ishraq Ibne Ashraf <ishraq@tinkerforge.com>
+ * Copyright (C) 2014 Olaf Lüke <olaf@tinkerforge.com>
+ *
+ * red_i2c_eeprom.h: I2C EEPROM specific functions
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,10 +29,20 @@
 
 #include <stdint.h>
 
-int i2c_eeprom_read(uint16_t eeprom_memory_address,
-uint8_t* buffer_to_store, int bytes_to_read);
+#include "red_gpio.h"
 
-int i2c_eeprom_write(uint16_t eeprom_memory_address,
-uint8_t* buffer_to_write, int bytes_to_write);
+typedef struct {
+	int extension;
+	int file;
+	GPIOPin enable_pin;
+	GPIOPin address_pin;
+} I2CEEPROM;
+
+int i2c_eeprom_init(I2CEEPROM *i2c_eeprom, int extension);
+void i2c_eeprom_release(I2CEEPROM *i2c_eeprom);
+int i2c_eeprom_read(I2CEEPROM *i2c_eeprom, uint16_t eeprom_memory_address,
+                    uint8_t* buffer_to_store, int bytes_to_read);
+int i2c_eeprom_write(I2CEEPROM *i2c_eeprom, uint16_t eeprom_memory_address,
+                     uint8_t* buffer_to_write, int bytes_to_write);
 
 #endif // DAEMONLIB_I2C_EEPROM_H
