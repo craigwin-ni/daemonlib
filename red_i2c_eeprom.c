@@ -61,8 +61,6 @@ int _i2c_eeprom_set_pointer(I2CEEPROM *i2c_eeprom, uint8_t* eeprom_memory_addres
 		return -1;
 	}
 
-    printf("set pointer: %d %d\n", i2c_eeprom->file, i2c_eeprom->extension);
-
     bytes_written = write(i2c_eeprom->file, eeprom_memory_address, 2);
     if ( bytes_written != 2) {
         log_error("Error setting EEPROM address pointer: %s (%d)",
@@ -86,15 +84,16 @@ int i2c_eeprom_init(I2CEEPROM *i2c_eeprom, int extension) {
 
 	// Initialize I2C EEPROM structure
 	i2c_eeprom->extension = extension;
+	i2c_eeprom->enable_pin.port_index = GPIO_PORT_B;
+	i2c_eeprom->enable_pin.pin_index = GPIO_PIN_6;
 	switch(extension) {
 		case 0:
-			i2c_eeprom->enable_pin.port_index = GPIO_PORT_B;
-			i2c_eeprom->enable_pin.pin_index = GPIO_PIN_6;
 			i2c_eeprom->address_pin.port_index = GPIO_PORT_G;
 			i2c_eeprom->address_pin.pin_index = GPIO_PIN_9;
 			break;
 		case 1:
-			// TODO
+			i2c_eeprom->address_pin.port_index = GPIO_PORT_G;
+			i2c_eeprom->address_pin.pin_index = GPIO_PIN_13;
 			break;
 	}
 
@@ -103,8 +102,6 @@ int i2c_eeprom_init(I2CEEPROM *i2c_eeprom, int extension) {
     gpio_mux_configure(i2c_eeprom->address_pin, GPIO_MUX_OUTPUT);
     
     i2c_eeprom->file = open(I2C_EEPROM_BUS, O_RDWR);
-
-    printf("init: %d\n", i2c_eeprom->file);
 
     if (i2c_eeprom->file < 0) {
         log_error("Initialization of I2C EEPROM for extension %d failed (Unable to open I2C bus: %s (%d))",
