@@ -71,10 +71,15 @@ void log_apply_color_platform(LogLevel level, bool begin) {
 
 	if (begin) {
 		switch (level) {
-		case LOG_LEVEL_NONE:  color = "\033[1;36m"; break;
-		case LOG_LEVEL_ERROR: color = "\033[1;31m"; break;
-		case LOG_LEVEL_WARN:  color = "\033[1;33m"; break;
-		case LOG_LEVEL_INFO:  color = "\033[1m";    break;
+		case LOG_LEVEL_NONE:  color = "\033[1;35m"; break; // bold + magenta
+		case LOG_LEVEL_ERROR: color = "\033[1;31m"; break; // bold + red
+		// FIXME: yellow would be better for warning, but yellow has poor
+		//        contrast on white background. there seems to be no reasonable
+		//        way to detect the current terminal background color to
+		//        dynamically adapt the colors for good contrast. as workaround
+		//        switch from yellow (3) to blue (4)
+		case LOG_LEVEL_WARN:  color = "\033[1;34m"; break; // bold + blue
+		case LOG_LEVEL_INFO:  color = "\033[1m";    break; // bold
 		default:
 		case LOG_LEVEL_DEBUG:                       return;
 		}
@@ -83,7 +88,7 @@ void log_apply_color_platform(LogLevel level, bool begin) {
 		case LOG_LEVEL_NONE:
 		case LOG_LEVEL_ERROR:
 		case LOG_LEVEL_WARN:
-		case LOG_LEVEL_INFO:  color = "\033[m";     break;
+		case LOG_LEVEL_INFO:  color = "\033[m";     break; // default
 		default:
 		case LOG_LEVEL_DEBUG:                       return;
 		}
