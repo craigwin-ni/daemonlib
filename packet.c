@@ -135,11 +135,11 @@ void packet_header_set_response_expected(PacketHeader *header, bool response_exp
 	header->sequence_number_and_options |= response_expected ? 0x08 : 0x00;
 }
 
-ErrorCode packet_header_get_error_code(PacketHeader *header) {
+PacketE packet_header_get_error_code(PacketHeader *header) {
 	return (header->error_code_and_future_use >> 6) & 0x03;
 }
 
-void packet_header_set_error_code(PacketHeader *header, ErrorCode error_code) {
+void packet_header_set_error_code(PacketHeader *header, PacketE error_code) {
 	header->error_code_and_future_use |= (error_code << 6) & 0xC0;
 }
 

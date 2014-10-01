@@ -51,14 +51,14 @@ typedef enum {
 	ENUMERATION_TYPE_AVAILABLE = 0,
 	ENUMERATION_TYPE_CONNECTED,
 	ENUMERATION_TYPE_DISCONNECTED
-} EnumerateCallbackEnumerationType;
+} EnumerationType;
 
 typedef enum {
-	ERROR_CODE_OK = 0,
-	ERROR_CODE_INVALID_PARAMETER,
-	ERROR_CODE_FUNCTION_NOT_SUPPORTED,
-	ERROR_CODE_UNKNOWN_ERROR
-} ErrorCode;
+	PACKET_E_SUCCESS = 0,
+	PACKET_E_INVALID_PARAMETER,
+	PACKET_E_FUNCTION_NOT_SUPPORTED,
+	PACKET_E_UNKNOWN_ERROR
+} PacketE;
 
 #define PACKET_MAX_SIGNATURE_LENGTH 64
 #define PACKET_MAX_CONTENT_DUMP_LENGTH ((int)sizeof(Packet) * 3 + 1)
@@ -93,7 +93,7 @@ typedef struct {
 
 typedef struct {
 	PacketHeader header;
-} ATTRIBUTE_PACKED ErrorCodeResponse;
+} ATTRIBUTE_PACKED EmptyResponse;
 
 typedef struct {
 	PacketHeader header;
@@ -134,8 +134,8 @@ void packet_header_set_sequence_number(PacketHeader *header, uint8_t sequence_nu
 bool packet_header_get_response_expected(PacketHeader *header);
 void packet_header_set_response_expected(PacketHeader *header, bool response_expected);
 
-ErrorCode packet_header_get_error_code(PacketHeader *header);
-void packet_header_set_error_code(PacketHeader *header, ErrorCode error_code);
+PacketE packet_header_get_error_code(PacketHeader *header);
+void packet_header_set_error_code(PacketHeader *header, PacketE error_code);
 
 const char *packet_get_response_type(Packet *packet);
 
