@@ -34,7 +34,6 @@
 typedef struct {
 	int extension;
 	int file;
-	GPIOPin enable_pin;
 	GPIOPin address_pin;
 } I2CEEPROM;
 

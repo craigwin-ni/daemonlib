@@ -80,6 +80,7 @@ typedef enum {
 	GPIO_MUX_3 = 3,
 	GPIO_MUX_4 = 4,
 	GPIO_MUX_5 = 5,
+	GPIO_MUX_6 = 6,
 } GPIOMux;
 
 typedef struct {

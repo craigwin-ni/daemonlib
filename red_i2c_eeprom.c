@@ -40,15 +40,11 @@
 #define LOG_CATEGORY LOG_CATEGORY_RED_BRICK
 
 void _i2c_eeprom_select(I2CEEPROM *i2c_eeprom) {
-    // i2c enable pin low (pullups)
-    gpio_output_clear(i2c_eeprom->enable_pin);
     // address pin high
     gpio_output_set(i2c_eeprom->address_pin);
 }
 
 void _i2c_eeprom_deselect(I2CEEPROM *i2c_eeprom) {
-    // i2c enable pin high
-    gpio_output_set(i2c_eeprom->enable_pin);
     // address pin low
     gpio_output_clear(i2c_eeprom->address_pin);
 }
@@ -63,7 +59,9 @@ int _i2c_eeprom_set_pointer(I2CEEPROM *i2c_eeprom, uint8_t* eeprom_memory_addres
 
     bytes_written = write(i2c_eeprom->file, eeprom_memory_address, 2);
     if ( bytes_written != 2) {
-        log_error("Error setting EEPROM address pointer: %s (%d)",
+    	// We only use debug here to not spam the log with errors.
+    	// This is the expected case if an extension is not present.
+        log_debug("Error setting EEPROM address pointer: %s (%d)",
                   get_errno_name(errno), errno);
 
         i2c_eeprom_release(i2c_eeprom);
@@ -82,10 +80,13 @@ int i2c_eeprom_init(I2CEEPROM *i2c_eeprom, int extension) {
 		return -1;
 	}
 
+    // Enable pullups
+	GPIOPin pullup = {GPIO_PORT_B, GPIO_PIN_6};
+    gpio_mux_configure(pullup, GPIO_MUX_OUTPUT);
+    gpio_output_clear(pullup);
+
 	// Initialize I2C EEPROM structure
 	i2c_eeprom->extension = extension;
-	i2c_eeprom->enable_pin.port_index = GPIO_PORT_B;
-	i2c_eeprom->enable_pin.pin_index = GPIO_PIN_6;
 	switch(extension) {
 		case 0:
 			i2c_eeprom->address_pin.port_index = GPIO_PORT_G;
@@ -98,8 +99,8 @@ int i2c_eeprom_init(I2CEEPROM *i2c_eeprom, int extension) {
 	}
 
     // enable I2C bus with GPIO
-    gpio_mux_configure(i2c_eeprom->enable_pin, GPIO_MUX_OUTPUT);
     gpio_mux_configure(i2c_eeprom->address_pin, GPIO_MUX_OUTPUT);
+    _i2c_eeprom_deselect(i2c_eeprom);
     
     i2c_eeprom->file = open(I2C_EEPROM_BUS, O_RDWR);
 
@@ -107,7 +108,6 @@ int i2c_eeprom_init(I2CEEPROM *i2c_eeprom, int extension) {
         log_error("Initialization of I2C EEPROM for extension %d failed (Unable to open I2C bus: %s (%d))",
                   extension, get_errno_name(errno), errno);
 
-        _i2c_eeprom_deselect(i2c_eeprom);
         return -1;
     }
     
