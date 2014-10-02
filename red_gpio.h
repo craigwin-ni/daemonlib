@@ -72,6 +72,12 @@ typedef enum {
 } GPIOPortIndex;
 
 typedef enum {
+	GPIO_INPUT_DEFAULT = 0,
+	GPIO_INPUT_PULLUP = 1,
+	GPIO_INPUT_PULLDOWN = 2
+} GPIOInputConfig;
+
+typedef enum {
 	GPIO_MUX_INPUT = 0,
 	GPIO_MUX_OUTPUT = 1,
 	GPIO_MUX_0 = 0,
@@ -97,6 +103,7 @@ typedef struct {
 
 int gpio_init(void);
 void gpio_mux_configure(const GPIOPin pin, const GPIOMux mux_config);
+void gpio_input_configure(const GPIOPin pin, const GPIOInputConfig input_config);
 void gpio_output_set(const GPIOPin pin);
 void gpio_output_clear(const GPIOPin pin);
 uint32_t gpio_input(const GPIOPin pin);

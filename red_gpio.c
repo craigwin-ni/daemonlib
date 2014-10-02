@@ -100,6 +100,17 @@ void gpio_mux_configure(const GPIOPin pin, const GPIOMux mux_config) {
 	gpio_port[pin.port_index].config[config_index] = config;
 }
 
+void gpio_input_configure(const GPIOPin pin, const GPIOInputConfig input_config) {
+	uint32_t config_index =  pin.pin_index >> 4;
+	uint32_t offset       = (pin.pin_index * 2) % 32;
+	uint32_t config       = gpio_port[pin.port_index].pull[config_index];
+
+	config &= ~(0x3 << offset);
+	config |= input_config << offset;
+
+	gpio_port[pin.port_index].pull[config_index] = config;
+}
+
 void gpio_output_set(const GPIOPin pin) {
 	gpio_port[pin.port_index].value |= (1 << pin.pin_index);
 }
