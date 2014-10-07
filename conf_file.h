@@ -54,4 +54,9 @@ int conf_file_write(ConfFile *conf_file, const char *filename);
 int conf_file_set_option_value(ConfFile *conf_file, const char *name, const char *value);
 const char *conf_file_get_option_value(ConfFile *conf_file, const char *name);
 
+bool conf_file_get_first_option(ConfFile *conf_file, const char **name,
+                                const char **value, int *cookie);
+bool conf_file_get_next_option(ConfFile *conf_file, const char **name,
+                               const char **value, int *cookie);
+
 #endif // DAEMONLIB_CONF_FILE_H

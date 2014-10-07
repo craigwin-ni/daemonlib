@@ -623,3 +623,34 @@ const char *conf_file_get_option_value(ConfFile *conf_file, const char *name) {
 
 	return NULL;
 }
+
+bool conf_file_get_first_option(ConfFile *conf_file, const char **name,
+                                const char **value, int *cookie) {
+	*cookie = 0;
+
+	return conf_file_get_next_option(conf_file, name, value, cookie);
+}
+
+bool conf_file_get_next_option(ConfFile *conf_file, const char **name,
+                               const char **value, int *cookie) {
+	int i;
+	ConfFileLine *line;
+
+	for (i = *cookie; i >= 0 && i < conf_file->lines.count; ++i) {
+		line = array_get(&conf_file->lines, i);
+
+		if (line->raw != NULL) {
+			continue;
+		}
+
+		*name = line->name;
+		*value = line->value;
+		*cookie = i + 1;
+
+		return true;
+	}
+
+	*cookie = conf_file->lines.count;
+
+	return false;
+}
