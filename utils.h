@@ -48,8 +48,8 @@ bool errno_would_block(void);
 
 const char *get_errno_name(int error_code);
 
-void string_copy(char *destination, const char *source, int destination_length);
-void string_append(char *destination, const char *source, int destination_length);
+void string_copy(char *target, int target_length, const char *source);
+void string_append(char *target, int target_length, const char *source);
 
 char *base58_encode(char *base58, uint32_t value);
 int base58_decode(uint32_t *value, const char *base58);

@@ -322,32 +322,32 @@ const char *get_errno_name(int error_code) {
 	#undef ADDRINFO_ERROR_NAME
 }
 
-void string_copy(char *destination, const char *source, int destination_length) {
-	if (destination_length <= 0) {
+void string_copy(char *target, int target_length, const char *source) {
+	if (target_length <= 0) {
 		return;
 	}
 
-	strncpy(destination, source, destination_length - 1);
+	strncpy(target, source, target_length - 1);
 
-	destination[destination_length - 1] = '\0';
+	target[target_length - 1] = '\0';
 }
 
-void string_append(char *destination, const char *source, int destination_length) {
+void string_append(char *target, int target_length, const char *source) {
 	int offset;
 
-	if (destination_length <= 0) {
+	if (target_length <= 0) {
 		return;
 	}
 
-	offset = strlen(destination);
+	offset = strlen(target);
 
-	if (offset >= destination_length - 1) {
+	if (offset >= target_length - 1) {
 		return;
 	}
 
-	strncpy(destination + offset, source, destination_length - offset - 1);
+	strncpy(target + offset, source, target_length - offset - 1);
 
-	destination[destination_length - 1] = '\0';
+	target[target_length - 1] = '\0';
 }
 
 static const char *_base58_alphabet =
