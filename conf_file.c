@@ -654,3 +654,23 @@ bool conf_file_get_next_option(ConfFile *conf_file, const char **name,
 
 	return false;
 }
+
+void conf_file_remove_option(ConfFile *conf_file, const char *name, bool prefix_match) {
+	int i;
+	ConfFileLine *line;
+	int prefix_length = prefix_match ? strlen(name) : 0;
+
+	// iterate backwards so that line removal doesn't affect the iteration index
+	for (i = conf_file->lines.count - 1; i >= 0; --i) {
+		line = array_get(&conf_file->lines, i);
+
+		if (line->raw != NULL) {
+			continue;
+		}
+
+		if ((prefix_match && strncasecmp(line->name, name, prefix_length) == 0) ||
+		    strcasecmp(line->name, name) == 0) {
+			array_remove(&conf_file->lines, i, conf_file_line_destroy);
+		}
+	}
+}

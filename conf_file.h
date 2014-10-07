@@ -59,4 +59,6 @@ bool conf_file_get_first_option(ConfFile *conf_file, const char **name,
 bool conf_file_get_next_option(ConfFile *conf_file, const char **name,
                                const char **value, int *cookie);
 
+void conf_file_remove_option(ConfFile *conf_file, const char *name, bool prefix_match);
+
 #endif // DAEMONLIB_CONF_FILE_H
