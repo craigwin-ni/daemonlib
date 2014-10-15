@@ -172,24 +172,31 @@ int i2c_eeprom_write(I2CEEPROM *i2c_eeprom, uint16_t eeprom_memory_address,
 		log_error("I2C EEPROM structure uninitialized\n");
 		return -1;
 	}
-
-    write_byte[0] = eeprom_memory_address >> 8;
-    write_byte[1] = eeprom_memory_address & 0xFF;
     
-    _i2c_eeprom_select(i2c_eeprom);
     for(i = 0; i < bytes_to_write; i++) {
+        write_byte[0] = eeprom_memory_address >> 8;
+        write_byte[1] = eeprom_memory_address & 0xFF;
         write_byte[2] = buffer_to_write[i];
+
+    	_i2c_eeprom_select(i2c_eeprom);
         _bytes_written = write(i2c_eeprom->file, write_byte, 3);
+        _i2c_eeprom_deselect(i2c_eeprom);
+
+        // Wait at least 5ms between writes (see m24128-bw.pdf)
+        usleep(5*1000);
+        printf("pos: %d\n", i);
+
         if(_bytes_written != 3) {
-            log_error("EEPROM write failed: %s (%d)",
-                      get_errno_name(errno), errno);
+            log_error("EEPROM write failed (pos(%d), length(%d), expected length(%d): %s (%d)",
+            		  i, _bytes_written, 3, get_errno_name(errno), errno);
 
             i2c_eeprom_release(i2c_eeprom);
             return -1;
         }
+        eeprom_memory_address++;
         bytes_written++;
     }
 
-    _i2c_eeprom_deselect(i2c_eeprom);
+
     return bytes_written;
 }
