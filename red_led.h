@@ -20,30 +20,29 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef DAEMONLIB_RED_GPIO_H
-#define DAEMONLIB_RED_GPIO_H
+#ifndef DAEMONLIB_RED_LED_H
+#define DAEMONLIB_RED_LED_H
 
 #include <stdint.h>
 
 typedef enum {
-	LED_GREEN = 0,
-	LED_RED   = 1
-} LED;
+	RED_LED_GREEN = 0,
+	RED_LED_RED   = 1
+} REDLED;
 
 typedef enum {
-	LED_TRIGGER_CPU       =  0, 
-	LED_TRIGGER_GPIO      =  1,
-	LED_TRIGGER_HEARTBEAT =  2,
-	LED_TRIGGER_MMC       =  3,
-	LED_TRIGGER_OFF       =  4,
-	LED_TRIGGER_ON        =  5,
+	RED_LED_TRIGGER_CPU       =  0,
+	RED_LED_TRIGGER_GPIO      =  1,
+	RED_LED_TRIGGER_HEARTBEAT =  2,
+	RED_LED_TRIGGER_MMC       =  3,
+	RED_LED_TRIGGER_OFF       =  4,
+	RED_LED_TRIGGER_ON        =  5,
 
-	LED_TRIGGER_UNKNOWN   =  -1,
-	LED_TRIGGER_ERROR     =  -2
-} LEDTrigger;
+	RED_LED_TRIGGER_UNKNOWN   =  -1,
+	RED_LED_TRIGGER_ERROR     =  -2
+} REDLEDTrigger;
 
-int led_set_trigger(LED led, LEDTrigger trigger);
-LEDTrigger led_get_trigger(LED led);
+int red_led_set_trigger(REDLED led, REDLEDTrigger trigger);
+REDLEDTrigger red_led_get_trigger(REDLED led);
 
 #endif // DAEMONLIB_RED_LED_H
-

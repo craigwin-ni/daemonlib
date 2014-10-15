@@ -27,12 +27,14 @@
 #include <stdint.h>
 
 #include "log.h"
+#include "red_led.h"
 
 typedef enum {
 	CONFIG_OPTION_TYPE_STRING = 0,
 	CONFIG_OPTION_TYPE_INTEGER,
 	CONFIG_OPTION_TYPE_BOOLEAN,
-	CONFIG_OPTION_TYPE_LOG_LEVEL
+	CONFIG_OPTION_TYPE_LOG_LEVEL,
+	CONFIG_OPTION_TYPE_RED_LED_TRIGGER
 } ConfigOptionType;
 
 typedef struct {
@@ -40,6 +42,7 @@ typedef struct {
 	int integer;
 	bool boolean;
 	LogLevel log_level;
+	REDLEDTrigger red_led_trigger;
 } ConfigOptionValue;
 
 typedef struct {
@@ -61,19 +64,22 @@ typedef struct {
 	min, max
 
 #define CONFIG_OPTION_VALUE_STRING_INITIALIZER(value) \
-	{ value, 0, 0, LOG_LEVEL_NONE }
+	{ value, 0, 0, LOG_LEVEL_NONE, RED_LED_TRIGGER_OFF }
 
 #define CONFIG_OPTION_VALUE_INTEGER_INITIALIZER(value) \
-	{ NULL, value, 0, LOG_LEVEL_NONE }
+	{ NULL, value, 0, LOG_LEVEL_NONE, RED_LED_TRIGGER_OFF }
 
 #define CONFIG_OPTION_VALUE_BOOLEAN_INITIALIZER(value) \
-	{ NULL, 0, value, LOG_LEVEL_NONE }
+	{ NULL, 0, value, LOG_LEVEL_NONE, RED_LED_TRIGGER_OFF }
 
 #define CONFIG_OPTION_VALUE_LOG_LEVEL_INITIALIZER(value) \
-	{ NULL, 0, 0, value }
+	{ NULL, 0, 0, value, RED_LED_TRIGGER_OFF }
+
+#define CONFIG_OPTION_VALUE_RED_LED_TRIGGER_INITIALIZER(value) \
+	{ NULL, 0, 0, LOG_LEVEL_NONE, value }
 
 #define CONFIG_OPTION_VALUE_NULL_INITIALIZER \
-	{ NULL, 0, 0, LOG_LEVEL_NONE }
+	{ NULL, 0, 0, LOG_LEVEL_NONE, RED_LED_TRIGGER_OFF }
 
 #define CONFIG_OPTION_STRING_INITIALIZER(name, legacy_name, min, max, default_value) \
 	{ \
@@ -116,6 +122,17 @@ typedef struct {
 		CONFIG_OPTION_STRING_LENGTH_RANGE(0, 0), \
 		CONFIG_OPTION_INTEGER_RANGE(0, 0), \
 		CONFIG_OPTION_VALUE_LOG_LEVEL_INITIALIZER(default_value), \
+		CONFIG_OPTION_VALUE_NULL_INITIALIZER \
+	}
+
+#define CONFIG_OPTION_RED_LED_TRIGGER_INITIALIZER(name, legacy_name, default_value) \
+	{ \
+		name, \
+		legacy_name, \
+		CONFIG_OPTION_TYPE_RED_LED_TRIGGER, \
+		CONFIG_OPTION_STRING_LENGTH_RANGE(0, 0), \
+		CONFIG_OPTION_INTEGER_RANGE(0, 0), \
+		CONFIG_OPTION_VALUE_RED_LED_TRIGGER_INITIALIZER(default_value), \
 		CONFIG_OPTION_VALUE_NULL_INITIALIZER \
 	}
 

@@ -50,23 +50,23 @@ static const char led_path[][LED_PATH_STR_MAX_LENGTH] = {
 	"/sys/class/leds/pc06:red:error/trigger"
 };
 
-int led_set_trigger(LED led, LEDTrigger trigger) {
+int red_led_set_trigger(REDLED led, REDLEDTrigger trigger) {
 	FILE *f;
 	int length;
 
-	if(!((trigger >= LED_TRIGGER_CPU) && (trigger <= LED_TRIGGER_ON))) {
+	if(!((trigger >= RED_LED_TRIGGER_CPU) && (trigger <= RED_LED_TRIGGER_ON))) {
 		log_error("Unknown LED trigger: %d (must be in [%d, %d])",
 		          trigger,
-		          LED_TRIGGER_CPU,
-		          LED_TRIGGER_ON);
+		          RED_LED_TRIGGER_CPU,
+		          RED_LED_TRIGGER_ON);
 		return -1;
 	}
 
-	if(led > LED_RED) {
+	if(led > RED_LED_RED) {
 		log_error("Unknown LED: %d (must be in [%d, %d])",
 		          led,
-		          LED_GREEN,
-		          LED_RED);
+		          RED_LED_GREEN,
+		          RED_LED_RED);
 		return -1;
 	}
 
@@ -89,43 +89,43 @@ int led_set_trigger(LED led, LEDTrigger trigger) {
     return 0;
 }
 
-LEDTrigger led_get_trigger(LED led) {
+REDLEDTrigger red_led_get_trigger(REDLED led) {
 	char buf[LED_TRIGGER_MAX_LENGTH+1] = {0};
 	FILE *f;
 	int length;
 	int i;
 
-	if(led > LED_RED) {
+	if(led > RED_LED_RED) {
 		log_error("Unknown LED: %d (must be in [%d, %d])",
 		          led,
-		          LED_GREEN,
-		          LED_RED);
+		          RED_LED_GREEN,
+		          RED_LED_RED);
 		return -1;
 	}
 
     if((f = fopen(led_path[led], "r")) == NULL) {
 		log_error("Could not open file %s", led_path[led]);
-        return LED_TRIGGER_ERROR;
+        return RED_LED_TRIGGER_ERROR;
     }
 
     if((length = fread(buf, sizeof(char), LED_TRIGGER_MAX_LENGTH, f)) <= 0) {
 		fclose(f);
 		log_error("Could not read from file %s", led_path[led]);
-		return LED_TRIGGER_ERROR;
+		return RED_LED_TRIGGER_ERROR;
 	}
 
 	buf[length] = '\0';
 
 	if(fclose(f) < 0) {
 		log_error("Could not close file %s", led_path[led]);
-		return LED_TRIGGER_ERROR;
+		return RED_LED_TRIGGER_ERROR;
 	}
 
 	char *start = strchr(buf, '[');
 	char *end = strchr(buf, ']');
 
 	if(start == NULL || end == NULL || start >= end) {
-		return LED_TRIGGER_UNKNOWN;
+		return RED_LED_TRIGGER_UNKNOWN;
 	}
 
 	++start; // skip '['
@@ -136,6 +136,5 @@ LEDTrigger led_get_trigger(LED led) {
 		}
 	}
 
-    return LED_TRIGGER_UNKNOWN;
+    return RED_LED_TRIGGER_UNKNOWN;
 }
-

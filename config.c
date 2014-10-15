@@ -134,7 +134,45 @@ static const char *config_format_log_level(LogLevel level) {
 	case LOG_LEVEL_WARN:  return "warn";
 	case LOG_LEVEL_INFO:  return "info";
 	case LOG_LEVEL_DEBUG: return "debug";
+
 	default:              return "<unknown>";
+	}
+}
+
+static int config_parse_red_led_trigger(const char *string, REDLEDTrigger *value) {
+	REDLEDTrigger tmp;
+
+	if (strcasecmp(string, "cpu") == 0) {
+		tmp = RED_LED_TRIGGER_CPU;
+	} else if (strcasecmp(string, "gpio") == 0) {
+		tmp = RED_LED_TRIGGER_GPIO;
+	} else if (strcasecmp(string, "heartbeat") == 0) {
+		tmp = RED_LED_TRIGGER_HEARTBEAT;
+	} else if (strcasecmp(string, "mmc") == 0) {
+		tmp = RED_LED_TRIGGER_MMC;
+	} else if (strcasecmp(string, "off") == 0) {
+		tmp = RED_LED_TRIGGER_OFF;
+	} else if (strcasecmp(string, "on") == 0) {
+		tmp = RED_LED_TRIGGER_ON;
+	} else {
+		return -1;
+	}
+
+	*value = tmp;
+
+	return 0;
+}
+
+static const char *config_format_red_led_trigger(REDLEDTrigger level) {
+	switch (level) {
+	case RED_LED_TRIGGER_CPU:       return "cpu";
+	case RED_LED_TRIGGER_GPIO:      return "gpio";
+	case RED_LED_TRIGGER_HEARTBEAT: return "heartbeat";
+	case RED_LED_TRIGGER_MMC:       return "mmc";
+	case RED_LED_TRIGGER_OFF:       return "off";
+	case RED_LED_TRIGGER_ON:        return "on";
+
+	default:                        return "<unknown>";
 	}
 }
 
@@ -234,6 +272,11 @@ int config_check(const char *filename) {
 
 		case CONFIG_OPTION_TYPE_LOG_LEVEL:
 			printf("%s", config_format_log_level(config_options[i].value.log_level));
+
+			break;
+
+		case CONFIG_OPTION_TYPE_RED_LED_TRIGGER:
+			printf("%s", config_format_red_led_trigger(config_options[i].value.red_led_trigger));
 
 			break;
 
@@ -363,6 +406,15 @@ void config_init(const char *filename) {
 
 		case CONFIG_OPTION_TYPE_LOG_LEVEL:
 			if (config_parse_log_level(value, &config_options[i].value.log_level) < 0) {
+				config_warn("Value '%s' for %s option is invalid", value, name);
+
+				goto cleanup;
+			}
+
+			break;
+
+		case CONFIG_OPTION_TYPE_RED_LED_TRIGGER:
+			if (config_parse_red_led_trigger(value, &config_options[i].value.red_led_trigger) < 0) {
 				config_warn("Value '%s' for %s option is invalid", value, name);
 
 				goto cleanup;
