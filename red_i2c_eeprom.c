@@ -184,7 +184,6 @@ int i2c_eeprom_write(I2CEEPROM *i2c_eeprom, uint16_t eeprom_memory_address,
 
         // Wait at least 5ms between writes (see m24128-bw.pdf)
         usleep(5*1000);
-        printf("pos: %d\n", i);
 
         if(_bytes_written != 3) {
             log_error("EEPROM write failed (pos(%d), length(%d), expected length(%d): %s (%d)",
