@@ -75,14 +75,21 @@ int event_init(void) {
 }
 
 void event_exit(void) {
+	int i;
+	EventSource *event_source;
+
 	log_debug("Shutting down event subsystem");
 
 	event_exit_platform();
 
 	event_cleanup_sources();
 
-	if (_event_sources.count > 0) {
-		log_warn("Leaking %d event sources", _event_sources.count);
+	for (i = 0; i < _event_sources.count; ++i) {
+		event_source = array_get(&_event_sources, i);
+
+		log_warn("Leaking %s event source (handle: %d, events: %d) at index %d",
+		         event_get_source_type_name(event_source->type, false),
+		         event_source->handle, event_source->events, i);
 	}
 
 	array_destroy(&_event_sources, NULL);
