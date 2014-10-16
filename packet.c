@@ -27,6 +27,7 @@
 
 #include "packet.h"
 
+#include "base58.h"
 #include "macros.h"
 #include "utils.h"
 

@@ -38,6 +38,8 @@
 
 #include "utils.h"
 
+#include "base58.h"
+
 #if !defined(_WIN32) && !defined(EAI_ADDRFAMILY)
 	#if EAI_AGAIN < 0
 		#define EAI_ADDRFAMILY -9
@@ -350,75 +352,6 @@ void string_append(char *target, int target_length, const char *source) {
 	target[target_length - 1] = '\0';
 }
 
-static const char *_base58_alphabet =
-	"123456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ";
-
-char *base58_encode(char *base58, uint32_t value) {
-	uint32_t digit;
-	char reverse[BASE58_MAX_LENGTH];
-	int i = 0;
-	int k = 0;
-
-	while (value >= 58) {
-		digit = value % 58;
-		reverse[i] = _base58_alphabet[digit];
-		value = value / 58;
-		++i;
-	}
-
-	reverse[i] = _base58_alphabet[value];
-
-	for (k = 0; k <= i; ++k) {
-		base58[k] = reverse[i - k];
-	}
-
-	for (; k < BASE58_MAX_LENGTH; ++k) {
-		base58[k] = '\0';
-	}
-
-	return base58;
-}
-
-// sets errno on error
-int base58_decode(uint32_t *value, const char *base58) {
-	int i;
-	const char *p;
-	int k;
-	uint32_t base = 1;
-
-	*value = 0;
-	i = strlen(base58) - 1;
-
-	if (i < 0) {
-		errno = EINVAL;
-
-		return -1;
-	}
-
-	for (; i >= 0; --i) {
-		p = strchr(_base58_alphabet, base58[i]);
-
-		if (p == NULL) {
-			errno = EINVAL;
-
-			return -1;
-		}
-
-		k = p - _base58_alphabet;
-
-		if (*value > UINT32_MAX - k * base) {
-			errno = ERANGE;
-
-			return -1;
-		}
-
-		*value += k * base;
-		base *= 58;
-	}
-
-	return 0;
-}
-
 // convert from host endian to little endian
 uint16_t uint16_to_le(uint16_t native) {
 	union {
@@ -551,32 +484,6 @@ int red_brick_uid(uint32_t *uid /* always little endian */) {
 	*uid = uint32_to_le(*uid);
 
 	return 0;
-}
-
-void node_reset(Node *node) {
-	node->prev = node;
-	node->next = node;
-}
-
-void node_insert_before(Node *node, Node *insert) {
-	insert->prev = node->prev;
-	node->prev = insert;
-	insert->next = insert->prev->next;
-	insert->prev->next = insert;
-}
-
-void node_insert_after(Node *node, Node *insert) {
-	insert->next = node->next;
-	node->next = insert;
-	insert->prev = insert->next->prev;
-	insert->next->prev = insert;
-}
-
-void node_remove(Node *node) {
-	node->next->prev = node->prev;
-	node->prev->next = node->next;
-
-	node_reset(node);
 }
 
 // sets errno on error
