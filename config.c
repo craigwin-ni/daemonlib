@@ -29,6 +29,7 @@
 #include "config.h"
 
 #include "conf_file.h"
+#include "enum.h"
 #include "utils.h"
 
 static bool _check_only = false;
@@ -36,6 +37,24 @@ static bool _has_error = false;
 static bool _has_warning = false;
 static bool _using_default_values = true;
 static ConfigOption _invalid = CONFIG_OPTION_STRING_INITIALIZER("<invalid>", NULL, 0, -1, "<invalid>");
+
+static EnumValueName _log_level_enum_value_names[] = {
+	{ LOG_LEVEL_ERROR, "error" },
+	{ LOG_LEVEL_WARN,  "warn" },
+	{ LOG_LEVEL_INFO,  "info" },
+	{ LOG_LEVEL_DEBUG, "debug" },
+	{ -1,              NULL }
+};
+
+static EnumValueName _red_led_trigger_enum_value_names[] = {
+	{ RED_LED_TRIGGER_CPU,       "cpu" },
+	{ RED_LED_TRIGGER_GPIO,      "gpio" },
+	{ RED_LED_TRIGGER_HEARTBEAT, "heartbeat" },
+	{ RED_LED_TRIGGER_MMC,       "mmc" },
+	{ RED_LED_TRIGGER_OFF,       "off" },
+	{ RED_LED_TRIGGER_ON,        "on" },
+	{ -1,                        NULL }
+};
 
 extern ConfigOption config_options[];
 
@@ -108,72 +127,29 @@ static int config_parse_int(const char *string, int *value) {
 }
 
 static int config_parse_log_level(const char *string, LogLevel *value) {
-	LogLevel tmp;
-
-	if (strcasecmp(string, "error") == 0) {
-		tmp = LOG_LEVEL_ERROR;
-	} else if (strcasecmp(string, "warn") == 0) {
-		tmp = LOG_LEVEL_WARN;
-	} else if (strcasecmp(string, "info") == 0) {
-		tmp = LOG_LEVEL_INFO;
-	} else if (strcasecmp(string, "debug") == 0) {
-		tmp = LOG_LEVEL_DEBUG;
-	} else {
-		return -1;
-	}
+	int tmp;
+	int rc = enum_get_value(_log_level_enum_value_names, string, &tmp, true);
 
 	*value = tmp;
 
-	return 0;
+	return rc;
 }
 
 static const char *config_format_log_level(LogLevel level) {
-	switch (level) {
-	case LOG_LEVEL_NONE:  return "none";
-	case LOG_LEVEL_ERROR: return "error";
-	case LOG_LEVEL_WARN:  return "warn";
-	case LOG_LEVEL_INFO:  return "info";
-	case LOG_LEVEL_DEBUG: return "debug";
-
-	default:              return "<unknown>";
-	}
+	return enum_get_name(_log_level_enum_value_names, level, "<unknown>");
 }
 
 static int config_parse_red_led_trigger(const char *string, REDLEDTrigger *value) {
-	REDLEDTrigger tmp;
-
-	if (strcasecmp(string, "cpu") == 0) {
-		tmp = RED_LED_TRIGGER_CPU;
-	} else if (strcasecmp(string, "gpio") == 0) {
-		tmp = RED_LED_TRIGGER_GPIO;
-	} else if (strcasecmp(string, "heartbeat") == 0) {
-		tmp = RED_LED_TRIGGER_HEARTBEAT;
-	} else if (strcasecmp(string, "mmc") == 0) {
-		tmp = RED_LED_TRIGGER_MMC;
-	} else if (strcasecmp(string, "off") == 0) {
-		tmp = RED_LED_TRIGGER_OFF;
-	} else if (strcasecmp(string, "on") == 0) {
-		tmp = RED_LED_TRIGGER_ON;
-	} else {
-		return -1;
-	}
+	int tmp;
+	int rc = enum_get_value(_red_led_trigger_enum_value_names, string, &tmp, true);
 
 	*value = tmp;
 
-	return 0;
+	return rc;
 }
 
-static const char *config_format_red_led_trigger(REDLEDTrigger level) {
-	switch (level) {
-	case RED_LED_TRIGGER_CPU:       return "cpu";
-	case RED_LED_TRIGGER_GPIO:      return "gpio";
-	case RED_LED_TRIGGER_HEARTBEAT: return "heartbeat";
-	case RED_LED_TRIGGER_MMC:       return "mmc";
-	case RED_LED_TRIGGER_OFF:       return "off";
-	case RED_LED_TRIGGER_ON:        return "on";
-
-	default:                        return "<unknown>";
-	}
+static const char *config_format_red_led_trigger(REDLEDTrigger trigger) {
+	return enum_get_name(_red_led_trigger_enum_value_names, trigger, "<unknown>");
 }
 
 static void config_report_read_warning(ConfFileReadWarning warning, int number,
@@ -252,7 +228,7 @@ int config_check(const char *filename) {
 
 		fputs("= ", stdout);
 
-		switch(config_options[i].type) {
+		switch (config_options[i].type) {
 		case CONFIG_OPTION_TYPE_STRING:
 			if (config_options[i].value.string != NULL) {
 				printf("%s", config_options[i].value.string);
