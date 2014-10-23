@@ -207,13 +207,8 @@ int timer_create_(Timer *timer, TimerFunction function, void *opaque) {
 
 	log_debug("Created waitable timer (handle: %p)", timer->waitable_timer);
 
-	phase = 5;
-
 cleanup:
 	switch (phase) { // no breaks, all cases fall through intentionally
-	case 4:
-		event_remove_source(timer->notification_pipe.read_end, EVENT_SOURCE_TYPE_GENERIC);
-
 	case 3:
 		CloseHandle(timer->interrupt_event);
 
@@ -227,7 +222,7 @@ cleanup:
 		break;
 	}
 
-	return phase == 5 ? 0 : -1;
+	return phase == 4 ? 0 : -1;
 }
 
 void timer_destroy(Timer *timer) {

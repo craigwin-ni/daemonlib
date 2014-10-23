@@ -186,13 +186,8 @@ int timer_create_(Timer *timer, TimerFunction function, void *opaque) {
 
 	log_debug("Created poll timer (handle: %d)", timer->notification_pipe.read_end);
 
-	phase = 4;
-
 cleanup:
 	switch (phase) { // no breaks, all cases fall through intentionally
-	case 3:
-		event_remove_source(timer->notification_pipe.read_end, EVENT_SOURCE_TYPE_GENERIC);
-
 	case 2:
 		pipe_destroy(&timer->interrupt_pipe);
 
@@ -203,7 +198,7 @@ cleanup:
 		break;
 	}
 
-	return phase == 4 ? 0 : -1;
+	return phase == 3 ? 0 : -1;
 }
 
 void timer_destroy(Timer *timer) {
