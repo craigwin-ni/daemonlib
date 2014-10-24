@@ -457,22 +457,15 @@ cleanup:
 // sets errno on error
 int conf_file_write(ConfFile *conf_file, const char *filename) {
 	bool success = false;
-	int length;
 	char filename_tmp[1024];
 	FILE *fp = NULL;
 	int i;
 	ConfFileLine *line;
 	int saved_errno;
 
-	length = strlen(filename);
-
-	if (length + strlen(".tmp") + 1 > sizeof(filename_tmp)) {
-		errno = ENAMETOOLONG;
-
+	if (robust_snprintf(filename_tmp, sizeof(filename_tmp), "%s.tmp", filename) < 0) {
 		goto cleanup;
 	}
-
-	snprintf(filename_tmp, sizeof(filename_tmp), "%s.tmp", filename);
 
 	// open <filename>.tmp for writing
 	fp = fopen(filename_tmp, "wb");
