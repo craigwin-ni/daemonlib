@@ -25,7 +25,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #ifndef _WIN32
-	#ifdef __linux__
+	#if defined(__linux__) && defined(DAEMONLIB_WITH_EPOLL)
 		#include <sys/epoll.h>
 	#else
 		#include <poll.h>
@@ -44,7 +44,7 @@ typedef enum { // bitmask
 	EVENT_PRIO  = 0x0002,
 	EVENT_ERROR = 0x0008
 #else
-	#ifdef __linux__
+	#if defined(__linux__) && defined(DAEMONLIB_WITH_EPOLL)
 		EVENT_READ  = EPOLLIN,
 		EVENT_WRITE = EPOLLOUT,
 		EVENT_PRIO  = EPOLLPRI,
