@@ -33,6 +33,9 @@
 // mmap
 #include <sys/mman.h>
 
+// strlen
+#include <string.h>
+
 #include "red_gpio.h"
 
 #include "log.h"
@@ -137,6 +140,11 @@ int gpio_sysfs_export(int gpio_num) {
 	rc = write(fd, buf, len);
 	close(fd);
 
+	// In this case the gpio was already exported
+	if(rc == -1 && errno == EBUSY) {
+		return 0;
+	}
+
 	return rc < 0 ? -1 : 0;
 }
 
@@ -151,6 +159,22 @@ int gpio_sysfs_unexport(int gpio_num) {
 
 	len = snprintf(buf, sizeof(buf), "%d", gpio_num);
 	rc = write(fd, buf, len);
+	close(fd);
+
+	return rc < 0 ? -1 : 0;
+}
+
+int gpio_sysfs_set_edge(const char *gpio_name, const char *edge) {
+	int fd, rc;
+	char buf[1024];
+
+	snprintf(buf, sizeof(buf), "%s%s%s", SYSFS_GPIO_DIR, gpio_name, "/edge");
+	fd = open(buf, O_WRONLY);
+	if(fd < 0) {
+		return -1;
+	}
+
+	rc = write(fd, edge, strlen(edge));
 	close(fd);
 
 	return rc < 0 ? -1 : 0;
