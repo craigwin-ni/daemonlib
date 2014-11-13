@@ -32,6 +32,7 @@
 #define LOG_CATEGORY LOG_CATEGORY_EVENT
 
 static Pipe _signal_pipe;
+static SIGHUPFunction _handle_sighup = NULL;
 static SIGUSR1Function _handle_sigusr1 = NULL;
 
 static void signal_handle(void *opaque) {
@@ -54,6 +55,12 @@ static void signal_handle(void *opaque) {
 		log_info("Received SIGTERM");
 
 		event_stop();
+	} else if (signal_number == SIGHUP) {
+		log_info("Received SIGHUP");
+
+		if (_handle_sighup != NULL) {
+			_handle_sighup();
+		}
 	} else if (signal_number == SIGUSR1) {
 		log_info("Received SIGUSR1");
 
@@ -69,9 +76,10 @@ static void signal_forward(int signal_number) {
 	pipe_write(&_signal_pipe, &signal_number, sizeof(signal_number));
 }
 
-int signal_init(SIGUSR1Function sigusr1) {
+int signal_init(SIGHUPFunction sighup, SIGUSR1Function sigusr1) {
 	int phase = 0;
 
+	_handle_sighup = sighup;
 	_handle_sigusr1 = sigusr1;
 
 	// create signal pipe
@@ -121,6 +129,16 @@ int signal_init(SIGUSR1Function sigusr1) {
 
 	phase = 5;
 
+	// handle SIGHUP to call a user provided function
+	if (signal(SIGHUP, signal_forward) == SIG_ERR) {
+		log_error("Could not install signal handler for SIGHUP: %s (%d)",
+		          get_errno_name(errno), errno);
+
+		goto cleanup;
+	}
+
+	phase = 6;
+
 	// handle SIGUSR1 to call a user provided function
 	if (signal(SIGUSR1, signal_forward) == SIG_ERR) {
 		log_error("Could not install signal handler for SIGUSR1: %s (%d)",
@@ -129,10 +147,13 @@ int signal_init(SIGUSR1Function sigusr1) {
 		goto cleanup;
 	}
 
-	phase = 6;
+	phase = 7;
 
 cleanup:
 	switch (phase) { // no breaks, all cases fall through intentionally
+	case 6:
+		signal(SIGHUP, SIG_DFL);
+
 	case 5:
 		signal(SIGPIPE, SIG_DFL);
 
@@ -152,11 +173,12 @@ cleanup:
 		break;
 	}
 
-	return phase == 6 ? 0 : -1;
+	return phase == 7 ? 0 : -1;
 }
 
 void signal_exit(void) {
 	signal(SIGUSR1, SIG_DFL);
+	signal(SIGHUP, SIG_DFL);
 	signal(SIGPIPE, SIG_DFL);
 	signal(SIGTERM, SIG_DFL);
 	signal(SIGINT, SIG_DFL);

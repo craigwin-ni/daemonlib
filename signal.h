@@ -22,9 +22,10 @@
 #ifndef DAEMONLIB_SIGNAL_H
 #define DAEMONLIB_SIGNAL_H
 
+typedef void (*SIGHUPFunction)(void);
 typedef void (*SIGUSR1Function)(void);
 
-int signal_init(SIGUSR1Function sigusr1);
+int signal_init(SIGHUPFunction sighup, SIGUSR1Function sigusr1);
 void signal_exit(void);
 
 #endif // DAEMONLIB_SIGNAL_H
