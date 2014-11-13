@@ -24,6 +24,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #ifndef _MSC_VER
 	#include <sys/time.h>
 #endif
@@ -406,15 +407,24 @@ void millisleep(uint32_t milliseconds) {
 }
 
 uint64_t microseconds(void) {
+#ifdef __linux__
+	struct timespec ts;
+
+	if (clock_gettime(CLOCK_MONOTONIC_RAW, &ts) < 0) {
+		return 0;
+	} else {
+		return ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
+	}
+#else
 	struct timeval tv;
 
-	// FIXME: use a monotonic source such as clock_gettime(CLOCK_MONOTONIC),
-	//        QueryPerformanceCounter() or mach_absolute_time()
+	// FIXME: use a monotonic source such as QueryPerformanceCounter() or mach_absolute_time()
 	if (gettimeofday(&tv, NULL) < 0) {
 		return 0;
 	} else {
 		return tv.tv_sec * 1000000 + tv.tv_usec;
 	}
+#endif
 }
 
 #if !defined _GNU_SOURCE && !defined __APPLE__
