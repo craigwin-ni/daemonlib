@@ -41,7 +41,6 @@
 #include "log.h"
 #include "utils.h"
 
-#define LOG_CATEGORY LOG_CATEGORY_OTHER
 #define GPIO_BASE 0x01c20800
 #define SYSFS_GPIO_DIR "/sys/class/gpio/"
 

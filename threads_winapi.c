@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2014 Matthias Bolte <matthias@tinkerforge.com>
  *
  * threads_winapi.c: WinAPI based thread and locking implementation
  *
@@ -26,8 +26,6 @@
 
 #include "log.h"
 #include "utils.h"
-
-#define LOG_CATEGORY LOG_CATEGORY_OTHER
 
 void mutex_create(Mutex *mutex) {
 	InitializeCriticalSection(&mutex->handle);

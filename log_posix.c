@@ -71,7 +71,6 @@ void log_apply_color_platform(LogLevel level, bool begin) {
 
 	if (begin) {
 		switch (level) {
-		case LOG_LEVEL_NONE:  color = "\033[1;35m"; break; // bold + magenta
 		case LOG_LEVEL_ERROR: color = "\033[1;31m"; break; // bold + red
 		// FIXME: yellow would be better for warning, but yellow has poor
 		//        contrast on white background. there seems to be no reasonable
@@ -85,7 +84,6 @@ void log_apply_color_platform(LogLevel level, bool begin) {
 		}
 	} else {
 		switch (level) {
-		case LOG_LEVEL_NONE:
 		case LOG_LEVEL_ERROR:
 		case LOG_LEVEL_WARN:
 		case LOG_LEVEL_INFO:  color = "\033[m";     break; // default
@@ -98,15 +96,13 @@ void log_apply_color_platform(LogLevel level, bool begin) {
 }
 
 // NOTE: assumes that _mutex (in log.c) is locked
-void log_secondary_output_platform(struct timeval *timestamp,
-                                   LogCategory category, LogLevel level,
-                                   const char *file, int line,
+void log_secondary_output_platform(struct timeval *timestamp, LogLevel level,
+                                   const char *filename, int line,
                                    const char *function, const char *format,
                                    va_list arguments) {
 	(void)timestamp;
-	(void)category;
 	(void)level;
-	(void)file;
+	(void)filename;
 	(void)line;
 	(void)function;
 	(void)format;

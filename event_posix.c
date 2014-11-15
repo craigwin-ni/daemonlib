@@ -28,8 +28,6 @@
 #include "log.h"
 #include "utils.h"
 
-#define LOG_CATEGORY LOG_CATEGORY_EVENT
-
 int event_init_platform(void) {
 	return 0;
 }

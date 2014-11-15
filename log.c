@@ -28,11 +28,12 @@
 
 #include "log.h"
 
+#include "config.h"
 #include "threads.h"
 
 static Mutex _mutex; // protects writing to _file
 static bool _debug_override = false;
-static LogLevel _levels[MAX_LOG_CATEGORIES]; // log_init initializes this
+static LogLevel _level = LOG_LEVEL_INFO;
 static FILE *_file = NULL;
 
 extern bool _log_debug_override_platform;
@@ -41,22 +42,19 @@ extern void log_init_platform(FILE *file);
 extern void log_exit_platform(void);
 extern void log_set_file_platform(FILE *file);
 extern void log_apply_color_platform(LogLevel level, bool begin);
-extern void log_secondary_output_platform(struct timeval *timestamp,
-                                          LogCategory category, LogLevel level,
-                                          const char *file, int line,
+extern void log_secondary_output_platform(struct timeval *timestamp, LogLevel level,
+                                          const char *filename, int line,
                                           const char *function, const char *format,
                                           va_list arguments);
 
 // NOTE: assumes that _mutex is locked
-static void log_primary_output(struct timeval *timestamp, LogCategory category,
-                               LogLevel level, const char *file, int line,
-                               const char *function, const char *format,
-                               va_list arguments) {
-	time_t t;
-	struct tm lt;
-	char lt_string[64] = "<unknown>";
+static void log_primary_output(struct timeval *timestamp, LogLevel level,
+                               const char *filename, int line, const char *function,
+                               const char *format, va_list arguments) {
+	time_t unix_seconds;
+	struct tm localized_timestamp;
+	char formatted_timestamp[64] = "<unknown>";
 	char level_char = 'U';
-	const char *category_name = "unknown";
 
 	(void)function;
 
@@ -70,45 +68,28 @@ static void log_primary_output(struct timeval *timestamp, LogCategory category,
 	// version and platforms. for example with WDK 7 both are 4 byte in
 	// size, but with MSVC 2010 time_t is 8 byte in size but timeval.tv_sec
 	// is still 4 byte in size.
-	t = timestamp->tv_sec;
+	unix_seconds = timestamp->tv_sec;
 
 	// format time
-	if (localtime_r(&t, &lt) != NULL) {
-		strftime(lt_string, sizeof(lt_string), "%Y-%m-%d %H:%M:%S", &lt);
+	if (localtime_r(&unix_seconds, &localized_timestamp) != NULL) {
+		strftime(formatted_timestamp, sizeof(formatted_timestamp),
+		         "%Y-%m-%d %H:%M:%S", &localized_timestamp);
 	}
 
 	// format level
 	switch (level) {
-	case LOG_LEVEL_NONE:  level_char = 'N'; break;
 	case LOG_LEVEL_ERROR: level_char = 'E'; break;
 	case LOG_LEVEL_WARN:  level_char = 'W'; break;
 	case LOG_LEVEL_INFO:  level_char = 'I'; break;
 	case LOG_LEVEL_DEBUG: level_char = 'D'; break;
 	}
 
-	// format category
-	switch (category) {
-	case LOG_CATEGORY_EVENT:     category_name = "event";     break;
-	case LOG_CATEGORY_USB:       category_name = "usb";       break;
-	case LOG_CATEGORY_NETWORK:   category_name = "network";   break;
-	case LOG_CATEGORY_HOTPLUG:   category_name = "hotplug";   break;
-	case LOG_CATEGORY_HARDWARE:  category_name = "hardware";  break;
-	case LOG_CATEGORY_WEBSOCKET: category_name = "websocket"; break;
-	case LOG_CATEGORY_RED_BRICK: category_name = "red-brick"; break;
-	case LOG_CATEGORY_SPI:       category_name = "spi";       break;
-	case LOG_CATEGORY_RS485:     category_name = "rs485";     break;
-	case LOG_CATEGORY_API:       category_name = "api";       break;
-	case LOG_CATEGORY_OBJECT:    category_name = "object";    break;
-	case LOG_CATEGORY_OTHER:     category_name = "other";     break;
-	case LOG_CATEGORY_LIBUSB:    category_name = "libusb";    break;
-	}
-
 	// begin color
 	log_apply_color_platform(level, true);
 
 	// print prefix
-	fprintf(_file, "%s.%06d <%c> <%s|%s:%d> ",
-	        lt_string, (int)timestamp->tv_usec, level_char, category_name, file, line);
+	fprintf(_file, "%s.%06d <%c> <%s:%d> ",
+	        formatted_timestamp, (int)timestamp->tv_usec, level_char, filename, line);
 
 	// print message
 	vfprintf(_file, format, arguments);
@@ -121,14 +102,9 @@ static void log_primary_output(struct timeval *timestamp, LogCategory category,
 }
 
 void log_init(void) {
-	int i;
-
 	mutex_create(&_mutex);
 
-	for (i = 0; i < MAX_LOG_CATEGORIES; ++i) {
-		_levels[i] = LOG_LEVEL_INFO;
-	}
-
+	_level = config_get_option_value("log.level")->log_level;
 	_file = stderr;
 
 	log_init_platform(_file);
@@ -152,17 +128,11 @@ void log_set_debug_override(bool override) {
 	_debug_override = override;
 }
 
-void log_set_level(LogCategory category, LogLevel level) {
-	if (category != LOG_CATEGORY_LIBUSB) {
-		_levels[category] = level;
-	}
-}
-
-LogLevel log_get_effective_level(LogCategory category) {
-	if (_debug_override || _log_debug_override_platform || category == LOG_CATEGORY_LIBUSB) {
+LogLevel log_get_effective_level(void) {
+	if (_debug_override || _log_debug_override_platform) {
 		return LOG_LEVEL_DEBUG;
 	} else {
-		return _levels[category];
+		return _level;
 	}
 }
 
@@ -180,7 +150,7 @@ FILE *log_get_file(void) {
 	return _file;
 }
 
-void log_message(LogCategory category, LogLevel level, const char *file, int line,
+void log_message(LogLevel level, const char *filename, int line,
                  const char *function, const char *format, ...) {
 	struct timeval timestamp;
 	const char *p;
@@ -194,28 +164,28 @@ void log_message(LogCategory category, LogLevel level, const char *file, int lin
 	}
 
 	// only keep last part of filename
-	p = strrchr(file, '/');
+	p = strrchr(filename, '/');
 
 	if (p != NULL) {
-		file = p + 1;
+		filename = p + 1;
 	}
 
-	p = strrchr(file, '\\');
+	p = strrchr(filename, '\\');
 
 	if (p != NULL) {
-		file = p + 1;
+		filename = p + 1;
 	}
 
 	// call log handlers
 	va_start(arguments, format);
 	log_lock();
 
-	if (_debug_override || level <= _levels[category]) {
-		log_primary_output(&timestamp, category, level, file, line, function, format, arguments);
+	if (level <= _level || _debug_override) {
+		log_primary_output(&timestamp, level, filename, line, function, format, arguments);
 	}
 
-	if (_debug_override || _log_debug_override_platform || level <= _levels[category]) {
-		log_secondary_output_platform(&timestamp, category, level, file, line, function, format, arguments);
+	if (level <= _level || _debug_override || _log_debug_override_platform) {
+		log_secondary_output_platform(&timestamp, level, filename, line, function, format, arguments);
 	}
 
 	log_unlock();

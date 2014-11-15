@@ -31,8 +31,6 @@
 #include "log.h"
 #include "utils.h"
 
-#define LOG_CATEGORY LOG_CATEGORY_EVENT
-
 static int _epollfd = -1;
 static int _epollfd_event_count = 0;
 

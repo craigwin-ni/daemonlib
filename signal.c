@@ -29,8 +29,6 @@
 #include "pipe.h"
 #include "utils.h"
 
-#define LOG_CATEGORY LOG_CATEGORY_EVENT
-
 static Pipe _signal_pipe;
 static SIGHUPFunction _handle_sighup = NULL;
 static SIGUSR1Function _handle_sigusr1 = NULL;

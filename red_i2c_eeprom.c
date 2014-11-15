@@ -37,8 +37,6 @@
 #include "log.h"
 #include "utils.h"
 
-#define LOG_CATEGORY LOG_CATEGORY_RED_BRICK
-
 void _i2c_eeprom_select(I2CEEPROM *i2c_eeprom) {
     // address pin high
     gpio_output_set(i2c_eeprom->address_pin);

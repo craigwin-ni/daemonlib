@@ -29,8 +29,6 @@
 #include "pipe.h"
 #include "utils.h"
 
-#define LOG_CATEGORY LOG_CATEGORY_EVENT
-
 static Array _event_sources;
 static bool _running = false;
 static bool _stop_requested = false;

@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2013 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2014 Matthias Bolte <matthias@tinkerforge.com>
  * Copyright (C) 2014 Olaf Lüke <olaf@tinkerforge.com>
  *
  * log.h: Logging specific functions
@@ -30,26 +30,7 @@
 #include "macros.h"
 
 typedef enum {
-	LOG_CATEGORY_EVENT = 0,
-	LOG_CATEGORY_USB,
-	LOG_CATEGORY_NETWORK,
-	LOG_CATEGORY_HOTPLUG,
-	LOG_CATEGORY_HARDWARE,
-	LOG_CATEGORY_WEBSOCKET,
-	LOG_CATEGORY_RED_BRICK,
-	LOG_CATEGORY_SPI,
-	LOG_CATEGORY_RS485,
-	LOG_CATEGORY_API,
-	LOG_CATEGORY_OBJECT,
-	LOG_CATEGORY_OTHER,
-	LOG_CATEGORY_LIBUSB = 255 // special case, just for LogPipeMessage (WinAPI)
-} LogCategory;
-
-#define MAX_LOG_CATEGORIES 12
-
-typedef enum {
-	LOG_LEVEL_NONE = 0,
-	LOG_LEVEL_ERROR,
+	LOG_LEVEL_ERROR = 0,
 	LOG_LEVEL_WARN,
 	LOG_LEVEL_INFO,
 	LOG_LEVEL_DEBUG
@@ -59,9 +40,8 @@ typedef enum {
 	#ifdef _MSC_VER
 		#define log_message_checked(level, ...) \
 			do { \
-				if ((level) <= log_get_effective_level(LOG_CATEGORY)) { \
-					log_message(LOG_CATEGORY, level, __FILE__, \
-					            __LINE__, __FUNCTION__, __VA_ARGS__); \
+				if ((level) <= log_get_effective_level()) { \
+					log_message(level, __FILE__, __LINE__, __FUNCTION__, __VA_ARGS__); \
 				} \
 			__pragma(warning(push)) \
 			__pragma(warning(disable:4127)) \
@@ -70,9 +50,8 @@ typedef enum {
 	#else
 		#define log_message_checked(level, ...) \
 			do { \
-				if ((level) <= log_get_effective_level(LOG_CATEGORY)) { \
-					log_message(LOG_CATEGORY, level, __FILE__, \
-					            __LINE__, __FUNCTION__, __VA_ARGS__); \
+				if ((level) <= log_get_effective_level()) { \
+					log_message(level, __FILE__, __LINE__, __FUNCTION__, __VA_ARGS__); \
 				} \
 			} while (0)
 	#endif
@@ -96,14 +75,12 @@ void log_unlock(void);
 
 void log_set_debug_override(bool override);
 
-void log_set_level(LogCategory category, LogLevel level);
-LogLevel log_get_effective_level(LogCategory category);
+LogLevel log_get_effective_level(void);
 
 void log_set_file(FILE *file);
 FILE *log_get_file(void);
 
-void log_message(LogCategory category, LogLevel level,
-                 const char *file, int line, const char *function,
-                 const char *format, ...) ATTRIBUTE_FMT_PRINTF(6, 7);
+void log_message(LogLevel level, const char *filename, int line,
+                 const char *function, const char *format, ...) ATTRIBUTE_FMT_PRINTF(5, 6);
 
 #endif // DAEMONLIB_LOG_H

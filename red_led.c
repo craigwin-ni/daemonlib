@@ -24,17 +24,14 @@
 #include <string.h>
 
 #include "red_led.h"
+
 #include "log.h"
-
-#define LOG_CATEGORY LOG_CATEGORY_OTHER
-
 
 #define LED_TRIGGER_NUM 6
 #define LED_TRIGGER_STR_MAX_LENGTH 11
 #define LED_PATH_STR_MAX_LENGTH 42
 
 #define LED_TRIGGER_MAX_LENGTH 1024
-
 
 static const char trigger_str[][LED_TRIGGER_STR_MAX_LENGTH] = {
 	"cpu0",

@@ -29,8 +29,6 @@
 #include "log.h"
 #include "utils.h"
 
-#define LOG_CATEGORY LOG_CATEGORY_OTHER
-
 static void timer_handle_read(void *opaque) {
 	Timer *timer = opaque;
 	uint64_t value;
