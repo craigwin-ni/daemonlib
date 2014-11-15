@@ -104,7 +104,7 @@ static void log_primary_output(struct timeval *timestamp, LogLevel level,
 void log_init(void) {
 	mutex_create(&_mutex);
 
-	_level = config_get_option_value("log.level")->log_level;
+	_level = config_get_option_value("log.level")->symbol;
 	_file = stderr;
 
 	log_init_platform(_file);

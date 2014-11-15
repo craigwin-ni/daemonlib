@@ -36,7 +36,7 @@ static bool _check_only = false;
 static bool _has_error = false;
 static bool _has_warning = false;
 static bool _using_default_values = true;
-static ConfigOption _invalid = CONFIG_OPTION_STRING_INITIALIZER("<invalid>", NULL, 0, -1, "<invalid>");
+static ConfigOption _invalid = CONFIG_OPTION_STRING_INITIALIZER("<invalid>", 0, -1, "<invalid>");
 
 static EnumValueName _log_level_enum_value_names[] = {
 	{ LOG_LEVEL_ERROR, "error" },
@@ -44,16 +44,6 @@ static EnumValueName _log_level_enum_value_names[] = {
 	{ LOG_LEVEL_INFO,  "info" },
 	{ LOG_LEVEL_DEBUG, "debug" },
 	{ -1,              NULL }
-};
-
-static EnumValueName _red_led_trigger_enum_value_names[] = {
-	{ RED_LED_TRIGGER_CPU,       "cpu" },
-	{ RED_LED_TRIGGER_GPIO,      "gpio" },
-	{ RED_LED_TRIGGER_HEARTBEAT, "heartbeat" },
-	{ RED_LED_TRIGGER_MMC,       "mmc" },
-	{ RED_LED_TRIGGER_OFF,       "off" },
-	{ RED_LED_TRIGGER_ON,        "on" },
-	{ -1,                        NULL }
 };
 
 extern ConfigOption config_options[];
@@ -126,32 +116,6 @@ static int config_parse_int(const char *string, int *value) {
 	return 0;
 }
 
-static int config_parse_log_level(const char *string, LogLevel *value) {
-	int tmp;
-	int rc = enum_get_value(_log_level_enum_value_names, string, &tmp, true);
-
-	*value = tmp;
-
-	return rc;
-}
-
-static const char *config_format_log_level(LogLevel level) {
-	return enum_get_name(_log_level_enum_value_names, level, "<unknown>");
-}
-
-static int config_parse_red_led_trigger(const char *string, REDLEDTrigger *value) {
-	int tmp;
-	int rc = enum_get_value(_red_led_trigger_enum_value_names, string, &tmp, true);
-
-	*value = tmp;
-
-	return rc;
-}
-
-static const char *config_format_red_led_trigger(REDLEDTrigger trigger) {
-	return enum_get_name(_red_led_trigger_enum_value_names, trigger, "<unknown>");
-}
-
 static void config_report_read_warning(ConfFileReadWarning warning, int number,
                                        const char *buffer, void *opaque) {
 	(void)opaque;
@@ -177,6 +141,14 @@ static void config_report_read_warning(ConfFileReadWarning warning, int number,
 
 		break;
 	}
+}
+
+int config_parse_log_level(const char *string, int *value) {
+	return enum_get_value(_log_level_enum_value_names, string, value, true);
+}
+
+const char *config_format_log_level(int level) {
+	return enum_get_name(_log_level_enum_value_names, level, "<unknown>");
 }
 
 int config_check(const char *filename) {
@@ -246,13 +218,8 @@ int config_check(const char *filename) {
 
 			break;
 
-		case CONFIG_OPTION_TYPE_LOG_LEVEL:
-			printf("%s", config_format_log_level(config_options[i].value.log_level));
-
-			break;
-
-		case CONFIG_OPTION_TYPE_RED_LED_TRIGGER:
-			printf("%s", config_format_red_led_trigger(config_options[i].value.red_led_trigger));
+		case CONFIG_OPTION_TYPE_SYMBOL:
+			printf("%s", config_options[i].symbol_format_name(config_options[i].value.symbol));
 
 			break;
 
@@ -276,7 +243,6 @@ cleanup:
 void config_init(const char *filename) {
 	ConfFile conf_file;
 	int i;
-	const char *name;
 	const char *value;
 	int length;
 	int integer;
@@ -305,13 +271,7 @@ void config_init(const char *filename) {
 	_using_default_values = false;
 
 	for (i = 0; config_options[i].name != NULL; ++i) {
-		name = config_options[i].name;
-		value = conf_file_get_option_value(&conf_file, name);
-
-		if (value == NULL && config_options[i].legacy_name != NULL) {
-			name = config_options[i].legacy_name;
-			value = conf_file_get_option_value(&conf_file, name);
-		}
+		value = conf_file_get_option_value(&conf_file, config_options[i].name);
 
 		if (value == NULL) {
 			continue;
@@ -328,20 +288,21 @@ void config_init(const char *filename) {
 
 			if (length < config_options[i].string_min_length) {
 				config_warn("Value '%s' for %s option is too short (minimum: %d chars)",
-				            value, name, config_options[i].string_min_length);
+				            value, config_options[i].name, config_options[i].string_min_length);
 
 				goto cleanup;
 			} else if (config_options[i].string_max_length >= 0 &&
 			           length > config_options[i].string_max_length) {
 				config_warn("Value '%s' for %s option is too long (maximum: %d chars)",
-				            value, name, config_options[i].string_max_length);
+				            value, config_options[i].name, config_options[i].string_max_length);
 
 				goto cleanup;
 			} else if (length > 0) {
 				config_options[i].value.string = strdup(value);
 
 				if (config_options[i].value.string == NULL) {
-					config_error("Could not duplicate %s value '%s'", name, value);
+					config_error("Could not duplicate %s value '%s'",
+					             config_options[i].name, value);
 
 					goto cleanup;
 				}
@@ -351,14 +312,16 @@ void config_init(const char *filename) {
 
 		case CONFIG_OPTION_TYPE_INTEGER:
 			if (config_parse_int(value, &integer) < 0) {
-				config_warn("Value '%s' for %s option is not an integer", value, name);
+				config_warn("Value '%s' for %s option is not an integer",
+				            value, config_options[i].name);
 
 				goto cleanup;
 			}
 
 			if (integer < config_options[i].integer_min || integer > config_options[i].integer_max) {
 				config_warn("Value %d for %s option is out-of-range (minimum: %d, maximum: %d)",
-				            integer, name, config_options[i].integer_min, config_options[i].integer_max);
+				            integer, config_options[i].name,
+				            config_options[i].integer_min, config_options[i].integer_max);
 
 				goto cleanup;
 			}
@@ -373,25 +336,17 @@ void config_init(const char *filename) {
 			} else if (strcasecmp(value, "off") == 0) {
 				config_options[i].value.boolean = false;
 			} else {
-				config_warn("Value '%s' for %s option is invalid", value, name);
+				config_warn("Value '%s' for %s option is invalid",
+				            value, config_options[i].name);
 
 				goto cleanup;
 			}
 
 			break;
 
-		case CONFIG_OPTION_TYPE_LOG_LEVEL:
-			if (config_parse_log_level(value, &config_options[i].value.log_level) < 0) {
-				config_warn("Value '%s' for %s option is invalid", value, name);
-
-				goto cleanup;
-			}
-
-			break;
-
-		case CONFIG_OPTION_TYPE_RED_LED_TRIGGER:
-			if (config_parse_red_led_trigger(value, &config_options[i].value.red_led_trigger) < 0) {
-				config_warn("Value '%s' for %s option is invalid", value, name);
+		case CONFIG_OPTION_TYPE_SYMBOL:
+			if (config_options[i].symbol_parse_value(value, &config_options[i].value.symbol) < 0) {
+				config_warn("Value '%s' for %s option is invalid", value, config_options[i].name);
 
 				goto cleanup;
 			}
