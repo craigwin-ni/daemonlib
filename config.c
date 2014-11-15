@@ -152,7 +152,6 @@ const char *config_format_log_level(int level) {
 }
 
 int config_check(const char *filename) {
-	bool success = false;
 	int i;
 	int length;
 	int maximum_length = 0;
@@ -165,16 +164,12 @@ int config_check(const char *filename) {
 	if (_has_error) {
 		fprintf(stderr, "Error(s) occurred while reading config file '%s'\n", filename);
 
-		goto cleanup;
-	}
+		config_exit();
 
-	if (_has_warning) {
-		fprintf(stderr, "Warning(s) in config file '%s'\n", filename);
-
-		goto cleanup;
-	}
-
-	if (_using_default_values) {
+		return -1;
+	} else if (_has_warning) {
+		printf("Warning(s) in config file '%s'\n", filename);
+	} else if (_using_default_values) {
 		printf("Config file '%s' not found, using default values\n", filename);
 	} else {
 		printf("No warnings or errors in config file '%s'\n", filename);
@@ -232,12 +227,9 @@ int config_check(const char *filename) {
 		printf("\n");
 	}
 
-	success = true;
-
-cleanup:
 	config_exit();
 
-	return success ? 0 : -1;
+	return _has_warning ? -1 : 0;
 }
 
 void config_init(const char *filename) {
@@ -289,18 +281,16 @@ void config_init(const char *filename) {
 			if (length < config_options[i].string_min_length) {
 				config_warn("Value '%s' for %s option is too short (minimum: %d chars)",
 				            value, config_options[i].name, config_options[i].string_min_length);
-
-				goto cleanup;
 			} else if (config_options[i].string_max_length >= 0 &&
 			           length > config_options[i].string_max_length) {
 				config_warn("Value '%s' for %s option is too long (maximum: %d chars)",
 				            value, config_options[i].name, config_options[i].string_max_length);
-
-				goto cleanup;
 			} else if (length > 0) {
 				config_options[i].value.string = strdup(value);
 
 				if (config_options[i].value.string == NULL) {
+					config_options[i].value.string = config_options[i].default_value.string;
+
 					config_error("Could not duplicate %s value '%s'",
 					             config_options[i].name, value);
 
@@ -314,19 +304,13 @@ void config_init(const char *filename) {
 			if (config_parse_int(value, &integer) < 0) {
 				config_warn("Value '%s' for %s option is not an integer",
 				            value, config_options[i].name);
-
-				goto cleanup;
-			}
-
-			if (integer < config_options[i].integer_min || integer > config_options[i].integer_max) {
+			} else if (integer < config_options[i].integer_min || integer > config_options[i].integer_max) {
 				config_warn("Value %d for %s option is out-of-range (minimum: %d, maximum: %d)",
 				            integer, config_options[i].name,
 				            config_options[i].integer_min, config_options[i].integer_max);
-
-				goto cleanup;
+			} else {
+				config_options[i].value.integer = integer;
 			}
-
-			config_options[i].value.integer = integer;
 
 			break;
 
@@ -338,8 +322,6 @@ void config_init(const char *filename) {
 			} else {
 				config_warn("Value '%s' for %s option is invalid",
 				            value, config_options[i].name);
-
-				goto cleanup;
 			}
 
 			break;
@@ -347,8 +329,6 @@ void config_init(const char *filename) {
 		case CONFIG_OPTION_TYPE_SYMBOL:
 			if (config_options[i].symbol_parse_value(value, &config_options[i].value.symbol) < 0) {
 				config_warn("Value '%s' for %s option is invalid", value, config_options[i].name);
-
-				goto cleanup;
 			}
 
 			break;
