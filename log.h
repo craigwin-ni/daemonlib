@@ -30,6 +30,7 @@
 #include "macros.h"
 
 typedef enum {
+	LOG_LEVEL_DUMMY = -1, // force signed enum to avoid "unsigned expression >= 0 is always true" warnings
 	LOG_LEVEL_ERROR = 0,
 	LOG_LEVEL_WARN,
 	LOG_LEVEL_INFO,

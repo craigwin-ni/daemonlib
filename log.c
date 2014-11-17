@@ -54,7 +54,7 @@ static void log_primary_output(struct timeval *timestamp, LogLevel level,
 	time_t unix_seconds;
 	struct tm localized_timestamp;
 	char formatted_timestamp[64] = "<unknown>";
-	char level_char = 'U';
+	char level_char;
 
 	(void)function;
 
@@ -82,6 +82,7 @@ static void log_primary_output(struct timeval *timestamp, LogLevel level,
 	case LOG_LEVEL_WARN:  level_char = 'W'; break;
 	case LOG_LEVEL_INFO:  level_char = 'I'; break;
 	case LOG_LEVEL_DEBUG: level_char = 'D'; break;
+	default:              level_char = 'U'; break;
 	}
 
 	// begin color
@@ -155,6 +156,10 @@ void log_message(LogLevel level, const char *filename, int line,
 	struct timeval timestamp;
 	const char *p;
 	va_list arguments;
+
+	if (level == LOG_LEVEL_DUMMY) {
+		return; // should never be reachable
+	}
 
 	// record timestamp before locking the mutex. this results in more accurate
 	// timing of log message if the mutex is contended
