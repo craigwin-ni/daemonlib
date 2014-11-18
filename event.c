@@ -378,14 +378,14 @@ void event_cleanup_sources(void) {
 
 void event_handle_source(EventSource *event_source, uint32_t received_events) {
 	if (event_source->state != EVENT_SOURCE_STATE_NORMAL) {
-		log_debug("Ignoring %s event source (handle: %d, received events: %u) in state transition",
+		log_debug("Ignoring %s event source (handle: %d, received-events: %u) in state transition",
 		          event_get_source_type_name(event_source->type, false),
 		          event_source->handle, received_events);
 
 		return;
 	}
 
-	log_debug("Handling %s event source (handle: %d, received events: %u)",
+	log_debug("Handling %s event source (handle: %d, received-events: %u)",
 	          event_get_source_type_name(event_source->type, false),
 	          event_source->handle, received_events);
 
@@ -419,7 +419,7 @@ void event_handle_source(EventSource *event_source, uint32_t received_events) {
 			// if the event source got removed in the meantime then don't deliver
 			// the write event anymore
 			if (event_source->state == EVENT_SOURCE_STATE_REMOVED) {
-				log_debug("Ignoring removed %s event source (handle: %d, received events: %u)",
+				log_debug("Ignoring removed %s event source (handle: %d, received-events: %u)",
 				          event_get_source_type_name(event_source->type, false),
 				          event_source->handle, received_events);
 
@@ -433,7 +433,7 @@ void event_handle_source(EventSource *event_source, uint32_t received_events) {
 			// if the event source got removed in the meantime then don't deliver
 			// the write event anymore
 			if (event_source->state == EVENT_SOURCE_STATE_REMOVED) {
-				log_debug("Ignoring removed %s event source (handle: %d, received events: %u)",
+				log_debug("Ignoring removed %s event source (handle: %d, received-events: %u)",
 				          event_get_source_type_name(event_source->type, false),
 				          event_source->handle, received_events);
 
@@ -447,7 +447,7 @@ void event_handle_source(EventSource *event_source, uint32_t received_events) {
 			// if the event source got removed in the meantime then don't deliver
 			// the write event anymore
 			if (event_source->state == EVENT_SOURCE_STATE_REMOVED) {
-				log_debug("Ignoring removed %s event source (handle: %d, received events: %u)",
+				log_debug("Ignoring removed %s event source (handle: %d, received-events: %u)",
 				          event_get_source_type_name(event_source->type, false),
 				          event_source->handle, received_events);
 
