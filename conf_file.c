@@ -133,7 +133,7 @@ static int conf_file_write_escaped(FILE *fp, const char *string, bool name) {
 
 	for (p = string; *p != '\0'; ++p) {
 		// check if printable ASCII character has to be encoded
-		printable = *p >= ' ' && *p <= '~'; // is printable ASCII character?
+		printable = *p >= ' ' && *p <= '~' && *p != '\\'; // is printable ASCII character (excluding bashslash)?
 		comment = *p == '#' && p == string; // is comment start?
 		whitespace = *p == ' ' && (p == string || *(p + 1) == '\0'); // has leading/trailing whitespace?
 
