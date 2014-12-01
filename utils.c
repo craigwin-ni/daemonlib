@@ -410,7 +410,11 @@ uint64_t microseconds(void) {
 #ifdef __linux__
 	struct timespec ts;
 
+	#ifdef CLOCK_MONOTONIC_RAW
 	if (clock_gettime(CLOCK_MONOTONIC_RAW, &ts) < 0) {
+	#else
+	if (clock_gettime(CLOCK_MONOTONIC, &ts) < 0) {
+	#endif
 		return 0;
 	} else {
 		return ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
