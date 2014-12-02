@@ -129,7 +129,7 @@ void pipe_destroy(Pipe *pipe) {
 
 // sets errno on error
 int pipe_read(Pipe *pipe, void *buffer, int length) {
-	// FIXME: handle partial read and interruption
+	// FIXME: handle interruption
 	length = recv(pipe->read_end, (char *)buffer, length, 0);
 
 	if (length == SOCKET_ERROR) {

@@ -83,12 +83,10 @@ void pipe_destroy(Pipe *pipe) {
 
 // sets errno on error
 int pipe_read(Pipe *pipe, void *buffer, int length) {
-	// FIXME: handle partial read
 	return robust_read(pipe->read_end, buffer, length);
 }
 
 // sets errno on error
 int pipe_write(Pipe *pipe, void *buffer, int length) {
-	// FIXME: handle partial write
 	return robust_write(pipe->write_end, buffer, length);
 }

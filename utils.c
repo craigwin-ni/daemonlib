@@ -516,6 +516,7 @@ int robust_write(int fd, const void *buffer, int length) {
 	int rc;
 
 	do {
+		// FIXME: handle partial write
 		rc = write(fd, buffer, length);
 	} while (rc < 0 && errno_interrupted());
 
@@ -538,6 +539,7 @@ int robust_fwrite(FILE *fp, const void *buffer, int length) {
 	int rc;
 
 	do {
+		// FIXME: handle partial fwrite
 		rc = fwrite(buffer, 1, length, fp);
 	} while (rc == 0 && ferror(fp) && errno_interrupted());
 
