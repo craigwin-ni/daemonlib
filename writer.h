@@ -35,6 +35,11 @@ typedef char *(*WriterRecipientSignatureFunction)(char *signature, bool upper, v
 typedef void (*WriterRecipientDisconnectFunction)(void *opaque);
 
 typedef struct {
+	Packet packet;
+	int written;
+} PartialPacket;
+
+typedef struct {
 	IO *io;
 	const char *packet_type; // for display purpose
 	WriterPacketSignatureFunction packet_signature;

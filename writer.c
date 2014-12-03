@@ -31,7 +31,10 @@
 
 static void writer_handle_write(void *opaque) {
 	Writer *writer = opaque;
-	Packet *packet;
+	PartialPacket *partial_packet;
+	void *remaining_data;
+	int remaining_length;
+	int rc;
 	char packet_signature[PACKET_MAX_SIGNATURE_LENGTH];
 	char recipient_signature[WRITER_MAX_RECIPIENT_SIGNATURE_LENGTH];
 
@@ -39,18 +42,32 @@ static void writer_handle_write(void *opaque) {
 		return;
 	}
 
-	packet = queue_peek(&writer->backlog);
+	// write remaining packet data
+	partial_packet = queue_peek(&writer->backlog);
+	remaining_data = (uint8_t *)&partial_packet->packet + partial_packet->written;
+	remaining_length = (int)partial_packet->packet.header.length - partial_packet->written;
 
-	if (io_write(writer->io, packet, packet->header.length) < 0) {
-		log_error("Could not send queued %s (%s) to %s, disconnecting %s: %s (%d)",
-		          writer->packet_type,
-		          writer->packet_signature(packet_signature, packet),
-		          writer->recipient_signature(recipient_signature, false, writer->opaque),
-		          writer->recipient_name,
-		          get_errno_name(errno), errno);
+	if (remaining_length > 0) {
+		rc = io_write(writer->io, remaining_data, remaining_length);
 
-		writer->recipient_disconnect(writer->opaque);
+		if (rc < 0) {
+			log_error("Could not send queued %s (%s) to %s, disconnecting %s: %s (%d)",
+			          writer->packet_type,
+			          writer->packet_signature(packet_signature, &partial_packet->packet),
+			          writer->recipient_signature(recipient_signature, false, writer->opaque),
+			          writer->recipient_name,
+			          get_errno_name(errno), errno);
 
+			writer->recipient_disconnect(writer->opaque);
+
+			return;
+		}
+
+		partial_packet->written += rc;
+	}
+
+	// if packet was no completely written then don't remove it from the backlog yet
+	if (partial_packet->written < (int)partial_packet->packet.header.length) {
 		return;
 	}
 
@@ -58,7 +75,7 @@ static void writer_handle_write(void *opaque) {
 
 	log_debug("Sent queued %s (%s) to %s, %d %s(s) left in write backlog",
 	          writer->packet_type,
-	          writer->packet_signature(packet_signature, packet),
+	          writer->packet_signature(packet_signature, &partial_packet->packet),
 	          writer->recipient_signature(recipient_signature, false, writer->opaque),
 	          writer->backlog.count,
 	          writer->packet_type);
@@ -70,8 +87,8 @@ static void writer_handle_write(void *opaque) {
 	}
 }
 
-static int writer_push_packet_to_backlog(Writer *writer, Packet *packet) {
-	Packet *queued_packet;
+static int writer_push_packet_to_backlog(Writer *writer, Packet *packet, int written) {
+	PartialPacket *queued_partial_packet;
 	char recipient_signature[WRITER_MAX_RECIPIENT_SIGNATURE_LENGTH];
 	char packet_signature[PACKET_MAX_SIGNATURE_LENGTH];
 	uint32_t packets_to_drop;
@@ -95,9 +112,9 @@ static int writer_push_packet_to_backlog(Writer *writer, Packet *packet) {
 		}
 	}
 
-	queued_packet = queue_push(&writer->backlog);
+	queued_partial_packet = queue_push(&writer->backlog);
 
-	if (queued_packet == NULL) {
+	if (queued_partial_packet == NULL) {
 		log_error("Could not push %s (%s) to write backlog for %s, discarding %s: %s (%d)",
 		          writer->packet_type,
 		          writer->packet_signature(packet_signature, packet),
@@ -108,7 +125,8 @@ static int writer_push_packet_to_backlog(Writer *writer, Packet *packet) {
 		return -1;
 	}
 
-	memcpy(queued_packet, packet, packet->header.length);
+	memcpy(&queued_partial_packet->packet, packet, packet->header.length);
+	queued_partial_packet->written = written;
 
 	if (writer->backlog.count == 1) {
 		// first queued packet, register for write events
@@ -139,7 +157,7 @@ int writer_create(Writer *writer, IO *io,
 	writer->dropped_packets = 0;
 
 	// create write queue
-	if (queue_create(&writer->backlog, sizeof(Packet)) < 0) {
+	if (queue_create(&writer->backlog, sizeof(PartialPacket)) < 0) {
 		log_error("Could not create backlog: %s (%d)",
 		          get_errno_name(errno), errno);
 
@@ -167,12 +185,15 @@ void writer_destroy(Writer *writer) {
 
 // returns -1 on error, 0 if the packet was written and 1 if the packet was enqueued
 int writer_write(Writer *writer, Packet *packet) {
+	int rc;
 	char packet_signature[PACKET_MAX_SIGNATURE_LENGTH];
 	char recipient_signature[WRITER_MAX_RECIPIENT_SIGNATURE_LENGTH];
 
 	if (writer->backlog.count == 0) {
 		// if there is no backlog, try to write
-		if (io_write(writer->io, packet, packet->header.length) < 0) {
+		rc = io_write(writer->io, packet, packet->header.length);
+
+		if (rc < 0) {
 			// if write fails with an error different from EWOULDBLOCK then give up
 			// and disconnect recipient
 			if (!errno_would_block()) {
@@ -187,6 +208,11 @@ int writer_write(Writer *writer, Packet *packet) {
 
 				return -1;
 			}
+		} else if (rc < packet->header.length) {
+			// packet was not written completely, push the remaining data to the backlog
+			if (writer_push_packet_to_backlog(writer, packet, rc) < 0) {
+				return -1;
+			}
 		} else {
 			// successfully written
 			return 0;
@@ -195,7 +221,7 @@ int writer_write(Writer *writer, Packet *packet) {
 
 	// if either there is already a backlog or a write failed with EWOULDBLOCK
 	// then push to backlog
-	if (writer_push_packet_to_backlog(writer, packet) < 0) {
+	if (writer_push_packet_to_backlog(writer, packet, 0) < 0) {
 		return -1;
 	}
 
