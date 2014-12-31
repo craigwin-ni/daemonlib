@@ -31,32 +31,127 @@
 #include "config.h"
 #include "threads.h"
 
+static LogSource _log_source = LOG_SOURCE_INITIALIZER;
+
+typedef struct {
+	bool included;
+	char source_name[64];
+	uint32_t groups;
+} LogDebugFilter;
+
 static Mutex _mutex; // protects writing to _file
-static bool _debug_override = false;
 static LogLevel _level = LOG_LEVEL_INFO;
 static FILE *_file = NULL;
-
-extern bool _log_debug_override_platform;
+static bool _debug_override = false;
+static int _debug_filter_version = 0;
+static LogDebugFilter _debug_filters[64];
+static int _debug_filter_count = 0;
 
 extern void log_init_platform(FILE *file);
 extern void log_exit_platform(void);
 extern void log_set_file_platform(FILE *file);
 extern void log_apply_color_platform(LogLevel level, bool begin);
+extern bool log_is_message_included_platform(LogLevel level);
 extern void log_secondary_output_platform(struct timeval *timestamp, LogLevel level,
-                                          const char *filename, int line,
-                                          const char *function, const char *format,
-                                          va_list arguments);
+                                          LogSource *source, int line,
+                                          const char *format, va_list arguments);
+
+static void log_set_debug_filter(const char *filter) {
+	const char *p = filter;
+	int i = 0;
+	const char *tmp;
+
+	++_debug_filter_version;
+	_debug_filter_count = 0;
+
+	while (*p != '\0') {
+		if (i >= (int)sizeof(_debug_filters) / (int)sizeof(_debug_filters[0])) {
+			log_warn("Too many source names in debug filter '%s'", filter);
+
+			return;
+		}
+
+		if (*p == '+') {
+			_debug_filters[i].included = true;
+		} else if (*p == '-') {
+			_debug_filters[i].included = false;
+		} else {
+			log_warn("Unexpected char '%c' in debug filter '%s' at index %d",
+			         *p, filter, (int)(p - filter));
+
+			return;
+		}
+
+		++p;
+		tmp = strchr(p, ',');
+
+		if (tmp == NULL) {
+			tmp = p + strlen(p);
+		}
+
+		if (tmp - p == 0) {
+			log_warn("Empty source name in debug filter '%s' at index %d",
+			         filter, (int)(p - filter));
+
+			return;
+		}
+
+		if (tmp - p >= (int)sizeof(_debug_filters[i].source_name)) {
+			log_warn("Source name '%s' is too long in debug filter '%s' at index %d",
+			         p, filter, (int)(p - filter));
+
+			return;
+		}
+
+		strncpy(_debug_filters[i].source_name, p, tmp - p);
+		_debug_filters[i].source_name[tmp - p] = '\0';
+
+		if (strcasecmp(_debug_filters[i].source_name, "common") == 0) {
+			_debug_filters[i].source_name[0] = '\0';
+			_debug_filters[i].groups = LOG_DEBUG_GROUP_COMMON;
+		} else if (strcasecmp(_debug_filters[i].source_name, "event") == 0) {
+			_debug_filters[i].source_name[0] = '\0';
+			_debug_filters[i].groups = LOG_DEBUG_GROUP_EVENT;
+		} else if (strcasecmp(_debug_filters[i].source_name, "packet") == 0) {
+			_debug_filters[i].source_name[0] = '\0';
+			_debug_filters[i].groups = LOG_DEBUG_GROUP_PACKET;
+		} else if (strcasecmp(_debug_filters[i].source_name, "object") == 0) {
+			_debug_filters[i].source_name[0] = '\0';
+			_debug_filters[i].groups = LOG_DEBUG_GROUP_OBJECT;
+		} else if (strcasecmp(_debug_filters[i].source_name, "all") == 0) {
+			_debug_filters[i].source_name[0] = '\0';
+			_debug_filters[i].groups = LOG_DEBUG_GROUP_ALL;
+		} else {
+			_debug_filters[i].groups = LOG_DEBUG_GROUP_ALL;
+		}
+
+		p = tmp;
+
+		if (*p == ',') {
+			++p;
+
+			if (*p == '\0') {
+				log_warn("Debug filter '%s' ends with a trailing comma", filter);
+
+				return;
+			}
+		}
+
+		++i;
+	}
+
+	_debug_filter_count = i;
+}
 
 // NOTE: assumes that _mutex is locked
 static void log_primary_output(struct timeval *timestamp, LogLevel level,
-                               const char *filename, int line, const char *function,
-                               const char *format, va_list arguments) {
+                               LogSource *source, LogDebugGroup debug_group,
+                               int line, const char *format, va_list arguments) {
 	time_t unix_seconds;
 	struct tm localized_timestamp;
 	char formatted_timestamp[64] = "<unknown>";
 	char level_char;
-
-	(void)function;
+	char *debug_group_name = "";
 
 	// check file
 	if (_file == NULL) {
@@ -85,12 +180,21 @@ static void log_primary_output(struct timeval *timestamp, LogLevel level,
 	default:              level_char = 'U'; break;
 	}
 
+	// format debug group
+	switch (debug_group) {
+	case LOG_DEBUG_GROUP_EVENT:  debug_group_name = "event|";  break;
+	case LOG_DEBUG_GROUP_PACKET: debug_group_name = "packet|"; break;
+	case LOG_DEBUG_GROUP_OBJECT: debug_group_name = "object|"; break;
+	default:                                                   break;
+	}
+
 	// begin color
 	log_apply_color_platform(level, true);
 
 	// print prefix
-	fprintf(_file, "%s.%06d <%c> <%s:%d> ",
-	        formatted_timestamp, (int)timestamp->tv_usec, level_char, filename, line);
+	fprintf(_file, "%s.%06d <%c> <%s%s:%d> ",
+	        formatted_timestamp, (int)timestamp->tv_usec, level_char,
+	        debug_group_name, source->name, line);
 
 	// print message
 	vfprintf(_file, format, arguments);
@@ -103,12 +207,20 @@ static void log_primary_output(struct timeval *timestamp, LogLevel level,
 }
 
 void log_init(void) {
+	const char *filter;
+
 	mutex_create(&_mutex);
 
 	_level = config_get_option_value("log.level")->symbol;
 	_file = stderr;
 
 	log_init_platform(_file);
+
+	filter = config_get_option_value("log.debug_filter")->string;
+
+	if (filter != NULL) {
+		log_set_debug_filter(filter);
+	}
 }
 
 void log_exit(void) {
@@ -125,16 +237,10 @@ void log_unlock(void) {
 	mutex_unlock(&_mutex);
 }
 
-void log_set_debug_override(bool override) {
-	_debug_override = override;
-}
+void log_enable_debug_override(const char *filter) {
+	_debug_override = true;
 
-LogLevel log_get_effective_level(void) {
-	if (_debug_override || _log_debug_override_platform) {
-		return LOG_LEVEL_DEBUG;
-	} else {
-		return _level;
-	}
+	log_set_debug_filter(filter);
 }
 
 void log_set_file(FILE *file) {
@@ -151,10 +257,73 @@ FILE *log_get_file(void) {
 	return _file;
 }
 
-void log_message(LogLevel level, const char *filename, int line,
-                 const char *function, const char *format, ...) {
-	struct timeval timestamp;
+bool log_is_message_included(LogLevel level, LogSource *source,
+                             LogDebugGroup debug_group) {
 	const char *p;
+	int i;
+
+	// if the source name is not set yet use the last part of its __FILE__
+	if (source->name == NULL) {
+		source->name = source->file;
+		p = strrchr(source->name, '/');
+
+		if (p != NULL) {
+			source->name = p + 1;
+		}
+
+		p = strrchr(source->name, '\\');
+
+		if (p != NULL) {
+			source->name = p + 1;
+		}
+	}
+
+	if (!_debug_override && level > _level) {
+		// primary output excluded by level, check secondary output
+		return log_is_message_included_platform(level);
+	}
+
+	if (level != LOG_LEVEL_DEBUG) {
+		return true;
+	}
+
+	// check if source's debug-groups are outdated, if yes try to update them
+	if (source->debug_filter_version < _debug_filter_version) {
+		log_lock();
+
+		// after gaining the mutex check that the source's debug-groups are
+		// still outdated and nobody else has updated them in the meantime
+		if (source->debug_filter_version < _debug_filter_version) {
+			source->debug_filter_version = _debug_filter_version;
+			source->included_debug_groups = LOG_DEBUG_GROUP_ALL;
+
+			for (i = 0; i < _debug_filter_count; ++i) {
+				if (_debug_filters[i].source_name[0] == '\0' ||
+				     strcasecmp(source->name, _debug_filters[i].source_name) == 0) {
+					if (_debug_filters[i].included) {
+						source->included_debug_groups |= _debug_filters[i].groups;
+					} else {
+						source->included_debug_groups &= ~_debug_filters[i].groups;
+					}
+				}
+			}
+		}
+
+		log_unlock();
+	}
+
+	// now the debug-groups are guaranteed to be up to date
+	if ((source->included_debug_groups & debug_group) != 0) {
+		return true;
+	}
+
+	// primary output excluded by debug-groups, check secondary output
+	return log_is_message_included_platform(level);
+}
+
+void log_message(LogLevel level, LogSource *source, LogDebugGroup debug_group,
+                 int line, const char *format, ...) {
+	struct timeval timestamp;
 	va_list arguments;
 
 	if (level == LOG_LEVEL_DUMMY) {
@@ -168,29 +337,19 @@ void log_message(LogLevel level, const char *filename, int line,
 		timestamp.tv_usec = 0;
 	}
 
-	// only keep last part of filename
-	p = strrchr(filename, '/');
-
-	if (p != NULL) {
-		filename = p + 1;
-	}
-
-	p = strrchr(filename, '\\');
-
-	if (p != NULL) {
-		filename = p + 1;
-	}
-
 	// call log handlers
 	va_start(arguments, format);
 	log_lock();
 
-	if (level <= _level || _debug_override) {
-		log_primary_output(&timestamp, level, filename, line, function, format, arguments);
+	if ((level <= _level || _debug_override) &&
+	    (level != LOG_LEVEL_DEBUG || (source->included_debug_groups & debug_group) != 0)) {
+		log_primary_output(&timestamp, level, source, debug_group,
+		                   line, format, arguments);
 	}
 
-	if (level <= _level || _debug_override || _log_debug_override_platform) {
-		log_secondary_output_platform(&timestamp, level, filename, line, function, format, arguments);
+	if (log_is_message_included_platform(level)) {
+		log_secondary_output_platform(&timestamp, level, source, line,
+		                              format, arguments);
 	}
 
 	log_unlock();

@@ -31,6 +31,8 @@
 #include "log.h"
 #include "utils.h"
 
+static LogSource _log_source = LOG_SOURCE_INITIALIZER;
+
 static int _epollfd = -1;
 static int _epollfd_event_count = 0;
 

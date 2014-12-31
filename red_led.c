@@ -27,6 +27,8 @@
 
 #include "log.h"
 
+static LogSource _log_source = LOG_SOURCE_INITIALIZER;
+
 #define LED_TRIGGER_NUM 6
 #define LED_TRIGGER_STR_MAX_LENGTH 11
 #define LED_PATH_STR_MAX_LENGTH 42

@@ -95,16 +95,20 @@ void log_apply_color_platform(LogLevel level, bool begin) {
 	fprintf(_file, "%s", color);
 }
 
+bool log_is_message_included_platform(LogLevel level) {
+	(void)level;
+
+	return false;
+}
+
 // NOTE: assumes that _mutex (in log.c) is locked
 void log_secondary_output_platform(struct timeval *timestamp, LogLevel level,
-                                   const char *filename, int line,
-                                   const char *function, const char *format,
-                                   va_list arguments) {
+                                   LogSource *source, int line,
+                                   const char *format, va_list arguments) {
 	(void)timestamp;
 	(void)level;
-	(void)filename;
+	(void)source;
 	(void)line;
-	(void)function;
 	(void)format;
 	(void)arguments;
 }

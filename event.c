@@ -29,6 +29,8 @@
 #include "pipe.h"
 #include "utils.h"
 
+static LogSource _log_source = LOG_SOURCE_INITIALIZER;
+
 static Array _event_sources;
 static bool _running = false;
 static bool _stop_requested = false;

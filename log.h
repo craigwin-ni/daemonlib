@@ -25,6 +25,7 @@
 
 #include <stdarg.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 
 #include "macros.h"
@@ -37,35 +38,72 @@ typedef enum {
 	LOG_LEVEL_DEBUG
 } LogLevel;
 
+typedef enum { // bitmask
+	LOG_DEBUG_GROUP_NONE   = 0x0000, // special value
+	LOG_DEBUG_GROUP_COMMON = 0x0001,
+	LOG_DEBUG_GROUP_EVENT  = 0x0002,
+	LOG_DEBUG_GROUP_PACKET = 0x0004,
+	LOG_DEBUG_GROUP_OBJECT = 0x0008
+} LogDebugGroup;
+
+#define LOG_DEBUG_GROUP_ALL (LOG_DEBUG_GROUP_COMMON | \
+                             LOG_DEBUG_GROUP_EVENT | \
+                             LOG_DEBUG_GROUP_PACKET | \
+                             LOG_DEBUG_GROUP_OBJECT)
+
+typedef struct {
+	const char *file; // __FILE__
+	const char *name; // last part of __FILE__
+	int debug_filter_version;
+	uint32_t included_debug_groups;
+} LogSource;
+
+#define LOG_SOURCE_INITIALIZER { \
+		__FILE__, \
+		NULL, \
+		-1, \
+		LOG_DEBUG_GROUP_ALL \
+	}
+
 #ifdef DAEMONLIB_WITH_LOGGING
 	#ifdef _MSC_VER
-		#define log_message_checked(level, ...) \
+		#define log_message_checked(level, debug_group, ...) \
 			do { \
-				if ((level) <= log_get_effective_level()) { \
-					log_message(level, __FILE__, __LINE__, __FUNCTION__, __VA_ARGS__); \
+				if (log_is_message_included(level, &_log_source, debug_group)) { \
+					log_message(level, &_log_source, debug_group, __LINE__, __VA_ARGS__); \
 				} \
 			__pragma(warning(push)) \
 			__pragma(warning(disable:4127)) \
 			} while (0) \
 			__pragma(warning(pop))
 	#else
-		#define log_message_checked(level, ...) \
+		#define log_message_checked(level, debug_group, ...) \
 			do { \
-				if ((level) <= log_get_effective_level()) { \
-					log_message(level, __FILE__, __LINE__, __FUNCTION__, __VA_ARGS__); \
+				if (log_is_message_included(level, &_log_source, debug_group)) { \
+					log_message(level, &_log_source, debug_group, __LINE__, __VA_ARGS__); \
 				} \
 			} while (0)
 	#endif
 
-	#define log_error(...) log_message_checked(LOG_LEVEL_ERROR, __VA_ARGS__)
-	#define log_warn(...)  log_message_checked(LOG_LEVEL_WARN, __VA_ARGS__)
-	#define log_info(...)  log_message_checked(LOG_LEVEL_INFO, __VA_ARGS__)
-	#define log_debug(...) log_message_checked(LOG_LEVEL_DEBUG, __VA_ARGS__)
+	#define log_error(...) log_message_checked(LOG_LEVEL_ERROR, LOG_DEBUG_GROUP_NONE, __VA_ARGS__)
+	#define log_warn(...)  log_message_checked(LOG_LEVEL_WARN, LOG_DEBUG_GROUP_NONE, __VA_ARGS__)
+	#define log_info(...)  log_message_checked(LOG_LEVEL_INFO, LOG_DEBUG_GROUP_NONE, __VA_ARGS__)
+	#define log_debug(...) log_message_checked(LOG_LEVEL_DEBUG, LOG_DEBUG_GROUP_COMMON, __VA_ARGS__)
+
+	// special debug logging for high traffic debug messages from event, packet
+	// and object related functions. the visibility of these messages can be
+	// controlled with the event, packet and object debug filters
+	#define log_event_debug(...)  log_message_checked(LOG_LEVEL_DEBUG, LOG_DEBUG_GROUP_EVENT, __VA_ARGS__)
+	#define log_packet_debug(...) log_message_checked(LOG_LEVEL_DEBUG, LOG_DEBUG_GROUP_PACKET, __VA_ARGS__)
+	#define log_object_debug(...) log_message_checked(LOG_LEVEL_DEBUG, LOG_DEBUG_GROUP_OBJECT, __VA_ARGS__)
 #else
-	#define log_error(...) ((void)0)
-	#define log_warn(...)  ((void)0)
-	#define log_info(...)  ((void)0)
-	#define log_debug(...) ((void)0)
+	#define log_error(...)        ((void)0)
+	#define log_warn(...)         ((void)0)
+	#define log_info(...)         ((void)0)
+	#define log_debug(...)        ((void)0)
+	#define log_event_debug(...)  ((void)0)
+	#define log_packet_debug(...) ((void)0)
+	#define log_object_debug(...) ((void)0)
 #endif
 
 void log_init(void);
@@ -74,14 +112,15 @@ void log_exit(void);
 void log_lock(void);
 void log_unlock(void);
 
-void log_set_debug_override(bool override);
-
-LogLevel log_get_effective_level(void);
+void log_enable_debug_override(const char *filter);
 
 void log_set_file(FILE *file);
 FILE *log_get_file(void);
 
-void log_message(LogLevel level, const char *filename, int line,
-                 const char *function, const char *format, ...) ATTRIBUTE_FMT_PRINTF(5, 6);
+bool log_is_message_included(LogLevel level, LogSource *source,
+                             LogDebugGroup debug_group);
+
+void log_message(LogLevel level, LogSource *source, LogDebugGroup debug_group,
+                 int line, const char *format, ...) ATTRIBUTE_FMT_PRINTF(5, 6);
 
 #endif // DAEMONLIB_LOG_H

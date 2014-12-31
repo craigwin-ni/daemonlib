@@ -21,25 +21,19 @@
  */
 
 #include <errno.h>
-
-// open
+#include <fcntl.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <fcntl.h>
-
-// sysconf
-#include <unistd.h>
-
-// mmap
 #include <sys/mman.h>
-
-// strlen
-#include <string.h>
+#include <unistd.h>
 
 #include "red_gpio.h"
 
 #include "log.h"
 #include "utils.h"
+
+static LogSource _log_source = LOG_SOURCE_INITIALIZER;
 
 #define GPIO_BASE 0x01c20800
 #define SYSFS_GPIO_DIR "/sys/class/gpio/"

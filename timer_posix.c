@@ -29,6 +29,8 @@
 #include "log.h"
 #include "utils.h"
 
+static LogSource _log_source = LOG_SOURCE_INITIALIZER;
+
 static void timer_handle_read(void *opaque) {
 	Timer *timer = opaque;
 	uint32_t configuration_id;

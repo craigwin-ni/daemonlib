@@ -28,6 +28,8 @@
 #include "log.h"
 #include "utils.h"
 
+static LogSource _log_source = LOG_SOURCE_INITIALIZER;
+
 int event_init_platform(void) {
 	return 0;
 }

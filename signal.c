@@ -29,6 +29,8 @@
 #include "pipe.h"
 #include "utils.h"
 
+static LogSource _log_source = LOG_SOURCE_INITIALIZER;
+
 static Pipe _signal_pipe;
 static SIGHUPFunction _handle_sighup = NULL;
 static SIGUSR1Function _handle_sigusr1 = NULL;

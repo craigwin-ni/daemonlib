@@ -24,6 +24,8 @@
 #include "log.h"
 #include "utils.h"
 
+static LogSource _log_source = LOG_SOURCE_INITIALIZER;
+
 void mutex_create(Mutex *mutex) {
 	pthread_mutex_init(&mutex->handle, NULL);
 

@@ -21,8 +21,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include "red_i2c_eeprom.h"
-
 #include <errno.h>
 #include <stdint.h>
 #include <sys/types.h>
@@ -32,10 +30,15 @@
 #include <linux/i2c-dev.h>
 #include <linux/i2c.h>
 #include <sys/ioctl.h>
+#include <string.h>
 
-#include "red_gpio.h"
+#include "red_i2c_eeprom.h"
+
 #include "log.h"
+#include "red_gpio.h"
 #include "utils.h"
+
+static LogSource _log_source = LOG_SOURCE_INITIALIZER;
 
 void _i2c_eeprom_select(I2CEEPROM *i2c_eeprom) {
     // address pin high
