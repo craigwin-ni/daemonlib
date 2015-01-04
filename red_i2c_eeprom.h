@@ -1,8 +1,8 @@
 /*
  * daemonlib
- *
  * Copyright (C) 2014 Ishraq Ibne Ashraf <ishraq@tinkerforge.com>
  * Copyright (C) 2014 Olaf Lüke <olaf@tinkerforge.com>
+ * Copyright (C) 2015 Matthias Bolte <matthias@tinkerforge.com>
  *
  * red_i2c_eeprom.h: I2C EEPROM specific functions
  *
@@ -23,9 +23,6 @@
 
 #ifndef DAEMONLIB_I2C_EEPROM_H
 #define DAEMONLIB_I2C_EEPROM_H
-
-#define I2C_EEPROM_BUS "/dev/i2c-2"
-#define I2C_EEPROM_DEVICE_ADDRESS 0x54
 
 #include <stdint.h>
 

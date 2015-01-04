@@ -1,7 +1,7 @@
 /*
  * daemonlib
  * Copyright (C) 2014 Olaf Lüke <olaf@tinkerforge.com>
- * Copyright (C) 2014 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2014-2015 Matthias Bolte <matthias@tinkerforge.com>
  *
  * red_led.c: LED functions for RED Brick
  *
@@ -53,87 +53,93 @@ int red_led_set_trigger(REDLED led, REDLEDTrigger trigger) {
 	FILE *f;
 	int length;
 
-	if(!((trigger >= RED_LED_TRIGGER_CPU) && (trigger <= RED_LED_TRIGGER_ON))) {
+	if (!((trigger >= RED_LED_TRIGGER_CPU) && (trigger <= RED_LED_TRIGGER_ON))) {
 		log_error("Unknown LED trigger: %d (must be in [%d, %d])",
-		          trigger,
-		          RED_LED_TRIGGER_CPU,
-		          RED_LED_TRIGGER_ON);
+		          trigger, RED_LED_TRIGGER_CPU, RED_LED_TRIGGER_ON);
+
 		return -1;
 	}
 
-	if(led > RED_LED_RED) {
+	if (led > RED_LED_RED) {
 		log_error("Unknown LED: %d (must be in [%d, %d])",
-		          led,
-		          RED_LED_GREEN,
-		          RED_LED_RED);
+		          led, RED_LED_GREEN, RED_LED_RED);
+
 		return -1;
 	}
 
-    if((f = fopen(led_path[led], "w")) == NULL) {
+	if ((f = fopen(led_path[led], "w")) == NULL) {
 		log_error("Could not open file %s", led_path[led]);
-        return -1;
-    }
 
-    if((length = fprintf(f, "%s\n", trigger_str[trigger])) < ((int)strlen(trigger_str[trigger]))) {
-		fclose(f);
+		return -1;
+	}
+
+	if ((length = fprintf(f, "%s\n", trigger_str[trigger])) < ((int)strlen(trigger_str[trigger]))) {
 		log_error("Could not write to file %s", led_path[led]);
+
+		fclose(f);
+
 		return -1;
 	}
 
-    if(fclose(f) < 0) {
+	if (fclose(f) < 0) {
 		log_error("Could not close file %s", led_path[led]);
+
 		return -1;
 	}
 
-    return 0;
+	return 0;
 }
 
 REDLEDTrigger red_led_get_trigger(REDLED led) {
-	char buf[LED_TRIGGER_MAX_LENGTH+1] = {0};
+	char buf[LED_TRIGGER_MAX_LENGTH + 1] = {0};
 	FILE *f;
 	int length;
 	int i;
 
-	if(led > RED_LED_RED) {
+	if (led > RED_LED_RED) {
 		log_error("Unknown LED: %d (must be in [%d, %d])",
-		          led,
-		          RED_LED_GREEN,
-		          RED_LED_RED);
+		          led, RED_LED_GREEN, RED_LED_RED);
+
 		return -1;
 	}
 
-    if((f = fopen(led_path[led], "r")) == NULL) {
+	if ((f = fopen(led_path[led], "r")) == NULL) {
 		log_error("Could not open file %s", led_path[led]);
-        return RED_LED_TRIGGER_ERROR;
-    }
 
-    if((length = fread(buf, sizeof(char), LED_TRIGGER_MAX_LENGTH, f)) <= 0) {
-		fclose(f);
+		return RED_LED_TRIGGER_ERROR;
+	}
+
+	if ((length = fread(buf, sizeof(char), LED_TRIGGER_MAX_LENGTH, f)) <= 0) {
 		log_error("Could not read from file %s", led_path[led]);
+
+		fclose(f);
+
 		return RED_LED_TRIGGER_ERROR;
 	}
 
 	buf[length] = '\0';
 
-	if(fclose(f) < 0) {
+	if (fclose(f) < 0) {
 		log_error("Could not close file %s", led_path[led]);
+
 		return RED_LED_TRIGGER_ERROR;
 	}
 
 	char *start = strchr(buf, '[');
 	char *end = strchr(buf, ']');
 
-	if(start == NULL || end == NULL || start >= end) {
+	if (start == NULL || end == NULL || start >= end) {
 		return RED_LED_TRIGGER_UNKNOWN;
 	}
 
 	++start; // skip '['
 	*end = '\0'; // overwrite ']'
-	for(i = 0; i < LED_TRIGGER_NUM; i++) {
-		if(strcmp(start, trigger_str[i]) == 0) {
+
+	for (i = 0; i < LED_TRIGGER_NUM; i++) {
+		if (strcmp(start, trigger_str[i]) == 0) {
 			return i;
 		}
 	}
 
-    return RED_LED_TRIGGER_UNKNOWN;
+	return RED_LED_TRIGGER_UNKNOWN;
 }

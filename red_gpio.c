@@ -1,7 +1,7 @@
 /*
  * daemonlib
  * Copyright (C) 2014 Olaf Lüke <olaf@tinkerforge.com>
- * Copyright (C) 2014 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2014-2015 Matthias Bolte <matthias@tinkerforge.com>
  *
  * red_gpio.c: GPIO functions for RED Brick
  *
@@ -23,9 +23,9 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <string.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <sys/mman.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 #include "red_gpio.h"
@@ -38,12 +38,14 @@ static LogSource _log_source = LOG_SOURCE_INITIALIZER;
 #define GPIO_BASE 0x01c20800
 #define SYSFS_GPIO_DIR "/sys/class/gpio/"
 
-static volatile GPIOPort *gpio_port;
+static volatile GPIOPort *_gpio_port;
 
 int gpio_init(void) {
 	int fd;
-	uint32_t address_start, address_offset;
-	uint32_t page_size, page_mask;
+	uint32_t address_start;
+	uint32_t address_offset;
+	uint32_t page_size;
+	uint32_t page_mask;
 	void *mapped_base;
 
 	fd = open("/dev/mem", O_RDWR);
@@ -57,17 +59,12 @@ int gpio_init(void) {
 
 	page_size = sysconf(_SC_PAGESIZE);
 	page_mask = ~(page_size - 1);
-
-	address_start  = GPIO_BASE &  page_mask;
+	address_start = GPIO_BASE & page_mask;
 	address_offset = GPIO_BASE & ~page_mask;
 
 	// FIXME: add gpio_exit() to munmap?
-	mapped_base = mmap(0,
-	                   page_size * 2,
-	                   PROT_READ | PROT_WRITE,
-	                   MAP_SHARED,
-	                   fd,
-	                   address_start);
+	mapped_base = mmap(0, page_size * 2, PROT_READ | PROT_WRITE, MAP_SHARED,
+	                   fd, address_start);
 
 	if (mapped_base == MAP_FAILED) {
 		log_error("Could not mmap '/dev/mem': %s (%d)",
@@ -78,7 +75,7 @@ int gpio_init(void) {
 		return -1;
 	}
 
-	gpio_port = mapped_base + address_offset;
+	_gpio_port = mapped_base + address_offset;
 
 	close(fd);
 
@@ -86,97 +83,108 @@ int gpio_init(void) {
 }
 
 void gpio_mux_configure(const GPIOPin pin, const GPIOMux mux_config) {
-	uint32_t config_index =  pin.pin_index        >> 3;
-	uint32_t offset       = (pin.pin_index & 0x7) << 2;
-	uint32_t config       = gpio_port[pin.port_index].config[config_index];
+	uint32_t config_index = pin.pin_index >> 3;
+	uint32_t offset = (pin.pin_index & 0x7) << 2;
+	uint32_t config = _gpio_port[pin.port_index].config[config_index];
 
 	config &= ~(0xF << offset);
 	config |= mux_config << offset;
 
-	gpio_port[pin.port_index].config[config_index] = config;
+	_gpio_port[pin.port_index].config[config_index] = config;
 }
 
 void gpio_input_configure(const GPIOPin pin, const GPIOInputConfig input_config) {
-	uint32_t config_index =  pin.pin_index >> 4;
-	uint32_t offset       = (pin.pin_index * 2) % 32;
-	uint32_t config       = gpio_port[pin.port_index].pull[config_index];
+	uint32_t config_index = pin.pin_index >> 4;
+	uint32_t offset = (pin.pin_index * 2) % 32;
+	uint32_t config = _gpio_port[pin.port_index].pull[config_index];
 
 	config &= ~(0x3 << offset);
 	config |= input_config << offset;
 
-	gpio_port[pin.port_index].pull[config_index] = config;
+	_gpio_port[pin.port_index].pull[config_index] = config;
 }
 
 void gpio_output_set(const GPIOPin pin) {
-	gpio_port[pin.port_index].value |= (1 << pin.pin_index);
+	_gpio_port[pin.port_index].value |= (1 << pin.pin_index);
 }
 
 void gpio_output_clear(const GPIOPin pin) {
-	gpio_port[pin.port_index].value &= ~(1 << pin.pin_index);
+	_gpio_port[pin.port_index].value &= ~(1 << pin.pin_index);
 }
 
 uint32_t gpio_input(const GPIOPin pin) {
-	return gpio_port[pin.port_index].value & (1 << pin.pin_index);
+	return _gpio_port[pin.port_index].value & (1 << pin.pin_index);
 }
 
 // sysfs operations, gpio_num and gpio_name are defined in fex file
 int gpio_sysfs_export(int gpio_num) {
-	int fd, len, rc;
-	char buf[32];
+	int fd;
+	char buffer[32];
+	int length;
+	int rc;
 
 	fd = open(SYSFS_GPIO_DIR "export", O_WRONLY);
-	if(fd < 0) {
+
+	if (fd < 0) {
 		return -1;
 	}
 
-	len = snprintf(buf, sizeof(buf), "%d", gpio_num);
-	rc = write(fd, buf, len);
+	length = snprintf(buffer, sizeof(buffer), "%d", gpio_num);
+	rc = write(fd, buffer, length);
+
 	close(fd);
 
-	// In this case the gpio was already exported
-	if(rc == -1 && errno == EBUSY) {
-		return 0;
+	if (rc < 0 && errno == EBUSY) {
+		return 0; // gpio was already exported
 	}
 
 	return rc < 0 ? -1 : 0;
 }
 
 int gpio_sysfs_unexport(int gpio_num) {
-	int fd, len, rc;
-	char buf[32];
+	int fd;
+	char buffer[32];
+	int length;
+	int rc;
 
 	fd = open(SYSFS_GPIO_DIR "unexport", O_WRONLY);
-	if(fd < 0) {
+
+	if (fd < 0) {
 		return -1;
 	}
 
-	len = snprintf(buf, sizeof(buf), "%d", gpio_num);
-	rc = write(fd, buf, len);
+	length = snprintf(buffer, sizeof(buffer), "%d", gpio_num);
+	rc = write(fd, buffer, length);
+
 	close(fd);
 
 	return rc < 0 ? -1 : 0;
 }
 
 int gpio_sysfs_set_edge(const char *gpio_name, const char *edge) {
-	int fd, rc;
-	char buf[1024];
+	int fd;
+	char buffer[1024];
+	int rc;
 
-	snprintf(buf, sizeof(buf), "%s%s%s", SYSFS_GPIO_DIR, gpio_name, "/edge");
-	fd = open(buf, O_WRONLY);
-	if(fd < 0) {
+	snprintf(buffer, sizeof(buffer), "%s%s/edge", SYSFS_GPIO_DIR, gpio_name);
+
+	fd = open(buffer, O_WRONLY);
+
+	if (fd < 0) {
 		return -1;
 	}
 
 	rc = write(fd, edge, strlen(edge));
+
 	close(fd);
 
 	return rc < 0 ? -1 : 0;
 }
 
-int gpio_sysfs_get_value_fd(char *gpio_name) {
-	char buf[1024];
+int gpio_sysfs_get_value_fd(const char *gpio_name) {
+	char buffer[1024];
 
-	snprintf(buf, sizeof(buf), "%s%s%s", SYSFS_GPIO_DIR, gpio_name, "/value");
+	snprintf(buffer, sizeof(buffer), "%s%s/value", SYSFS_GPIO_DIR, gpio_name);
 
-	return open(buf, O_RDONLY | O_NONBLOCK);
+	return open(buffer, O_RDONLY | O_NONBLOCK);
 }
