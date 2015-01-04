@@ -75,12 +75,12 @@ static void writer_handle_write(void *opaque) {
 
 	queue_pop(&writer->backlog, NULL);
 
-	log_debug("Sent queued %s (%s) to %s, %d %s(s) left in write backlog",
-	          writer->packet_type,
-	          writer->packet_signature(packet_signature, &partial_packet->packet),
-	          writer->recipient_signature(recipient_signature, false, writer->opaque),
-	          writer->backlog.count,
-	          writer->packet_type);
+	log_packet_debug("Sent queued %s (%s) to %s, %d %s(s) left in write backlog",
+	                 writer->packet_type,
+	                 writer->packet_signature(packet_signature, &partial_packet->packet),
+	                 writer->recipient_signature(recipient_signature, false, writer->opaque),
+	                 writer->backlog.count,
+	                 writer->packet_type);
 
 	if (writer->backlog.count == 0) {
 		// last queued response handled, deregister for write events
@@ -95,9 +95,9 @@ static int writer_push_packet_to_backlog(Writer *writer, Packet *packet, int wri
 	char packet_signature[PACKET_MAX_SIGNATURE_LENGTH];
 	uint32_t packets_to_drop;
 
-	log_debug("%s is not ready to receive, pushing %s to write backlog (count: %d +1)",
-	          writer->recipient_signature(recipient_signature, true, writer->opaque),
-	          writer->packet_type, writer->backlog.count);
+	log_packet_debug("%s is not ready to receive, pushing %s to write backlog (count: %d +1)",
+	                 writer->recipient_signature(recipient_signature, true, writer->opaque),
+	                 writer->packet_type, writer->backlog.count);
 
 	if (writer->backlog.count >= MAX_QUEUED_WRITES) {
 		packets_to_drop = writer->backlog.count - MAX_QUEUED_WRITES + 1;

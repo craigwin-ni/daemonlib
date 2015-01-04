@@ -138,7 +138,8 @@ int event_run_platform(Array *event_sources, bool *running, EventCleanupFunction
 		}
 
 		// start to epoll
-		log_debug("Starting to epoll on %d event source(s)", _epollfd_event_count);
+		log_event_debug("Starting to epoll on %d event source(s)",
+		                _epollfd_event_count);
 
 		ready = epoll_wait(_epollfd, (struct epoll_event *)received_events.bytes,
 		                   received_events.count, -1);
@@ -157,7 +158,7 @@ int event_run_platform(Array *event_sources, bool *running, EventCleanupFunction
 		}
 
 		// handle poll result
-		log_debug("EPoll returned %d event source(s) as ready", ready);
+		log_event_debug("EPoll returned %d event source(s) as ready", ready);
 
 		// this loop assumes that event sources stored in the epoll events
 		// are valid. because of this event_remove_source only marks event
@@ -170,7 +171,7 @@ int event_run_platform(Array *event_sources, bool *running, EventCleanupFunction
 			event_handle_source(event_source, received_event->events);
 		}
 
-		log_debug("Handled all ready event sources");
+		log_event_debug("Handled all ready event sources");
 
 		// now cleanup event sources that got marked as disconnected/removed
 		// during the event handling

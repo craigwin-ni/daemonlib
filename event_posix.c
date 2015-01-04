@@ -94,7 +94,7 @@ int event_run_platform(Array *event_sources, bool *running, EventCleanupFunction
 		}
 
 		// start to poll
-		log_debug("Starting to poll on %d event source(s)", pollfds.count);
+		log_event_debug("Starting to poll on %d event source(s)", pollfds.count);
 
 		ready = poll((struct pollfd *)pollfds.bytes, pollfds.count, -1);
 
@@ -112,7 +112,7 @@ int event_run_platform(Array *event_sources, bool *running, EventCleanupFunction
 		}
 
 		// handle poll result
-		log_debug("Poll returned %d event source(s) as ready", ready);
+		log_event_debug("Poll returned %d event source(s) as ready", ready);
 
 		handled = 0;
 
@@ -135,7 +135,7 @@ int event_run_platform(Array *event_sources, bool *running, EventCleanupFunction
 		}
 
 		if (ready == handled) {
-			log_debug("Handled all ready event sources");
+			log_event_debug("Handled all ready event sources");
 		} else if (*running) {
 			log_warn("Handled only %d of %d ready event source(s)",
 			         handled, ready);

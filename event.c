@@ -164,8 +164,8 @@ int event_add_source(IOHandle handle, EventSourceType type, uint32_t events,
 				return -1;
 			}
 
-			log_debug("Readded %s event source (handle: %d) at index %d",
-			          event_get_source_type_name(type, false), handle, index);
+			log_event_debug("Readded %s event source (handle: %d) at index %d",
+			                event_get_source_type_name(type, false), handle, index);
 
 			return 0;
 		}
@@ -216,9 +216,9 @@ int event_add_source(IOHandle handle, EventSourceType type, uint32_t events,
 			return -1;
 		}
 
-		log_debug("Added %s event source (handle: %d, events: %d) at index %d",
-		          event_get_source_type_name(type, false),
-		          handle, events, _event_sources.count - 1);
+		log_event_debug("Added %s event source (handle: %d, events: %d) at index %d",
+		                event_get_source_type_name(type, false),
+		                handle, events, _event_sources.count - 1);
 
 		return 0;
 	}
@@ -314,9 +314,9 @@ int event_modify_source(IOHandle handle, EventSourceType type, uint32_t events_t
 		return -1;
 	}
 
-	log_debug("Modified (removed: 0x%04X, added: 0x%04X) %s event source (handle: %d) at index %d",
-	          events_to_remove, events_to_add,
-	          event_get_source_type_name(type, false), handle, index);
+	log_event_debug("Modified (removed: 0x%04X, added: 0x%04X) %s event source (handle: %d) at index %d",
+	                events_to_remove, events_to_add,
+	                event_get_source_type_name(type, false), handle, index);
 
 	return 0;
 }
@@ -349,9 +349,9 @@ void event_remove_source(IOHandle handle, EventSourceType type) {
 
 		event_source_removed_platform(event_source);
 
-		log_debug("Marked %s event source (handle: %d, events: %d) as removed at index %d",
-		          event_get_source_type_name(event_source->type, false),
-		          event_source->handle, event_source->events, index);
+		log_event_debug("Marked %s event source (handle: %d, events: %d) as removed at index %d",
+		                event_get_source_type_name(event_source->type, false),
+		                event_source->handle, event_source->events, index);
 	}
 }
 
@@ -367,9 +367,9 @@ void event_cleanup_sources(void) {
 		event_source = array_get(&_event_sources, i);
 
 		if (event_source->state == EVENT_SOURCE_STATE_REMOVED) {
-			log_debug("Removed %s event source (handle: %d, events: %d) at index %d",
-			          event_get_source_type_name(event_source->type, false),
-			          event_source->handle, event_source->events, i);
+			log_event_debug("Removed %s event source (handle: %d, events: %d) at index %d",
+			                event_get_source_type_name(event_source->type, false),
+			                event_source->handle, event_source->events, i);
 
 			array_remove(&_event_sources, i, NULL);
 		} else {
@@ -380,16 +380,16 @@ void event_cleanup_sources(void) {
 
 void event_handle_source(EventSource *event_source, uint32_t received_events) {
 	if (event_source->state != EVENT_SOURCE_STATE_NORMAL) {
-		log_debug("Ignoring %s event source (handle: %d, received-events: %u) in state transition",
-		          event_get_source_type_name(event_source->type, false),
-		          event_source->handle, received_events);
+		log_event_debug("Ignoring %s event source (handle: %d, received-events: %u) in state transition",
+		                event_get_source_type_name(event_source->type, false),
+		                event_source->handle, received_events);
 
 		return;
 	}
 
-	log_debug("Handling %s event source (handle: %d, received-events: %u)",
-	          event_get_source_type_name(event_source->type, false),
-	          event_source->handle, received_events);
+	log_event_debug("Handling %s event source (handle: %d, received-events: %u)",
+	                event_get_source_type_name(event_source->type, false),
+	                event_source->handle, received_events);
 
 	// Here we currently only check if prio and error or read and write have
 	// the same functions. Currently read/write and prio/error are not mixed.
