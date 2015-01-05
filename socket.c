@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2014 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2014-2015 Matthias Bolte <matthias@tinkerforge.com>
  *
  * socket.c: Socket implementation
  *
@@ -24,6 +24,7 @@
 
 #include "socket.h"
 
+extern void socket_destroy_platform(Socket *socket);
 extern int socket_accept_platform(Socket *socket, Socket *accepted_socket,
                                   struct sockaddr *address, socklen_t *length);
 extern int socket_listen_platform(Socket *socket, int backlog);
@@ -42,6 +43,7 @@ int socket_create(Socket *socket) {
 	}
 
 	socket->create_allocated = NULL;
+	socket->destroy = socket_destroy_platform;
 	socket->receive = socket_receive_platform;
 	socket->send = socket_send_platform;
 
@@ -65,6 +67,10 @@ Socket *socket_create_allocated(void) {
 	}
 
 	return socket;
+}
+
+void socket_destroy(Socket *socket) {
+	return socket->destroy(socket);
 }
 
 // sets errno on error

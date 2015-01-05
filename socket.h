@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2014 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2015 Matthias Bolte <matthias@tinkerforge.com>
  * Copyright (C) 2014 Olaf Lüke <olaf@tinkerforge.com>
  *
  * socket.h: Socket specific functions
@@ -36,6 +36,7 @@
 typedef struct _Socket Socket;
 
 typedef Socket *(*SocketCreateAllocatedFunction)(void);
+typedef void (*SocketDestroyFunction)(Socket *socket);
 typedef int (*SocketReceiveFunction)(Socket *socket, void *buffer, int length);
 typedef int (*SocketSendFunction)(Socket *socket, void *buffer, int length);
 
@@ -43,6 +44,7 @@ struct _Socket {
 	IO base;
 
 	SocketCreateAllocatedFunction create_allocated;
+	SocketDestroyFunction destroy;
 	SocketReceiveFunction receive;
 	SocketSendFunction send;
 };

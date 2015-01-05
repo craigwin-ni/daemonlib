@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2014 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2015 Matthias Bolte <matthias@tinkerforge.com>
  * Copyright (C) 2014 Olaf Lüke <olaf@tinkerforge.com>
  *
  * socket_posix.c: POSIX based socket implementation
@@ -107,7 +107,7 @@ int socket_accept_platform(Socket *socket, Socket *accepted_socket,
 	return 0;
 }
 
-void socket_destroy(Socket *socket) {
+void socket_destroy_platform(Socket *socket) {
 	// check if socket is actually open, as socket_create deviates from
 	// the common pattern of allocation the wrapped resource
 	if (socket->base.handle != IO_HANDLE_INVALID) {
