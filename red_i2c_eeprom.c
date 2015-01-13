@@ -67,7 +67,7 @@ static int i2c_eeprom_set_pointer(I2CEEPROM *i2c_eeprom,
 		log_debug("Error setting EEPROM address pointer: %s (%d)",
 		          get_errno_name(errno), errno);
 
-		i2c_eeprom_release(i2c_eeprom);
+		i2c_eeprom_destroy(i2c_eeprom);
 
 		return -1;
 	}
@@ -77,7 +77,7 @@ static int i2c_eeprom_set_pointer(I2CEEPROM *i2c_eeprom,
 
 // TODO: If we want "real parallel accessibility" of the EEPROM we need to
 //       lock a mutex in the init function and unlock it in the release function
-int i2c_eeprom_init(I2CEEPROM *i2c_eeprom, int extension) {
+int i2c_eeprom_create(I2CEEPROM *i2c_eeprom, int extension) {
 	GPIOPin pullup = {GPIO_PORT_B, GPIO_PIN_6};
 
 	log_debug("Initializing I2C EEPROM for extension %d", extension);
@@ -127,7 +127,7 @@ int i2c_eeprom_init(I2CEEPROM *i2c_eeprom, int extension) {
 		log_error("Initialization of I2C EEPROM for extension %d failed (Unable to access I2C device on the bus: %s (%d))",
 		          extension, get_errno_name(errno), errno);
 
-		i2c_eeprom_release(i2c_eeprom);
+		i2c_eeprom_destroy(i2c_eeprom);
 
 		return -1;
 	}
@@ -135,7 +135,7 @@ int i2c_eeprom_init(I2CEEPROM *i2c_eeprom, int extension) {
 	return 0;
 }
 
-void i2c_eeprom_release(I2CEEPROM *i2c_eeprom) {
+void i2c_eeprom_destroy(I2CEEPROM *i2c_eeprom) {
 	log_debug("Releasing I2C EEPROM for extension %d", i2c_eeprom->extension);
 
 	if (i2c_eeprom != NULL) {
@@ -167,7 +167,7 @@ int i2c_eeprom_read(I2CEEPROM *i2c_eeprom, uint16_t eeprom_memory_address,
 	if (bytes_read != bytes_to_read) {
 		log_error("EEPROM read failed: %s (%d)", get_errno_name(errno), errno);
 
-		i2c_eeprom_release(i2c_eeprom);
+		i2c_eeprom_destroy(i2c_eeprom);
 		return -1;
 	}
 
@@ -204,7 +204,7 @@ int i2c_eeprom_write(I2CEEPROM *i2c_eeprom, uint16_t eeprom_memory_address,
 			log_error("EEPROM write failed (pos(%d), length(%d), expected length(%d): %s (%d)",
 			          i, rc, 3, get_errno_name(errno), errno);
 
-			i2c_eeprom_release(i2c_eeprom);
+			i2c_eeprom_destroy(i2c_eeprom);
 
 			return -1;
 		}

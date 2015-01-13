@@ -34,11 +34,12 @@ typedef struct {
 	GPIOPin address_pin;
 } I2CEEPROM;
 
-int i2c_eeprom_init(I2CEEPROM *i2c_eeprom, int extension);
-void i2c_eeprom_release(I2CEEPROM *i2c_eeprom);
+int i2c_eeprom_create(I2CEEPROM *i2c_eeprom, int extension);
+void i2c_eeprom_destroy(I2CEEPROM *i2c_eeprom);
+
 int i2c_eeprom_read(I2CEEPROM *i2c_eeprom, uint16_t eeprom_memory_address,
-                    uint8_t* buffer_to_store, int bytes_to_read);
+                    uint8_t *buffer_to_store, int bytes_to_read);
 int i2c_eeprom_write(I2CEEPROM *i2c_eeprom, uint16_t eeprom_memory_address,
-                     uint8_t* buffer_to_write, int bytes_to_write);
+                     uint8_t *buffer_to_write, int bytes_to_write);
 
 #endif // DAEMONLIB_I2C_EEPROM_H
