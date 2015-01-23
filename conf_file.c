@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2014 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2014-2015 Matthias Bolte <matthias@tinkerforge.com>
  *
  * conf_file.c: Reads and writes .conf formatted files
  *
@@ -40,8 +40,7 @@ static int conf_file_unescape_string(char *string) {
 	char *p = string;
 	char *d = string;
 	char x[3];
-	char *end;
-	long tmp;
+	int tmp;
 
 	while (*p != '\0') {
 		if (*p < ' ' || *p > '~') {
@@ -91,17 +90,9 @@ static int conf_file_unescape_string(char *string) {
 		x[1] = *p++;
 		x[2] = '\0';
 
-		errno = 0;
-		tmp = strtol(x, &end, 16);
-
-		if (errno != 0) {
+		if (parse_int(x, NULL, 16, &tmp) < 0) {
 			// invalid number in \x escape sequence
 			return -1;
-		}
-
-		if (end == NULL || *end != '\0') {
-			// invalid number in \x escape sequence
-			goto error;
 		}
 
 		if (tmp < 1 || tmp > 255) {

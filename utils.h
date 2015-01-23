@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2014 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2015 Matthias Bolte <matthias@tinkerforge.com>
  * Copyright (C) 2014 Olaf Lüke <olaf@tinkerforge.com>
  *
  * utils.h: Utility functions
@@ -41,6 +41,8 @@ const char *get_errno_name(int error_code);
 
 void string_copy(char *target, int target_length, const char *source);
 void string_append(char *target, int target_length, const char *source);
+
+int parse_int(const char *string, char **end_ptr, int base, int *value);
 
 uint16_t uint16_to_le(uint16_t native);
 uint32_t uint32_to_le(uint32_t native);

@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2014 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2015 Matthias Bolte <matthias@tinkerforge.com>
  * Copyright (C) 2014 Olaf Lüke <olaf@tinkerforge.com>
  *
  * utils.c: Utility functions
@@ -351,6 +351,51 @@ void string_append(char *target, int target_length, const char *source) {
 	strncpy(target + offset, source, target_length - offset - 1);
 
 	target[target_length - 1] = '\0';
+}
+
+// sets errno on error
+int parse_int(const char *string, char **end_ptr, int base, int *value) {
+	char *end = NULL;
+	long tmp;
+
+	errno = 0;
+	tmp = strtol(string, &end, base);
+
+	if (errno != 0) {
+		return -1;
+	}
+
+	if (end == NULL) {
+		errno = EINVAL;
+
+		return -1;
+	}
+
+	if (end_ptr == NULL && *end != '\0') {
+		errno = EINVAL;
+
+		return -1;
+	}
+
+	if (end == string) {
+		errno = EINVAL;
+
+		return -1;
+	}
+
+	if (sizeof(long) > sizeof(int) && (tmp < INT32_MIN || tmp > INT32_MAX)) {
+		errno = ERANGE;
+
+		return -1;
+	}
+
+	if (end_ptr != NULL) {
+		*end_ptr = end;
+	}
+
+	*value = tmp;
+
+	return 0;
 }
 
 // convert from host endian to little endian

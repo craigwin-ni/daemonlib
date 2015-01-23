@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2014 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2015 Matthias Bolte <matthias@tinkerforge.com>
  * Copyright (C) 2014 Olaf Lüke <olaf@tinkerforge.com>
  *
  * config.c: Config file subsystem
@@ -86,34 +86,6 @@ static void config_reset(void) {
 		memcpy(&config_options[i].value, &config_options[i].default_value,
 		       sizeof(config_options[i].value));
 	}
-}
-
-static int config_parse_int(const char *string, int *value) {
-	char *end = NULL;
-	long tmp;
-
-	if (*string == '\0') {
-		return -1;
-	}
-
-	errno = 0;
-	tmp = strtol(string, &end, 10);
-
-	if (errno != 0) {
-		return -1;
-	}
-
-	if (end == NULL || *end != '\0') {
-		return -1;
-	}
-
-	if (sizeof(long) > sizeof(int) && (tmp < INT32_MIN || tmp > INT32_MAX)) {
-		return -1;
-	}
-
-	*value = tmp;
-
-	return 0;
 }
 
 static void config_report_read_warning(ConfFileReadWarning warning, int number,
@@ -301,7 +273,7 @@ void config_init(const char *filename) {
 			break;
 
 		case CONFIG_OPTION_TYPE_INTEGER:
-			if (config_parse_int(value, &integer) < 0) {
+			if (parse_int(value, NULL, 10, &integer) < 0) {
 				config_warn("Value '%s' for %s option is not an integer",
 				            value, config_options[i].name);
 			} else if (integer < config_options[i].integer_min || integer > config_options[i].integer_max) {
