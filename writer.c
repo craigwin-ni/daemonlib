@@ -83,7 +83,7 @@ static void writer_handle_write(void *opaque) {
 	                 writer->packet_type);
 
 	if (writer->backlog.count == 0) {
-		// last queued response handled, deregister for write events
+		// last queued packet handled, deregister for write events
 		event_modify_source(writer->io->handle, EVENT_SOURCE_TYPE_GENERIC,
 		                    EVENT_WRITE, 0, NULL, NULL);
 	}
@@ -185,48 +185,54 @@ void writer_destroy(Writer *writer) {
 	queue_destroy(&writer->backlog, NULL);
 }
 
-// returns -1 on error, 0 if the packet was written and 1 if the packet was enqueued
+// returns -1 on error, 0 if the packet was completely written and 1 if the
+// packet was completely or partly pushed to the backlog
 int writer_write(Writer *writer, Packet *packet) {
 	int rc;
 	char packet_signature[PACKET_MAX_SIGNATURE_LENGTH];
 	char recipient_signature[WRITER_MAX_RECIPIENT_SIGNATURE_LENGTH];
 
-	if (writer->backlog.count == 0) {
-		// if there is no backlog, try to write
-		rc = io_write(writer->io, packet, packet->header.length);
-
-		if (rc < 0) {
-			// if write fails with an error different from EWOULDBLOCK then give up
-			// and disconnect recipient
-			if (!errno_would_block()) {
-				log_error("Could not send %s (%s) to %s, disconnecting %s: %s (%d)",
-				          writer->packet_type,
-				          writer->packet_signature(packet_signature, packet),
-				          writer->recipient_signature(recipient_signature, false, writer->opaque),
-				          writer->recipient_name,
-				          get_errno_name(errno), errno);
-
-				writer->recipient_disconnect(writer->opaque);
-
-				return -1;
-			}
-		} else if (rc < packet->header.length) {
-			// packet was not written completely, push the remaining data to the backlog
-			if (writer_push_packet_to_backlog(writer, packet, rc) < 0) {
-				return -1;
-			}
-		} else {
-			// successfully written
-			return 0;
+	// there is already a backlog, push complete packet to backlog
+	if (writer->backlog.count > 0) {
+		if (writer_push_packet_to_backlog(writer, packet, 0) < 0) {
+			return -1;
 		}
+
+		return 1;
 	}
 
-	// if either there is already a backlog or a write failed with EWOULDBLOCK
-	// then push to backlog
-	if (writer_push_packet_to_backlog(writer, packet, 0) < 0) {
+	// if there is no backlog, try to write
+	rc = io_write(writer->io, packet, packet->header.length);
+
+	if (rc < 0) {
+		if (errno_would_block()) {
+			// if write failed with EWOULDBLOCK, push complete packet to backlog
+			if (writer_push_packet_to_backlog(writer, packet, 0) < 0) {
+				return -1;
+			}
+
+			return 1;
+		}
+
+		// otherwise give up and disconnect the recipient
+		log_error("Could not send %s (%s) to %s, disconnecting %s: %s (%d)",
+		          writer->packet_type,
+		          writer->packet_signature(packet_signature, packet),
+		          writer->recipient_signature(recipient_signature, false, writer->opaque),
+		          writer->recipient_name,
+		          get_errno_name(errno), errno);
+
+		writer->recipient_disconnect(writer->opaque);
+
 		return -1;
+	} else if (rc < packet->header.length) {
+		// packet was not written completely, push remaining packet to backlog
+		if (writer_push_packet_to_backlog(writer, packet, rc) < 0) {
+			return -1;
+		}
+
+		return 1;
 	}
 
-	// successfully pushed to backlog
-	return 1;
+	return 0;
 }
