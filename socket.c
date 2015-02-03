@@ -70,7 +70,7 @@ Socket *socket_create_allocated(void) {
 }
 
 void socket_destroy(Socket *socket) {
-	return socket->destroy(socket);
+	socket->destroy(socket);
 }
 
 // sets errno on error
