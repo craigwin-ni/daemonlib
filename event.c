@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2014 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2015 Matthias Bolte <matthias@tinkerforge.com>
  *
  * event.c: Event specific functions
  *
@@ -87,7 +87,7 @@ void event_exit(void) {
 	for (i = 0; i < _event_sources.count; ++i) {
 		event_source = array_get(&_event_sources, i);
 
-		log_warn("Leaking %s event source (handle: %d, events: %d) at index %d",
+		log_warn("Leaking %s event source (handle: %d, events: 0x%04X) at index %d",
 		         event_get_source_type_name(event_source->type, false),
 		         event_source->handle, event_source->events, i);
 	}
@@ -216,7 +216,7 @@ int event_add_source(IOHandle handle, EventSourceType type, uint32_t events,
 			return -1;
 		}
 
-		log_event_debug("Added %s event source (handle: %d, events: %d) at index %d",
+		log_event_debug("Added %s event source (handle: %d, events: 0x%04X) at index %d",
 		                event_get_source_type_name(type, false),
 		                handle, events, _event_sources.count - 1);
 
@@ -341,7 +341,7 @@ void event_remove_source(IOHandle handle, EventSourceType type) {
 	}
 
 	if (event_source->state == EVENT_SOURCE_STATE_REMOVED) {
-		log_warn("%s event source (handle: %d, events: %d) already marked as removed at index %d",
+		log_warn("%s event source (handle: %d, events: 0x%04X) already marked as removed at index %d",
 		         event_get_source_type_name(event_source->type, true),
 		         event_source->handle, event_source->events, index);
 	} else {
@@ -349,7 +349,7 @@ void event_remove_source(IOHandle handle, EventSourceType type) {
 
 		event_source_removed_platform(event_source);
 
-		log_event_debug("Marked %s event source (handle: %d, events: %d) as removed at index %d",
+		log_event_debug("Marked %s event source (handle: %d, events: 0x%04X) as removed at index %d",
 		                event_get_source_type_name(event_source->type, false),
 		                event_source->handle, event_source->events, index);
 	}
@@ -367,7 +367,7 @@ void event_cleanup_sources(void) {
 		event_source = array_get(&_event_sources, i);
 
 		if (event_source->state == EVENT_SOURCE_STATE_REMOVED) {
-			log_event_debug("Removed %s event source (handle: %d, events: %d) at index %d",
+			log_event_debug("Removed %s event source (handle: %d, events: 0x%04X) at index %d",
 			                event_get_source_type_name(event_source->type, false),
 			                event_source->handle, event_source->events, i);
 
@@ -380,14 +380,14 @@ void event_cleanup_sources(void) {
 
 void event_handle_source(EventSource *event_source, uint32_t received_events) {
 	if (event_source->state != EVENT_SOURCE_STATE_NORMAL) {
-		log_event_debug("Ignoring %s event source (handle: %d, received-events: %u) in state transition",
+		log_event_debug("Ignoring %s event source (handle: %d, received-events: 0x%04X) in state transition",
 		                event_get_source_type_name(event_source->type, false),
 		                event_source->handle, received_events);
 
 		return;
 	}
 
-	log_event_debug("Handling %s event source (handle: %d, received-events: %u)",
+	log_event_debug("Handling %s event source (handle: %d, received-events: 0x%04X)",
 	                event_get_source_type_name(event_source->type, false),
 	                event_source->handle, received_events);
 
@@ -421,7 +421,7 @@ void event_handle_source(EventSource *event_source, uint32_t received_events) {
 			// if the event source got removed in the meantime then don't deliver
 			// the write event anymore
 			if (event_source->state == EVENT_SOURCE_STATE_REMOVED) {
-				log_debug("Ignoring removed %s event source (handle: %d, received-events: %u)",
+				log_debug("Ignoring removed %s event source (handle: %d, received-events: 0x%04X)",
 				          event_get_source_type_name(event_source->type, false),
 				          event_source->handle, received_events);
 
@@ -435,7 +435,7 @@ void event_handle_source(EventSource *event_source, uint32_t received_events) {
 			// if the event source got removed in the meantime then don't deliver
 			// the write event anymore
 			if (event_source->state == EVENT_SOURCE_STATE_REMOVED) {
-				log_debug("Ignoring removed %s event source (handle: %d, received-events: %u)",
+				log_debug("Ignoring removed %s event source (handle: %d, received-events: 0x%04X)",
 				          event_get_source_type_name(event_source->type, false),
 				          event_source->handle, received_events);
 
@@ -449,7 +449,7 @@ void event_handle_source(EventSource *event_source, uint32_t received_events) {
 			// if the event source got removed in the meantime then don't deliver
 			// the write event anymore
 			if (event_source->state == EVENT_SOURCE_STATE_REMOVED) {
-				log_debug("Ignoring removed %s event source (handle: %d, received-events: %u)",
+				log_debug("Ignoring removed %s event source (handle: %d, received-events: 0x%04X)",
 				          event_get_source_type_name(event_source->type, false),
 				          event_source->handle, received_events);
 
