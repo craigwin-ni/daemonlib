@@ -353,14 +353,18 @@ void string_append(char *target, int target_length, const char *source) {
 	target[target_length - 1] = '\0';
 }
 
-bool string_ends_with(const char *string, const char *suffix) {
+bool string_ends_with(const char *string, const char *suffix, bool case_sensitive) {
 	int offset = (int)strlen(string) - (int)strlen(suffix);
 
 	if (offset < 0) {
 		return false;
 	}
 
-	return strcmp(string + offset, suffix) == 0;
+	if (case_sensitive) {
+		return strcmp(string + offset, suffix) == 0;
+	} else {
+		return strcasecmp(string + offset, suffix) == 0;
+	}
 }
 
 // sets errno on error
