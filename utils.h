@@ -41,6 +41,7 @@ const char *get_errno_name(int error_code);
 
 void string_copy(char *target, int target_length, const char *source);
 void string_append(char *target, int target_length, const char *source);
+bool string_ends_with(const char *string, const char *suffix);
 
 int parse_int(const char *string, char **end_ptr, int base, int *value);
 
