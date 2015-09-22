@@ -172,12 +172,12 @@ char *packet_get_request_signature(char *signature, Packet *packet) {
 	char base58[BASE58_MAX_LENGTH];
 
 	snprintf(signature, PACKET_MAX_SIGNATURE_LENGTH,
-	         "U: %s, L: %u, F: %u, S: %u, R: %u",
+	         "U: %s, L: %u, F: %u, S: %u, R: %d",
 	         base58_encode(base58, uint32_from_le(packet->header.uid)),
 	         packet->header.length,
 	         packet->header.function_id,
 	         packet_header_get_sequence_number(&packet->header),
-	         packet_header_get_response_expected(&packet->header));
+	         packet_header_get_response_expected(&packet->header) ? 1 : 0);
 
 	return signature;
 }
