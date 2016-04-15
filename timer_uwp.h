@@ -1,8 +1,8 @@
 /*
  * daemonlib
- * Copyright (C) 2014, 2016 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2016 Matthias Bolte <matthias@tinkerforge.com>
  *
- * timer.h: Timer specific functions
+ * timer_uwp.h: Universal Windows Platform timer implementation
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,24 +19,30 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef DAEMONLIB_TIMER_H
-#define DAEMONLIB_TIMER_H
+#ifndef DAEMONLIB_TIMER_UWP_H
+#define DAEMONLIB_TIMER_UWP_H
 
+#include <stdbool.h>
 #include <stdint.h>
+#include <windows.h>
 
-#ifdef DAEMONLIB_UWP_BUILD
-	#include "timer_uwp.h"
-#elif defined (_WIN32)
-	#include "timer_winapi.h"
-#elif defined (__linux__)
-	#include "timer_linux.h"
-#else
-	#include "timer_posix.h"
-#endif
+#include "io.h"
+#include "pipe.h"
+#include "threads.h"
 
-int timer_create_(Timer *timer, TimerFunction function, void *opaque);
-void timer_destroy(Timer *timer);
+typedef void (*TimerFunction)(void *opaque);
 
-int timer_configure(Timer *timer, uint64_t delay, uint64_t interval); // microseconds
+typedef struct {
+	Pipe notification_pipe;
+	HANDLE interrupt_event;
+	Semaphore handshake;
+	Thread thread;
+	bool running;
+	uint64_t delay; // in microseconds
+	uint64_t interval; // in microseconds
+	uint32_t configuration_id;
+	TimerFunction function;
+	void *opaque;
+} Timer;
 
-#endif // DAEMONLIB_TIMER_H
+#endif // DAEMONLIB_TIMER_UWP_H

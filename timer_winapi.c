@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2014 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2014. 2016 Matthias Bolte <matthias@tinkerforge.com>
  *
  * timer_winapi.c: WinAPI based timer implementation
  *
@@ -68,7 +68,7 @@ static void timer_thread(void *opaque) {
 	while (timer->running) {
 		rc = WaitForMultipleObjects(2, handles, FALSE, INFINITE);
 
-		if (rc == WAIT_OBJECT_0) {
+		if (rc == WAIT_OBJECT_0) { // timer
 			if (delay.QuadPart == 0 && interval == 0) {
 				log_debug("Ignoring timer event for inactive waitable timer (handle: %p)",
 				          timer->waitable_timer);
@@ -83,7 +83,7 @@ static void timer_thread(void *opaque) {
 
 				break;
 			}
-		} else if (rc == WAIT_OBJECT_0 + 1) {
+		} else if (rc == WAIT_OBJECT_0 + 1) { // interrupt
 			if (!timer->running) {
 				break;
 			}
