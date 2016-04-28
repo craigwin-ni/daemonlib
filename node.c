@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2014 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2014, 2016 Matthias Bolte <matthias@tinkerforge.com>
  *
  * node.c: Double linked list helpers
  *
@@ -26,6 +26,7 @@ void node_reset(Node *node) {
 	node->next = node;
 }
 
+// NOTE: assumes that INSERT is not part of another linked list already
 void node_insert_before(Node *node, Node *insert) {
 	insert->prev = node->prev;
 	node->prev = insert;
@@ -33,6 +34,7 @@ void node_insert_before(Node *node, Node *insert) {
 	insert->prev->next = insert;
 }
 
+// NOTE: assumes that INSERT is not part of another linked list already
 void node_insert_after(Node *node, Node *insert) {
 	insert->next = node->next;
 	node->next = insert;
