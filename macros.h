@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2014 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2014, 2016 Matthias Bolte <matthias@tinkerforge.com>
  *
  * macros.h: Preprocessor macros
  *
@@ -71,7 +71,7 @@
 #define GROW_ALLOCATION(size) ((((int)(size) - 1) / 16 + 1) * 16)
 
 // this is intentinally called containerof instead of container_of to avoid
-// conflicts wtih potential other definitions of the container_of macro
+// conflicts with potential other definitions of the container_of macro
 #ifdef __GNUC__
 	#define containerof(ptr, type, member) ({ \
 		const typeof(((type *)0)->member) *__ptr = ptr; \
