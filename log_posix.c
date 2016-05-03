@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012, 2014 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012, 2014, 2016 Matthias Bolte <matthias@tinkerforge.com>
  *
  * log_posix.c: POSIX specific log handling
  *
@@ -29,27 +29,27 @@
 
 bool _log_debug_override_platform = false;
 
-static FILE *_file = NULL;
+static IO *_output = NULL;
 
-void log_set_file_platform(FILE *file);
+void log_set_output_platform(IO *output);
 
-void log_init_platform(FILE *file) {
-	log_set_file_platform(file);
+void log_init_platform(IO *output) {
+	log_set_output_platform(output);
 }
 
 void log_exit_platform(void) {
 }
 
-void log_set_file_platform(FILE *file) {
+void log_set_output_platform(IO *output) {
 	char *term;
 
-	_file = NULL;
+	_output = NULL;
 
-	if (file == NULL) {
+	if (output == NULL) {
 		return;
 	}
 
-	if (!isatty(fileno(file))) {
+	if (!isatty(output->handle)) {
 		return;
 	}
 
@@ -59,13 +59,13 @@ void log_set_file_platform(FILE *file) {
 		return;
 	}
 
-	_file = file;
+	_output = output;
 }
 
 void log_apply_color_platform(LogLevel level, bool begin) {
 	const char *color = "";
 
-	if (_file == NULL) {
+	if (_output == NULL) {
 		return;
 	}
 
@@ -92,7 +92,7 @@ void log_apply_color_platform(LogLevel level, bool begin) {
 		}
 	}
 
-	fprintf(_file, "%s", color);
+	io_write(_output, (void *)color, strlen(color));
 }
 
 bool log_is_message_included_platform(LogLevel level) {

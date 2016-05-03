@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012, 2014 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012, 2014, 2016 Matthias Bolte <matthias@tinkerforge.com>
  * Copyright (C) 2014 Olaf Lüke <olaf@tinkerforge.com>
  *
  * log.c: Logging specific functions
@@ -39,22 +39,52 @@ typedef struct {
 	uint32_t groups;
 } LogDebugFilter;
 
-static Mutex _mutex; // protects writing to _file
+typedef struct {
+	IO base;
+} Stderr;
+
+static Mutex _mutex; // protects writing to _output
 static LogLevel _level = LOG_LEVEL_INFO;
-static FILE *_file = NULL;
+static Stderr _stderr;
+static IO *_output = NULL;
 static bool _debug_override = false;
 static int _debug_filter_version = 0;
 static LogDebugFilter _debug_filters[64];
 static int _debug_filter_count = 0;
 
-extern void log_init_platform(FILE *file);
+extern void log_init_platform(IO *output);
 extern void log_exit_platform(void);
-extern void log_set_file_platform(FILE *file);
+extern void log_set_output_platform(IO *output);
 extern void log_apply_color_platform(LogLevel level, bool begin);
 extern bool log_is_message_included_platform(LogLevel level);
 extern void log_secondary_output_platform(struct timeval *timestamp, LogLevel level,
                                           LogSource *source, int line,
                                           const char *format, va_list arguments);
+
+static int stderr_write(Stderr *stderr_, void *buffer, int length) {
+	int rc;
+
+	(void)stderr_;
+
+	rc = fwrite(buffer, 1, length, stderr);
+
+	fflush(stderr);
+
+	return rc;
+}
+
+static int stderr_create(Stderr *stderr_) {
+	int rc = io_create(&stderr_->base, "stderr", NULL, NULL,
+	                   (IOWriteFunction)stderr_write);
+
+	if (rc < 0) {
+		return rc;
+	}
+
+	stderr_->base.handle = fileno(stderr);
+
+	return 0;
+}
 
 static void log_set_debug_filter(const char *filter) {
 	const char *p = filter;
@@ -152,9 +182,11 @@ static void log_primary_output(struct timeval *timestamp, LogLevel level,
 	char formatted_timestamp[64] = "<unknown>";
 	char level_char;
 	char *debug_group_name = "";
+	char buffer[1024] = "<unknown>";
+	int length;
 
-	// check file
-	if (_file == NULL) {
+	// check output
+	if (_output == NULL) {
 		return;
 	}
 
@@ -188,22 +220,27 @@ static void log_primary_output(struct timeval *timestamp, LogLevel level,
 	default:                                                   break;
 	}
 
-	// begin color
+	// format prefix
+	snprintf(buffer, sizeof(buffer), "%s.%06d <%c> <%s%s:%d> ",
+	         formatted_timestamp, (int)timestamp->tv_usec, level_char,
+	         debug_group_name, source->name, line);
+
+	length = strlen(buffer);
+
+	// format message
+	vsnprintf(buffer + length, sizeof(buffer) - length, format, arguments);
+
+	length = strlen(buffer);
+
+	// format newline
+	snprintf(buffer + length, sizeof(buffer) - length, "\n");
+
+	length = strlen(buffer);
+
+	// write output
 	log_apply_color_platform(level, true);
-
-	// print prefix
-	fprintf(_file, "%s.%06d <%c> <%s%s:%d> ",
-	        formatted_timestamp, (int)timestamp->tv_usec, level_char,
-	        debug_group_name, source->name, line);
-
-	// print message
-	vfprintf(_file, format, arguments);
-	fprintf(_file, "\n");
-
-	// end color
+	io_write(_output, buffer, length);
 	log_apply_color_platform(level, false);
-
-	fflush(_file);
 }
 
 void log_init(void) {
@@ -212,9 +249,12 @@ void log_init(void) {
 	mutex_create(&_mutex);
 
 	_level = config_get_option_value("log.level")->symbol;
-	_file = stderr;
 
-	log_init_platform(_file);
+	stderr_create(&_stderr);
+
+	_output = &_stderr.base;
+
+	log_init_platform(_output);
 
 	filter = config_get_option_value("log.debug_filter")->string;
 
@@ -243,18 +283,18 @@ void log_enable_debug_override(const char *filter) {
 	log_set_debug_filter(filter);
 }
 
-void log_set_file(FILE *file) {
+void log_set_output(IO *output) {
 	log_lock();
 
-	_file = file;
+	_output = output;
 
-	log_set_file_platform(file);
+	log_set_output_platform(_output);
 
 	log_unlock();
 }
 
-FILE *log_get_file(void) {
-	return _file;
+IO *log_get_output(void) {
+	return _output;
 }
 
 bool log_is_message_included(LogLevel level, LogSource *source,

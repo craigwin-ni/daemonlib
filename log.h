@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2014 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2014, 2016 Matthias Bolte <matthias@tinkerforge.com>
  * Copyright (C) 2014 Olaf Lüke <olaf@tinkerforge.com>
  *
  * log.h: Logging specific functions
@@ -28,6 +28,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include "io.h"
 #include "macros.h"
 
 typedef enum {
@@ -114,8 +115,8 @@ void log_unlock(void);
 
 void log_enable_debug_override(const char *filter);
 
-void log_set_file(FILE *file);
-FILE *log_get_file(void);
+void log_set_output(IO *output);
+IO *log_get_output(void);
 
 bool log_is_message_included(LogLevel level, LogSource *source,
                              LogDebugGroup debug_group);
