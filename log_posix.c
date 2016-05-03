@@ -92,7 +92,7 @@ void log_apply_color_platform(LogLevel level, bool begin) {
 		}
 	}
 
-	io_write(_output, (void *)color, strlen(color));
+	io_write(_output, color, strlen(color));
 }
 
 bool log_is_message_included_platform(LogLevel level) {

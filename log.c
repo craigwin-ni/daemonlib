@@ -61,7 +61,7 @@ extern void log_secondary_output_platform(struct timeval *timestamp, LogLevel le
                                           LogSource *source, int line,
                                           const char *format, va_list arguments);
 
-static int stderr_write(Stderr *stderr_, void *buffer, int length) {
+static int stderr_write(Stderr *stderr_, const void *buffer, int length) {
 	int rc;
 
 	(void)stderr_;

@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2014 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2014, 2016 Matthias Bolte <matthias@tinkerforge.com>
  *
  * io.c: Base for all I/O devices
  *
@@ -65,7 +65,7 @@ int io_read(IO *io, void *buffer, int length) {
 	return io->read(io, buffer, length);
 }
 
-int io_write(IO *io, void *buffer, int length) {
+int io_write(IO *io, const void *buffer, int length) {
 	if (io->write == NULL) {
 		errno = ENOSYS;
 

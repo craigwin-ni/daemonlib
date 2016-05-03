@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2015 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2016 Matthias Bolte <matthias@tinkerforge.com>
  * Copyright (C) 2014 Olaf Lüke <olaf@tinkerforge.com>
  *
  * socket_posix.c: POSIX based socket implementation
@@ -137,7 +137,7 @@ int socket_receive_platform(Socket *socket, void *buffer, int length) {
 }
 
 // sets errno on error
-int socket_send_platform(Socket *socket, void *buffer, int length) {
+int socket_send_platform(Socket *socket, const void *buffer, int length) {
 #ifdef MSG_NOSIGNAL
 	int flags = MSG_NOSIGNAL;
 #else

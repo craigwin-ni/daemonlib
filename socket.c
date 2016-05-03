@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2014-2015 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2014-2016 Matthias Bolte <matthias@tinkerforge.com>
  *
  * socket.c: Socket implementation
  *
@@ -29,7 +29,7 @@ extern int socket_accept_platform(Socket *socket, Socket *accepted_socket,
                                   struct sockaddr *address, socklen_t *length);
 extern int socket_listen_platform(Socket *socket, int backlog);
 extern int socket_receive_platform(Socket *socket, void *buffer, int length);
-extern int socket_send_platform(Socket *socket, void *buffer, int length);
+extern int socket_send_platform(Socket *socket, const void *buffer, int length);
 
 // sets errno on error
 int socket_create(Socket *socket) {
@@ -119,7 +119,7 @@ int socket_receive(Socket *socket, void *buffer, int length) {
 }
 
 // sets errno on error
-int socket_send(Socket *socket, void *buffer, int length) {
+int socket_send(Socket *socket, const void *buffer, int length) {
 	if (socket->send == NULL) {
 		errno = ENOSYS;
 

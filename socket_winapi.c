@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2015 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2016 Matthias Bolte <matthias@tinkerforge.com>
  * Copyright (C) 2014 Olaf Lüke <olaf@tinkerforge.com>
  *
  * socket_winapi.c: WinAPI based socket implementation
@@ -168,7 +168,7 @@ int socket_receive_platform(Socket *socket, void *buffer, int length) {
 }
 
 // sets errno on error
-int socket_send_platform(Socket *socket, void *buffer, int length) {
+int socket_send_platform(Socket *socket, const void *buffer, int length) {
 	length = send(socket->base.handle, (const char *)buffer, length, 0);
 
 	if (length == SOCKET_ERROR) {

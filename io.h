@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2014 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2014, 2016 Matthias Bolte <matthias@tinkerforge.com>
  *
  * io.h: Base for all I/O devices
  *
@@ -44,7 +44,7 @@ typedef struct _IO IO;
 
 typedef void (*IODestroyFunction)(IO *io);
 typedef int (*IOReadFunction)(IO *io, void *buffer, int length);
-typedef int (*IOWriteFunction)(IO *io, void *buffer, int length);
+typedef int (*IOWriteFunction)(IO *io, const void *buffer, int length);
 
 struct _IO {
 	IOHandle handle;
@@ -61,6 +61,6 @@ int io_create(IO *io, const char *type,
 void io_destroy(IO *io);
 
 int io_read(IO *io, void *buffer, int length);
-int io_write(IO *io, void *buffer, int length);
+int io_write(IO *io, const void *buffer, int length);
 
 #endif // DAEMONLIB_IO_H
