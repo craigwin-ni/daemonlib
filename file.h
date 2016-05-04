@@ -1,8 +1,8 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2014, 2016 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2014, 2016 Matthias Bolte <matthias@tinkerforge.com>
  *
- * daemon.c: Daemon implementation
+ * file.h: File based I/O device
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,14 +19,20 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef DAEMONLIB_DAEMON_H
-#define DAEMONLIB_DAEMON_H
+#ifndef DAEMONLIB_FILE_H
+#define DAEMONLIB_FILE_H
 
-#include <stdbool.h>
+#include "io.h"
 
-#include "file.h"
+typedef struct {
+	IO base;
+} File;
 
-int daemon_start(const char *log_filename, File *log_file,
-                 const char *pid_filename, bool double_fork);
+int file_create(File *file, const char *name, int flags, int mode); // takes open flags
+void file_destroy(File *file);
 
-#endif // DAEMONLIB_DAEMON_H
+int file_read(File *file, void *buffer, int length);
+int file_write(File *file, void *buffer, int length);
+int file_seek(File *file, off_t offset, int origin); // takes lseek origin
+
+#endif // BRICKD_FILE_H

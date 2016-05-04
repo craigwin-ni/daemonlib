@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2014 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2014, 2016 Matthias Bolte <matthias@tinkerforge.com>
  *
  * daemon.c: Daemon implementation
  *
@@ -35,13 +35,15 @@
 #include "pid_file.h"
 #include "utils.h"
 
-int daemon_start(const char *log_filename, const char *pid_filename, bool double_fork) {
+int daemon_start(const char *log_filename, File *log_file,
+                 const char *pid_filename, bool double_fork) {
 	int status_pipe[2];
 	pid_t pid;
 	int rc;
 	int pid_fd = -1;
 	uint8_t success = 0;
-	FILE *log_file = NULL;
+	bool log_file_created = false;
+	IO *previous_log_output = NULL;
 	int stdin_fd = -1;
 	int stdout_fd = -1;
 
@@ -140,16 +142,18 @@ int daemon_start(const char *log_filename, const char *pid_filename, bool double
 	}
 
 	// open log file
-	log_file = fopen(log_filename, "a+");
-
-	if (log_file == NULL) {
+	if (file_create(log_file, log_filename,
+	                O_CREAT | O_WRONLY | O_APPEND, 0644) < 0) {
 		fprintf(stderr, "Could not open log file '%s': %s (%d)\n",
 		        log_filename, get_errno_name(errno), errno);
 
 		goto cleanup;
 	}
 
-	log_set_file(log_file);
+	log_file_created = true;
+	previous_log_output = log_get_output();
+
+	log_set_output(&log_file->base);
 
 	// redirect standard file descriptors
 	stdin_fd = open("/dev/null", O_RDONLY);
@@ -161,7 +165,7 @@ int daemon_start(const char *log_filename, const char *pid_filename, bool double
 		goto cleanup;
 	}
 
-	stdout_fd = fileno(log_file);
+	stdout_fd = log_file->base.handle;
 
 	if (dup2(stdin_fd, STDIN_FILENO) != STDIN_FILENO) {
 		fprintf(stderr, "Could not redirect stdin: %s (%d)\n",
@@ -204,10 +208,10 @@ cleanup:
 		close(status_pipe[1]);
 	}
 
-	if (!success) {
-		if (log_file != NULL) {
-			log_set_file(stderr);
-			fclose(log_file);
+	if (success == 0) {
+		if (log_file_created) {
+			log_set_output(previous_log_output);
+			file_destroy(log_file);
 		}
 
 		if (pid_fd >= 0) {
