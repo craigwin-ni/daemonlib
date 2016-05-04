@@ -531,7 +531,7 @@ int red_brick_uid(uint32_t *uid /* always little endian */) {
 		return -1;
 	}
 
-	rc = fread(base58, 1, sizeof(base58), fp);
+	rc = robust_fread(fp, base58, sizeof(base58));
 	saved_errno = errno;
 
 	fclose(fp);

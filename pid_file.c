@@ -102,7 +102,7 @@ int pid_file_acquire(const char *filename, pid_t pid) {
 
 	snprintf(buffer, sizeof(buffer), "%"PRIi64, (int64_t)pid);
 
-	if (write(fd, buffer, strlen(buffer)) < 0) {
+	if (robust_write(fd, buffer, strlen(buffer)) < 0) {
 		fprintf(stderr, "Could not write to PID file '%s': %s (%d)\n",
 		        filename, get_errno_name(errno), errno);
 

@@ -1,7 +1,7 @@
 /*
  * daemonlib
  * Copyright (C) 2014 Olaf Lüke <olaf@tinkerforge.com>
- * Copyright (C) 2014-2015 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2014-2016 Matthias Bolte <matthias@tinkerforge.com>
  *
  * red_gpio.c: GPIO functions for RED Brick
  *
@@ -130,7 +130,7 @@ int gpio_sysfs_export(int gpio_num) {
 	}
 
 	length = snprintf(buffer, sizeof(buffer), "%d", gpio_num);
-	rc = write(fd, buffer, length);
+	rc = robust_write(fd, buffer, length);
 
 	close(fd);
 
@@ -154,7 +154,7 @@ int gpio_sysfs_unexport(int gpio_num) {
 	}
 
 	length = snprintf(buffer, sizeof(buffer), "%d", gpio_num);
-	rc = write(fd, buffer, length);
+	rc = robust_write(fd, buffer, length);
 
 	close(fd);
 
@@ -174,7 +174,7 @@ int gpio_sysfs_set_edge(const char *gpio_name, const char *edge) {
 		return -1;
 	}
 
-	rc = write(fd, edge, strlen(edge));
+	rc = robust_write(fd, edge, strlen(edge));
 
 	close(fd);
 

@@ -1,7 +1,7 @@
 /*
  * daemonlib
  * Copyright (C) 2014 Olaf Lüke <olaf@tinkerforge.com>
- * Copyright (C) 2014-2015 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2014-2016 Matthias Bolte <matthias@tinkerforge.com>
  *
  * red_led.c: LED functions for RED Brick
  *
@@ -26,6 +26,7 @@
 #include "red_led.h"
 
 #include "log.h"
+#include "utils.h"
 
 static LogSource _log_source = LOG_SOURCE_INITIALIZER;
 
@@ -92,7 +93,7 @@ int red_led_set_trigger(REDLED led, REDLEDTrigger trigger) {
 
 REDLEDTrigger red_led_get_trigger(REDLED led) {
 	char buf[LED_TRIGGER_MAX_LENGTH + 1] = {0};
-	FILE *f;
+	FILE *fp;
 	int length;
 	int i;
 
@@ -103,23 +104,27 @@ REDLEDTrigger red_led_get_trigger(REDLED led) {
 		return -1;
 	}
 
-	if ((f = fopen(led_path[led], "r")) == NULL) {
+	fp = fopen(led_path[led], "rb");
+
+	if (fp == NULL) {
 		log_error("Could not open file %s", led_path[led]);
 
 		return RED_LED_TRIGGER_ERROR;
 	}
 
-	if ((length = fread(buf, sizeof(char), LED_TRIGGER_MAX_LENGTH, f)) <= 0) {
+	length = robust_fread(fp, buf, LED_TRIGGER_MAX_LENGTH);
+
+	if (length <= 0) {
 		log_error("Could not read from file %s", led_path[led]);
 
-		fclose(f);
+		fclose(fp);
 
 		return RED_LED_TRIGGER_ERROR;
 	}
 
 	buf[length] = '\0';
 
-	if (fclose(f) < 0) {
+	if (fclose(fp) < 0) {
 		log_error("Could not close file %s", led_path[led]);
 
 		return RED_LED_TRIGGER_ERROR;

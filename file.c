@@ -30,6 +30,8 @@
 
 #include "file.h"
 
+#include "utils.h"
+
 // sets errno on error
 int file_create(File *file, const char *name, int flags, int mode) { // takes open flags
 	int rc;
@@ -85,12 +87,12 @@ void file_destroy(File *file) {
 
 // sets errno on error
 int file_read(File *file, void *buffer, int length) {
-	return read(file->base.handle, buffer, length);
+	return robust_read(file->base.handle, buffer, length);
 }
 
 // sets errno on error
 int file_write(File *file, void *buffer, int length) {
-	return write(file->base.handle, buffer, length);
+	return robust_write(file->base.handle, buffer, length);
 }
 
 // sets errno on error

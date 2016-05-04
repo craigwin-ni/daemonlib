@@ -1,7 +1,7 @@
 /*
  * daemonlib
  * Copyright (C) 2014 Ishraq Ibne Ashraf <ishraq@tinkerforge.com>
- * Copyright (C) 2014-2015 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2014-2016 Matthias Bolte <matthias@tinkerforge.com>
  * Copyright (C) 2014 Olaf Lüke <olaf@tinkerforge.com>
  *
  * red_i2c_eeprom.c: I2C EEPROM specific functions
@@ -59,7 +59,7 @@ static int i2c_eeprom_set_pointer(I2CEEPROM *i2c_eeprom,
 		return -1;
 	}
 
-	bytes_written = write(i2c_eeprom->file, eeprom_memory_address, 2);
+	bytes_written = robust_write(i2c_eeprom->file, eeprom_memory_address, 2);
 
 	if (bytes_written != 2) {
 		// We only use debug here to not spam the log with errors.
@@ -162,7 +162,7 @@ int i2c_eeprom_read(I2CEEPROM *i2c_eeprom, uint16_t eeprom_memory_address,
 		return -1;
 	}
 
-	bytes_read = read(i2c_eeprom->file, buffer_to_store, bytes_to_read);
+	bytes_read = robust_read(i2c_eeprom->file, buffer_to_store, bytes_to_read);
 
 	if (bytes_read != bytes_to_read) {
 		log_error("EEPROM read failed: %s (%d)", get_errno_name(errno), errno);
@@ -194,7 +194,7 @@ int i2c_eeprom_write(I2CEEPROM *i2c_eeprom, uint16_t eeprom_memory_address,
 		write_byte[2] = buffer_to_write[i];
 
 		i2c_eeprom_select(i2c_eeprom);
-		rc = write(i2c_eeprom->file, write_byte, 3);
+		rc = robust_write(i2c_eeprom->file, write_byte, 3);
 		i2c_eeprom_deselect(i2c_eeprom);
 
 		// Wait at least 5ms between writes (see m24128-bw.pdf)

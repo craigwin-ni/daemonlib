@@ -30,6 +30,7 @@
 
 #include "config.h"
 #include "threads.h"
+#include "utils.h"
 
 static LogSource _log_source = LOG_SOURCE_INITIALIZER;
 
@@ -63,7 +64,7 @@ static int stderr_write(IO *io, const void *buffer, int length) {
 
 	(void)io;
 
-	rc = fwrite(buffer, 1, length, stderr);
+	rc = robust_fwrite(stderr, buffer, length);
 
 	fflush(stderr);
 

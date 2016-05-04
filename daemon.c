@@ -39,7 +39,6 @@ int daemon_start(const char *log_filename, File *log_file,
                  const char *pid_filename, bool double_fork) {
 	int status_pipe[2];
 	pid_t pid;
-	int rc;
 	int pid_fd = -1;
 	uint8_t success = 0;
 	bool log_file_created = false;
@@ -196,11 +195,7 @@ cleanup:
 	}
 
 	if (double_fork) {
-		do {
-			rc = write(status_pipe[1], &success, sizeof(success));
-		} while (rc < 0 && errno == EINTR);
-
-		if (rc < 0) {
+		if (robust_write(status_pipe[1], &success, sizeof(success)) < 0) {
 			fprintf(stderr, "Could not write to status pipe: %s (%d)",
 			        get_errno_name(errno), errno);
 		}
