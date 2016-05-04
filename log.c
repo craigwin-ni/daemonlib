@@ -39,18 +39,15 @@ typedef struct {
 	uint32_t groups;
 } LogDebugFilter;
 
-typedef struct {
-	IO base;
-} Stderr;
-
 static Mutex _mutex; // protects writing to _output
 static LogLevel _level = LOG_LEVEL_INFO;
-static Stderr _stderr;
 static IO *_output = NULL;
 static bool _debug_override = false;
 static int _debug_filter_version = 0;
 static LogDebugFilter _debug_filters[64];
 static int _debug_filter_count = 0;
+
+IO log_stderr_output;
 
 extern void log_init_platform(IO *output);
 extern void log_exit_platform(void);
@@ -61,10 +58,10 @@ extern void log_secondary_output_platform(struct timeval *timestamp, LogLevel le
                                           LogSource *source, int line,
                                           const char *format, va_list arguments);
 
-static int stderr_write(Stderr *stderr_, const void *buffer, int length) {
+static int stderr_write(IO *io, const void *buffer, int length) {
 	int rc;
 
-	(void)stderr_;
+	(void)io;
 
 	rc = fwrite(buffer, 1, length, stderr);
 
@@ -73,15 +70,14 @@ static int stderr_write(Stderr *stderr_, const void *buffer, int length) {
 	return rc;
 }
 
-static int stderr_create(Stderr *stderr_) {
-	int rc = io_create(&stderr_->base, "stderr", NULL, NULL,
-	                   (IOWriteFunction)stderr_write);
+static int stderr_create(IO *io) {
+	int rc = io_create(io, "stderr", NULL, NULL, stderr_write);
 
 	if (rc < 0) {
 		return rc;
 	}
 
-	stderr_->base.handle = fileno(stderr);
+	io->handle = fileno(stderr);
 
 	return 0;
 }
@@ -250,9 +246,9 @@ void log_init(void) {
 
 	_level = config_get_option_value("log.level")->symbol;
 
-	stderr_create(&_stderr);
+	stderr_create(&log_stderr_output);
 
-	_output = &_stderr.base;
+	_output = &log_stderr_output;
 
 	log_init_platform(_output);
 

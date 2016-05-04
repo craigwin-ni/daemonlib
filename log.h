@@ -107,6 +107,8 @@ typedef struct {
 	#define log_object_debug(...) ((void)0)
 #endif
 
+extern IO log_stderr_output;
+
 void log_init(void);
 void log_exit(void);
 
