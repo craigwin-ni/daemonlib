@@ -187,12 +187,12 @@ char *packet_get_response_signature(char *signature, Packet *packet) {
 
 	if (packet_header_get_sequence_number(&packet->header) != 0) {
 		snprintf(signature, PACKET_MAX_SIGNATURE_LENGTH,
-		         "U: %s, L: %u, F: %u, S: %u, E: %u",
+		         "U: %s, L: %u, F: %u, S: %u, E: %d",
 		         base58_encode(base58, uint32_from_le(packet->header.uid)),
 		         packet->header.length,
 		         packet->header.function_id,
 		         packet_header_get_sequence_number(&packet->header),
-		         packet_header_get_error_code(&packet->header));
+		         (int)packet_header_get_error_code(&packet->header));
 	} else {
 		snprintf(signature, PACKET_MAX_SIGNATURE_LENGTH,
 		         "U: %s, L: %u, F: %u",
