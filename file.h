@@ -35,4 +35,4 @@ int file_read(File *file, void *buffer, int length);
 int file_write(File *file, void *buffer, int length);
 int file_seek(File *file, off_t offset, int origin); // takes lseek origin
 
-#endif // BRICKD_FILE_H
+#endif // DAEMONLIB_FILE_H
