@@ -27,6 +27,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
+#ifndef _MSC_VER
+	#include <sys/time.h>
+#endif
 
 #include "io.h"
 #include "macros.h"
@@ -66,12 +69,18 @@ typedef struct {
 		LOG_DEBUG_GROUP_ALL \
 	}
 
+#ifdef _WIN32
+	#define LOG_NEWLINE "\r\n"
+#else
+	#define LOG_NEWLINE "\n"
+#endif
+
 #ifdef DAEMONLIB_WITH_LOGGING
 	#ifdef _MSC_VER
 		#define log_message_checked(level, debug_group, ...) \
 			do { \
 				if (log_is_message_included(level, &_log_source, debug_group)) { \
-					log_message(level, &_log_source, debug_group, __LINE__, __VA_ARGS__); \
+					log_message(level, &_log_source, debug_group, __FUNCTION__, __LINE__, __VA_ARGS__); \
 				} \
 			__pragma(warning(push)) \
 			__pragma(warning(disable:4127)) \
@@ -81,7 +90,7 @@ typedef struct {
 		#define log_message_checked(level, debug_group, ...) \
 			do { \
 				if (log_is_message_included(level, &_log_source, debug_group)) { \
-					log_message(level, &_log_source, debug_group, __LINE__, __VA_ARGS__); \
+					log_message(level, &_log_source, debug_group, __FUNCTION__, __LINE__, __VA_ARGS__); \
 				} \
 			} while (0)
 	#endif
@@ -124,6 +133,12 @@ bool log_is_message_included(LogLevel level, LogSource *source,
                              LogDebugGroup debug_group);
 
 void log_message(LogLevel level, LogSource *source, LogDebugGroup debug_group,
-                 int line, const char *format, ...) ATTRIBUTE_FMT_PRINTF(5, 6);
+                 const char *function, int line, const char *format, ...)
+                 ATTRIBUTE_FMT_PRINTF(6, 7);
+
+void log_format(char *buffer, int length, struct timeval *timestamp,
+                LogLevel level, LogSource *source, LogDebugGroup debug_group,
+                const char *function, int line, const char *format,
+                va_list arguments);
 
 #endif // DAEMONLIB_LOG_H

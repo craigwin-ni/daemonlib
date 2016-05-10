@@ -22,9 +22,6 @@
 
 #include <stdbool.h>
 #include <string.h>
-#ifndef _MSC_VER
-	#include <sys/time.h>
-#endif
 
 #include "log.h"
 
@@ -54,9 +51,11 @@ extern void log_init_platform(IO *output);
 extern void log_exit_platform(void);
 extern void log_set_output_platform(IO *output);
 extern void log_apply_color_platform(LogLevel level, bool begin);
-extern bool log_is_message_included_platform(LogLevel level);
+extern bool log_is_message_included_platform(LogLevel level, LogSource *source,
+                                             LogDebugGroup debug_group);
 extern void log_secondary_output_platform(struct timeval *timestamp, LogLevel level,
-                                          LogSource *source, int line,
+                                          LogSource *source, LogDebugGroup debug_group,
+                                          const char *function, int line,
                                           const char *format, va_list arguments);
 
 static int stderr_write(IO *io, const void *buffer, int length) {
@@ -173,70 +172,19 @@ static void log_set_debug_filter(const char *filter) {
 // NOTE: assumes that _mutex is locked
 static void log_primary_output(struct timeval *timestamp, LogLevel level,
                                LogSource *source, LogDebugGroup debug_group,
-                               int line, const char *format, va_list arguments) {
-	time_t unix_seconds;
-	struct tm localized_timestamp;
-	char formatted_timestamp[64] = "<unknown>";
-	char level_char;
-	char *debug_group_name = "";
+                               const char *function, int line,
+                               const char *format, va_list arguments) {
 	char buffer[1024] = "<unknown>";
-	int length;
 
-	// check output
 	if (_output == NULL) {
 		return;
 	}
 
-	// copy value to time_t variable because timeval.tv_sec and time_t
-	// can have different sizes between different compilers and compiler
-	// version and platforms. for example with WDK 7 both are 4 byte in
-	// size, but with MSVC 2010 time_t is 8 byte in size but timeval.tv_sec
-	// is still 4 byte in size.
-	unix_seconds = timestamp->tv_sec;
+	log_format(buffer, sizeof(buffer), timestamp, level, source, debug_group,
+	           function, line, format, arguments);
 
-	// format time
-	if (localtime_r(&unix_seconds, &localized_timestamp) != NULL) {
-		strftime(formatted_timestamp, sizeof(formatted_timestamp),
-		         "%Y-%m-%d %H:%M:%S", &localized_timestamp);
-	}
-
-	// format level
-	switch (level) {
-	case LOG_LEVEL_ERROR: level_char = 'E'; break;
-	case LOG_LEVEL_WARN:  level_char = 'W'; break;
-	case LOG_LEVEL_INFO:  level_char = 'I'; break;
-	case LOG_LEVEL_DEBUG: level_char = 'D'; break;
-	default:              level_char = 'U'; break;
-	}
-
-	// format debug group
-	switch (debug_group) {
-	case LOG_DEBUG_GROUP_EVENT:  debug_group_name = "event|";  break;
-	case LOG_DEBUG_GROUP_PACKET: debug_group_name = "packet|"; break;
-	case LOG_DEBUG_GROUP_OBJECT: debug_group_name = "object|"; break;
-	default:                                                   break;
-	}
-
-	// format prefix
-	snprintf(buffer, sizeof(buffer), "%s.%06d <%c> <%s%s:%d> ",
-	         formatted_timestamp, (int)timestamp->tv_usec, level_char,
-	         debug_group_name, source->name, line);
-
-	length = strlen(buffer);
-
-	// format message
-	vsnprintf(buffer + length, sizeof(buffer) - length, format, arguments);
-
-	length = strlen(buffer);
-
-	// format newline
-	snprintf(buffer + length, sizeof(buffer) - length, "\n");
-
-	length = strlen(buffer);
-
-	// write output
 	log_apply_color_platform(level, true);
-	io_write(_output, buffer, length);
+	io_write(_output, buffer, strlen(buffer));
 	log_apply_color_platform(level, false);
 }
 
@@ -317,7 +265,7 @@ bool log_is_message_included(LogLevel level, LogSource *source,
 
 	if (!_debug_override && level > _level) {
 		// primary output excluded by level, check secondary output
-		return log_is_message_included_platform(level);
+		return log_is_message_included_platform(level, source, debug_group);
 	}
 
 	if (level != LOG_LEVEL_DEBUG) {
@@ -336,7 +284,7 @@ bool log_is_message_included(LogLevel level, LogSource *source,
 
 			for (i = 0; i < _debug_filter_count; ++i) {
 				if (_debug_filters[i].source_name[0] == '\0' ||
-				     strcasecmp(source->name, _debug_filters[i].source_name) == 0) {
+				    strcasecmp(source->name, _debug_filters[i].source_name) == 0) {
 					if (_debug_filters[i].included) {
 						source->included_debug_groups |= _debug_filters[i].groups;
 					} else {
@@ -355,11 +303,11 @@ bool log_is_message_included(LogLevel level, LogSource *source,
 	}
 
 	// primary output excluded by debug-groups, check secondary output
-	return log_is_message_included_platform(level);
+	return log_is_message_included_platform(level, source, debug_group);
 }
 
 void log_message(LogLevel level, LogSource *source, LogDebugGroup debug_group,
-                 int line, const char *format, ...) {
+                 const char *function, int line, const char *format, ...) {
 	struct timeval timestamp;
 	va_list arguments;
 
@@ -379,16 +327,78 @@ void log_message(LogLevel level, LogSource *source, LogDebugGroup debug_group,
 	log_lock();
 
 	if ((level <= _level || _debug_override) &&
-	    (level != LOG_LEVEL_DEBUG || (source->included_debug_groups & debug_group) != 0)) {
-		log_primary_output(&timestamp, level, source, debug_group,
+	    (level != LOG_LEVEL_DEBUG ||
+	     (source->included_debug_groups & debug_group) != 0)) {
+		log_primary_output(&timestamp, level, source, debug_group, function,
 		                   line, format, arguments);
 	}
 
-	if (log_is_message_included_platform(level)) {
-		log_secondary_output_platform(&timestamp, level, source, line,
-		                              format, arguments);
+	if (log_is_message_included_platform(level, source, debug_group)) {
+		log_secondary_output_platform(&timestamp, level, source, debug_group,
+		                              function, line, format, arguments);
 	}
 
 	log_unlock();
 	va_end(arguments);
+}
+
+void log_format(char *buffer, int length, struct timeval *timestamp,
+                LogLevel level, LogSource *source, LogDebugGroup debug_group,
+                const char *function, int line, const char *format,
+                va_list arguments) {
+	time_t unix_seconds;
+	struct tm localized_timestamp;
+	char formatted_timestamp[64] = "<unknown>";
+	char level_char;
+	char *debug_group_name = "";
+	char line_str[16] = "<unknown>";
+	int offset;
+
+	// copy value to time_t variable because timeval.tv_sec and time_t
+	// can have different sizes between different compilers and compiler
+	// version and platforms. for example with WDK 7 both are 4 byte in
+	// size, but with MSVC 2010 time_t is 8 byte in size but timeval.tv_sec
+	// is still 4 byte in size.
+	unix_seconds = timestamp->tv_sec;
+
+	// format time
+	if (localtime_r(&unix_seconds, &localized_timestamp) != NULL) {
+		strftime(formatted_timestamp, sizeof(formatted_timestamp),
+		         "%Y-%m-%d %H:%M:%S", &localized_timestamp);
+	}
+
+	// format level
+	switch (level) {
+	case LOG_LEVEL_ERROR: level_char = 'E'; break;
+	case LOG_LEVEL_WARN:  level_char = 'W'; break;
+	case LOG_LEVEL_INFO:  level_char = 'I'; break;
+	case LOG_LEVEL_DEBUG: level_char = 'D'; break;
+	default:              level_char = 'U'; break;
+	}
+
+	// format debug group
+	switch (debug_group) {
+	case LOG_DEBUG_GROUP_EVENT:  debug_group_name = "event|";  break;
+	case LOG_DEBUG_GROUP_PACKET: debug_group_name = "packet|"; break;
+	case LOG_DEBUG_GROUP_OBJECT: debug_group_name = "object|"; break;
+	default:                                                   break;
+	}
+
+	// format line
+	snprintf(line_str, sizeof(line_str), "%d", line);
+
+	// format prefix
+	snprintf(buffer, length, "%s.%06d <%c> <%s%s:%s> ",
+	         formatted_timestamp, (int)timestamp->tv_usec, level_char,
+	         debug_group_name, source->name, line >= 0 ? line_str : function);
+
+	offset = strlen(buffer);
+
+	// format message
+	vsnprintf(buffer + offset, MAX(length - offset, 0), format, arguments);
+
+	offset = strlen(buffer);
+
+	// format newline
+	snprintf(buffer + offset, MAX(length - offset, 0), LOG_NEWLINE);
 }

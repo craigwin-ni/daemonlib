@@ -95,19 +95,25 @@ void log_apply_color_platform(LogLevel level, bool begin) {
 	io_write(_output, color, strlen(color));
 }
 
-bool log_is_message_included_platform(LogLevel level) {
+bool log_is_message_included_platform(LogLevel level, LogSource *source,
+                                      LogDebugGroup debug_group) {
 	(void)level;
+	(void)source;
+	(void)debug_group;
 
 	return false;
 }
 
 // NOTE: assumes that _mutex (in log.c) is locked
 void log_secondary_output_platform(struct timeval *timestamp, LogLevel level,
-                                   LogSource *source, int line,
+                                   LogSource *source, LogDebugGroup debug_group,
+                                   const char *function, int line,
                                    const char *format, va_list arguments) {
 	(void)timestamp;
 	(void)level;
 	(void)source;
+	(void)debug_group;
+	(void)function;
 	(void)line;
 	(void)format;
 	(void)arguments;
