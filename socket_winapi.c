@@ -145,7 +145,7 @@ int socket_listen_platform(Socket *socket, int backlog) {
 
 // sets errno on error
 int socket_connect(Socket *socket, struct sockaddr *address, int length) {
-	int rc = connect(socket->base.handle, (struct sockaddr *)address, length);
+	int rc = connect(socket->base.handle, address, length);
 
 	if (rc == SOCKET_ERROR) {
 		rc = -1;
