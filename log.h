@@ -47,13 +47,15 @@ typedef enum { // bitmask
 	LOG_DEBUG_GROUP_COMMON = 0x0001,
 	LOG_DEBUG_GROUP_EVENT  = 0x0002,
 	LOG_DEBUG_GROUP_PACKET = 0x0004,
-	LOG_DEBUG_GROUP_OBJECT = 0x0008
+	LOG_DEBUG_GROUP_OBJECT = 0x0008,
+	LOG_DEBUG_GROUP_LIBUSB = 0x0010
 } LogDebugGroup;
 
 #define LOG_DEBUG_GROUP_ALL (LOG_DEBUG_GROUP_COMMON | \
                              LOG_DEBUG_GROUP_EVENT | \
                              LOG_DEBUG_GROUP_PACKET | \
-                             LOG_DEBUG_GROUP_OBJECT)
+                             LOG_DEBUG_GROUP_OBJECT | \
+                             LOG_DEBUG_GROUP_LIBUSB)
 
 typedef struct {
 	const char *file; // __FILE__
@@ -125,6 +127,8 @@ void log_lock(void);
 void log_unlock(void);
 
 void log_enable_debug_override(const char *filter);
+
+LogLevel log_get_effective_level(void);
 
 void log_set_output(IO *output);
 IO *log_get_output(void);

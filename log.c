@@ -144,6 +144,9 @@ static void log_set_debug_filter(const char *filter) {
 		} else if (strcasecmp(_debug_filters[i].source_name, "object") == 0) {
 			_debug_filters[i].source_name[0] = '\0';
 			_debug_filters[i].groups = LOG_DEBUG_GROUP_OBJECT;
+		} else if (strcasecmp(_debug_filters[i].source_name, "libusb") == 0) {
+			_debug_filters[i].source_name[0] = '\0';
+			_debug_filters[i].groups = LOG_DEBUG_GROUP_LIBUSB;
 		} else if (strcasecmp(_debug_filters[i].source_name, "all") == 0) {
 			_debug_filters[i].source_name[0] = '\0';
 			_debug_filters[i].groups = LOG_DEBUG_GROUP_ALL;
@@ -226,6 +229,10 @@ void log_enable_debug_override(const char *filter) {
 	_debug_override = true;
 
 	log_set_debug_filter(filter);
+}
+
+LogLevel log_get_effective_level(void) {
+	return _debug_override ? LOG_LEVEL_DEBUG : _level;
 }
 
 void log_set_output(IO *output) {
@@ -381,6 +388,7 @@ void log_format(char *buffer, int length, struct timeval *timestamp,
 	case LOG_DEBUG_GROUP_EVENT:  debug_group_name = "event|";  break;
 	case LOG_DEBUG_GROUP_PACKET: debug_group_name = "packet|"; break;
 	case LOG_DEBUG_GROUP_OBJECT: debug_group_name = "object|"; break;
+	case LOG_DEBUG_GROUP_LIBUSB:                               break;
 	default:                                                   break;
 	}
 
