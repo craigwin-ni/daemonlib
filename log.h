@@ -81,7 +81,7 @@ typedef struct {
 	#ifdef _MSC_VER
 		#define log_message_checked(level, debug_group, ...) \
 			do { \
-				if (log_is_message_included(level, &_log_source, debug_group)) { \
+				if (log_is_included(level, &_log_source, debug_group)) { \
 					log_message(level, &_log_source, debug_group, __FUNCTION__, __LINE__, __VA_ARGS__); \
 				} \
 			__pragma(warning(push)) \
@@ -91,7 +91,7 @@ typedef struct {
 	#else
 		#define log_message_checked(level, debug_group, ...) \
 			do { \
-				if (log_is_message_included(level, &_log_source, debug_group)) { \
+				if (log_is_included(level, &_log_source, debug_group)) { \
 					log_message(level, &_log_source, debug_group, __FUNCTION__, __LINE__, __VA_ARGS__); \
 				} \
 			} while (0)
@@ -133,8 +133,7 @@ LogLevel log_get_effective_level(void);
 void log_set_output(IO *output);
 IO *log_get_output(void);
 
-bool log_is_message_included(LogLevel level, LogSource *source,
-                             LogDebugGroup debug_group);
+bool log_is_included(LogLevel level, LogSource *source, LogDebugGroup debug_group);
 
 void log_message(LogLevel level, LogSource *source, LogDebugGroup debug_group,
                  const char *function, int line, const char *format, ...)

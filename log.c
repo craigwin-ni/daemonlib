@@ -51,12 +51,12 @@ extern void log_init_platform(IO *output);
 extern void log_exit_platform(void);
 extern void log_set_output_platform(IO *output);
 extern void log_apply_color_platform(LogLevel level, bool begin);
-extern bool log_is_message_included_platform(LogLevel level, LogSource *source,
-                                             LogDebugGroup debug_group);
-extern void log_secondary_output_platform(struct timeval *timestamp, LogLevel level,
-                                          LogSource *source, LogDebugGroup debug_group,
-                                          const char *function, int line,
-                                          const char *format, va_list arguments);
+extern bool log_is_included_platform(LogLevel level, LogSource *source,
+                                     LogDebugGroup debug_group);
+extern void log_write_platform(struct timeval *timestamp, LogLevel level,
+                               LogSource *source, LogDebugGroup debug_group,
+                               const char *function, int line,
+                               const char *format, va_list arguments);
 
 static int stderr_write(IO *io, const void *buffer, int length) {
 	int rc;
@@ -173,10 +173,9 @@ static void log_set_debug_filter(const char *filter) {
 }
 
 // NOTE: assumes that _mutex is locked
-static void log_primary_output(struct timeval *timestamp, LogLevel level,
-                               LogSource *source, LogDebugGroup debug_group,
-                               const char *function, int line,
-                               const char *format, va_list arguments) {
+static void log_write(struct timeval *timestamp, LogLevel level, LogSource *source,
+                      LogDebugGroup debug_group, const char *function, int line,
+                      const char *format, va_list arguments) {
 	char buffer[1024] = "<unknown>";
 
 	if (_output == NULL) {
@@ -249,8 +248,7 @@ IO *log_get_output(void) {
 	return _output;
 }
 
-bool log_is_message_included(LogLevel level, LogSource *source,
-                             LogDebugGroup debug_group) {
+bool log_is_included(LogLevel level, LogSource *source, LogDebugGroup debug_group) {
 	const char *p;
 	int i;
 
@@ -272,7 +270,7 @@ bool log_is_message_included(LogLevel level, LogSource *source,
 
 	if (!_debug_override && level > _level) {
 		// primary output excluded by level, check secondary output
-		return log_is_message_included_platform(level, source, debug_group);
+		return log_is_included_platform(level, source, debug_group);
 	}
 
 	if (level != LOG_LEVEL_DEBUG) {
@@ -310,7 +308,7 @@ bool log_is_message_included(LogLevel level, LogSource *source,
 	}
 
 	// primary output excluded by debug-groups, check secondary output
-	return log_is_message_included_platform(level, source, debug_group);
+	return log_is_included_platform(level, source, debug_group);
 }
 
 void log_message(LogLevel level, LogSource *source, LogDebugGroup debug_group,
@@ -336,13 +334,13 @@ void log_message(LogLevel level, LogSource *source, LogDebugGroup debug_group,
 	if ((level <= _level || _debug_override) &&
 	    (level != LOG_LEVEL_DEBUG ||
 	     (source->included_debug_groups & debug_group) != 0)) {
-		log_primary_output(&timestamp, level, source, debug_group, function,
-		                   line, format, arguments);
+		log_write(&timestamp, level, source, debug_group, function, line,
+		          format, arguments);
 	}
 
-	if (log_is_message_included_platform(level, source, debug_group)) {
-		log_secondary_output_platform(&timestamp, level, source, debug_group,
-		                              function, line, format, arguments);
+	if (log_is_included_platform(level, source, debug_group)) {
+		log_write_platform(&timestamp, level, source, debug_group, function,
+		                   line, format, arguments);
 	}
 
 	log_unlock();
