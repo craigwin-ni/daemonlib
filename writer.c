@@ -73,14 +73,14 @@ static void writer_handle_write(void *opaque) {
 		return;
 	}
 
-	queue_pop(&writer->backlog, NULL);
-
 	log_packet_debug("Sent queued %s (%s) to %s, %d %s(s) left in write backlog",
 	                 writer->packet_type,
 	                 writer->packet_signature(packet_signature, &partial_packet->packet),
 	                 writer->recipient_signature(recipient_signature, false, writer->opaque),
-	                 writer->backlog.count,
+	                 writer->backlog.count - 1,
 	                 writer->packet_type);
+
+	queue_pop(&writer->backlog, NULL);
 
 	if (writer->backlog.count == 0) {
 		// last queued packet handled, deregister for write events
