@@ -91,7 +91,7 @@ int file_read(File *file, void *buffer, int length) {
 }
 
 // sets errno on error
-int file_write(File *file, void *buffer, int length) {
+int file_write(File *file, const void *buffer, int length) {
 	return robust_write(file->base.handle, buffer, length);
 }
 
