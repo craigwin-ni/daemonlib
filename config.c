@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2015 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2016 Matthias Bolte <matthias@tinkerforge.com>
  * Copyright (C) 2014 Olaf Lüke <olaf@tinkerforge.com>
  *
  * config.c: Config file subsystem
@@ -55,6 +55,9 @@ static void config_message(bool *has_message, const char *format, ...) ATTRIBUTE
 
 static void config_message(bool *has_message, const char *format, ...) {
 	va_list arguments;
+#ifdef DAEMONLIB_UWP_BUILD
+	char buffer[1024];
+#endif
 
 	*has_message = true;
 
@@ -64,9 +67,16 @@ static void config_message(bool *has_message, const char *format, ...) {
 
 	va_start(arguments, format);
 
+#ifdef DAEMONLIB_UWP_BUILD
+	vsnprintf(buffer, sizeof(buffer), format, arguments);
+
+	OutputDebugStringA(buffer);
+	OutputDebugStringA("\n");
+#else
 	vfprintf(stderr, format, arguments);
 	fprintf(stderr, "\n");
 	fflush(stderr);
+#endif
 
 	va_end(arguments);
 }
