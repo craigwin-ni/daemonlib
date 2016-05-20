@@ -235,8 +235,10 @@ void config_init(const char *filename) {
 			// ignore
 		} else if (errno == ENOMEM) {
 			config_error("Could not allocate memory");
+		} else if (errno == EACCES) {
+			config_error("Access to config file was denied");
 		} else {
-			config_error("Error %s (%d) occurred", get_errno_name(errno), errno);
+			config_error("Unexpected error %s (%d) occurred", get_errno_name(errno), errno);
 		}
 
 		goto cleanup;
