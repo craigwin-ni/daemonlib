@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2014 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2014, 2016 Matthias Bolte <matthias@tinkerforge.com>
  *
  * event_linux.c: epoll based event loop
  *
@@ -22,6 +22,7 @@
 #include <errno.h>
 #include <stdbool.h>
 #include <signal.h>
+#include <string.h>
 #include <sys/epoll.h>
 #include <unistd.h>
 
@@ -56,6 +57,8 @@ void event_exit_platform(void) {
 
 int event_source_added_platform(EventSource *event_source) {
 	struct epoll_event event;
+
+	memset(&event, 0, sizeof(event));
 
 	event.events = event_source->events;
 	event.data.ptr = event_source;
