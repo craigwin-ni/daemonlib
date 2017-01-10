@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2014-2016 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2014-2017 Matthias Bolte <matthias@tinkerforge.com>
  *
  * socket.c: Socket implementation
  *
@@ -21,8 +21,17 @@
 
 #include <errno.h>
 #include <stdlib.h>
+#ifndef _WIN32
+	#include <netdb.h>
+	#include <unistd.h>
+#endif
 
 #include "socket.h"
+
+#include "log.h"
+#include "utils.h"
+
+static LogSource _log_source = LOG_SOURCE_INITIALIZER;
 
 extern void socket_destroy_platform(Socket *socket);
 extern int socket_accept_platform(Socket *socket, Socket *accepted_socket,
@@ -30,6 +39,19 @@ extern int socket_accept_platform(Socket *socket, Socket *accepted_socket,
 extern int socket_listen_platform(Socket *socket, int backlog);
 extern int socket_receive_platform(Socket *socket, void *buffer, int length);
 extern int socket_send_platform(Socket *socket, const void *buffer, int length);
+
+static const char *socket_get_address_family_name(int family, bool dual_stack) {
+	switch (family) {
+	case AF_INET:
+		return "IPv4";
+
+	case AF_INET6:
+		return dual_stack ? "IPv6 dual-stack" : "IPv6";
+
+	default:
+		return "<unknown>";
+	}
+}
 
 // sets errno on error
 int socket_create(Socket *socket) {
@@ -127,4 +149,112 @@ int socket_send(Socket *socket, const void *buffer, int length) {
 	}
 
 	return socket->send(socket, buffer, length);
+}
+
+// logs errors
+int socket_open_server(Socket *socket, const char *address, uint16_t port, bool dual_stack,
+                       SocketCreateAllocatedFunction create_allocated) {
+	int phase = 0;
+	struct addrinfo *resolved_address = NULL;
+
+	log_debug("Opening server socket on port %u", port);
+
+	// resolve listen address
+	// FIXME: bind to all returned addresses, instead of just the first one.
+	//        requires special handling if IPv4 and IPv6 addresses are returned
+	//        and dual-stack mode is enabled
+	resolved_address = socket_hostname_to_address(address, port);
+
+	if (resolved_address == NULL) {
+		log_error("Could not resolve listen address '%s' (port: %u): %s (%d)",
+		          address, port, get_errno_name(errno), errno);
+
+		goto cleanup;
+	}
+
+	phase = 1;
+
+	// create socket
+	if (socket_create(socket) < 0) {
+		log_error("Could not create socket: %s (%d)",
+		          get_errno_name(errno), errno);
+
+		goto cleanup;
+	}
+
+	phase = 2;
+
+	if (socket_open(socket, resolved_address->ai_family,
+	                resolved_address->ai_socktype, resolved_address->ai_protocol) < 0) {
+		log_error("Could not open %s server socket: %s (%d)",
+		          socket_get_address_family_name(resolved_address->ai_family, false),
+		          get_errno_name(errno), errno);
+
+		goto cleanup;
+	}
+
+	if (resolved_address->ai_family == AF_INET6) {
+		if (socket_set_dual_stack(socket, dual_stack) < 0) {
+			log_error("Could not %s dual-stack mode for IPv6 server socket: %s (%d)",
+			          dual_stack ? "enable" : "disable",
+			          get_errno_name(errno), errno);
+
+			goto cleanup;
+		}
+	}
+
+#ifndef _WIN32
+	// on Unix the SO_REUSEADDR socket option allows to rebind sockets in
+	// CLOSE-WAIT state. this is a desired effect. on Windows SO_REUSEADDR
+	// allows to rebind sockets in any state. this is dangerous. therefore,
+	// don't set SO_REUSEADDR on Windows. sockets can be rebound in CLOSE-WAIT
+	// state on Windows by default.
+	if (socket_set_address_reuse(socket, true) < 0) {
+		log_error("Could not enable address-reuse mode for server socket: %s (%d)",
+		          get_errno_name(errno), errno);
+
+		goto cleanup;
+	}
+#endif
+
+	// bind socket and start to listen
+	if (socket_bind(socket, resolved_address->ai_addr,
+	                resolved_address->ai_addrlen) < 0) {
+		log_error("Could not bind %s server socket to '%s' on port %u: %s (%d)",
+		          socket_get_address_family_name(resolved_address->ai_family, dual_stack),
+		          address, port, get_errno_name(errno), errno);
+
+		goto cleanup;
+	}
+
+	if (socket_listen(socket, 10, create_allocated) < 0) {
+		log_error("Could not listen to %s server socket bound to '%s' on port %u: %s (%d)",
+		          socket_get_address_family_name(resolved_address->ai_family, dual_stack),
+		          address, port, get_errno_name(errno), errno);
+
+		goto cleanup;
+	}
+
+	phase = 3;
+
+	log_debug("Started listening to '%s' (%s) on port %u",
+	          address,
+	          socket_get_address_family_name(resolved_address->ai_family, dual_stack),
+	          port);
+
+	freeaddrinfo(resolved_address);
+
+cleanup:
+	switch (phase) { // no breaks, all cases fall through intentionally
+	case 2:
+		socket_destroy(socket);
+
+	case 1:
+		freeaddrinfo(resolved_address);
+
+	default:
+		break;
+	}
+
+	return phase == 3 ? 0 : -1;
 }

@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2016 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2017 Matthias Bolte <matthias@tinkerforge.com>
  * Copyright (C) 2014 Olaf Lüke <olaf@tinkerforge.com>
  *
  * socket.h: Socket specific functions
@@ -72,5 +72,8 @@ struct addrinfo *socket_hostname_to_address(const char *hostname, uint16_t port)
 int socket_address_to_hostname(struct sockaddr *address, socklen_t address_length,
                                char *hostname, int hostname_length,
                                char *port, int port_length);
+
+int socket_open_server(Socket *socket, const char *address, uint16_t port, bool dual_stack,
+                       SocketCreateAllocatedFunction create_allocated);
 
 #endif // DAEMONLIB_SOCKET_H
