@@ -459,7 +459,7 @@ int conf_file_write(ConfFile *conf_file, const char *filename) {
 	}
 
 	// open <filename>.tmp for writing
-	fp = fopen(filename_tmp, "wb");
+	fp = fopen(filename_tmp, "wb"); // FIXME: don't create as 0666 in all cases
 
 	if (fp == NULL) {
 		goto cleanup;

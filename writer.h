@@ -51,6 +51,8 @@ typedef struct {
 	Queue backlog;
 } Writer;
 
+// FIXME: rework this to work for mesh packets as well
+
 int writer_create(Writer *writer, IO *io,
                   const char *packet_type,
                   WriterPacketSignatureFunction packet_signature,
