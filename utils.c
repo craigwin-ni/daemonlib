@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2015 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2015, 2017 Matthias Bolte <matthias@tinkerforge.com>
  * Copyright (C) 2014 Olaf Lüke <olaf@tinkerforge.com>
  *
  * utils.c: Utility functions
@@ -326,14 +326,23 @@ const char *get_errno_name(int error_code) {
 	#undef ADDRINFO_ERROR_NAME
 }
 
-void string_copy(char *target, int target_length, const char *source) {
+void string_copy(char *target, int target_length,
+                 const char *source, int source_length) {
+	int copy_length;
+
 	if (target_length <= 0) {
 		return;
 	}
 
-	strncpy(target, source, target_length - 1);
+	if (source_length >= 0 && source_length < target_length - 1) {
+		copy_length = source_length;
+	} else {
+		copy_length = target_length - 1;
+	}
 
-	target[target_length - 1] = '\0';
+	strncpy(target, source, copy_length);
+
+	target[copy_length] = '\0';
 }
 
 void string_append(char *target, int target_length, const char *source) {

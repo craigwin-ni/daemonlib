@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2015 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2015, 2017 Matthias Bolte <matthias@tinkerforge.com>
  * Copyright (C) 2014 Olaf Lüke <olaf@tinkerforge.com>
  *
  * utils.h: Utility functions
@@ -39,7 +39,8 @@ bool errno_would_block(void);
 
 const char *get_errno_name(int error_code);
 
-void string_copy(char *target, int target_length, const char *source);
+void string_copy(char *target, int target_length,
+                 const char *source, int source_length);
 void string_append(char *target, int target_length, const char *source);
 bool string_ends_with(const char *string, const char *suffix, bool case_sensitive);
 
