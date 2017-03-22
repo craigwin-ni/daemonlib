@@ -34,12 +34,12 @@
 #include "utils.h"
 
 // sets errno on error
-static int socket_prepare(Socket *socket, int family) {
+static int socket_prepare(Socket *socket) {
 	int no_delay = 1;
 	int flags;
 
 	// enable no-delay option
-	if (family == AF_INET || family == AF_INET6) {
+	if (socket->family == AF_INET || socket->family == AF_INET6) {
 		if (setsockopt(socket->handle, IPPROTO_TCP, TCP_NODELAY,
 		               &no_delay, sizeof(no_delay)) < 0) {
 			return -1;
@@ -58,28 +58,15 @@ static int socket_prepare(Socket *socket, int family) {
 
 // sets errno on error
 int socket_open(Socket *socket_, int family, int type, int protocol) {
-	int saved_errno;
-
-	// create socket
 	socket_->handle = socket(family, type, protocol);
 
 	if (socket_->handle < 0) {
 		return -1;
 	}
 
+	socket_->family = family;
 	socket_->base.read_handle = socket_->handle;
 	socket_->base.write_handle = socket_->handle;
-
-	// prepare socket
-	if (socket_prepare(socket_, family) < 0) {
-		saved_errno = errno;
-
-		close(socket_->handle);
-
-		errno = saved_errno;
-
-		return -1;
-	}
 
 	return 0;
 }
@@ -96,11 +83,12 @@ int socket_accept_platform(Socket *socket, Socket *accepted_socket,
 		return -1;
 	}
 
+	accepted_socket->family = address->sa_family;
 	accepted_socket->base.read_handle = accepted_socket->handle;
 	accepted_socket->base.write_handle = accepted_socket->handle;
 
 	// prepare socket
-	if (socket_prepare(accepted_socket, address->sa_family) < 0) {
+	if (socket_prepare(accepted_socket) < 0) {
 		saved_errno = errno;
 
 		close(accepted_socket->handle);
@@ -124,7 +112,11 @@ void socket_destroy_platform(Socket *socket) {
 
 // sets errno on error
 int socket_bind(Socket *socket, const struct sockaddr *address, socklen_t length) {
-	return bind(socket->handle, address, length);
+	if (bind(socket->handle, address, length) < 0) {
+		return -1;
+	}
+
+	return socket_prepare(socket);
 }
 
 // sets errno on error
@@ -134,7 +126,11 @@ int socket_listen_platform(Socket *socket, int backlog) {
 
 // sets errno on error
 int socket_connect(Socket *socket, struct sockaddr *address, int length) {
-	return connect(socket->handle, (struct sockaddr *)address, length);
+	if (connect(socket->handle, (struct sockaddr *)address, length) < 0) {
+		return -1;
+	}
+
+	return socket_prepare(socket);
 }
 
 // sets errno on error

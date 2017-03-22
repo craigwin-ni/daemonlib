@@ -44,6 +44,7 @@ struct _Socket {
 	IO base;
 
 	IOHandle handle;
+	int family;
 	SocketCreateAllocatedFunction create_allocated;
 	SocketDestroyFunction destroy;
 	SocketReceiveFunction receive;

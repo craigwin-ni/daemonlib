@@ -31,12 +31,12 @@
 #include "utils.h"
 
 // sets errno on error
-static int socket_prepare(Socket *socket, int family) {
+static int socket_prepare(Socket *socket) {
 	BOOL no_delay = TRUE;
 	unsigned long non_blocking = 1;
 
 	// enable no-delay option
-	if (family == AF_INET || family == AF_INET6) {
+	if (socket->family == AF_INET || socket->family == AF_INET6) {
 		if (setsockopt(socket->handle, IPPROTO_TCP, TCP_NODELAY,
 		               (const char *)&no_delay, sizeof(no_delay)) == SOCKET_ERROR) {
 			errno = ERRNO_WINAPI_OFFSET + WSAGetLastError();
@@ -66,9 +66,6 @@ void socket_destroy_platform(Socket *socket) {
 
 // sets errno on error
 int socket_open(Socket *socket_, int family, int type, int protocol) {
-	int saved_errno;
-
-	// create socket
 	socket_->handle = socket(family, type, protocol);
 
 	if (socket_->handle == IO_HANDLE_INVALID) {
@@ -77,19 +74,9 @@ int socket_open(Socket *socket_, int family, int type, int protocol) {
 		return -1;
 	}
 
+	socket_->family = family;
 	socket_->base.read_handle = socket_->handle;
 	socket_->base.write_handle = socket_->handle;
-
-	// prepare socket
-	if (socket_prepare(socket_, family) < 0) {
-		saved_errno = errno;
-
-		closesocket(socket_->handle);
-
-		errno = saved_errno;
-
-		return -1;
-	}
 
 	return 0;
 }
@@ -108,11 +95,12 @@ int socket_accept_platform(Socket *socket, Socket *accepted_socket,
 		return -1;
 	}
 
+	accepted_socket->family = address->sa_family;
 	accepted_socket->base.read_handle = accepted_socket->handle;
 	accepted_socket->base.write_handle = accepted_socket->handle;
 
 	// prepare socket
-	if (socket_prepare(accepted_socket, address->sa_family) < 0) {
+	if (socket_prepare(accepted_socket) < 0) {
 		saved_errno = errno;
 
 		closesocket(accepted_socket->handle);
@@ -127,38 +115,35 @@ int socket_accept_platform(Socket *socket, Socket *accepted_socket,
 
 // sets errno on error
 int socket_bind(Socket *socket, const struct sockaddr *address, socklen_t length) {
-	int rc = bind(socket->handle, address, length);
-
-	if (rc == SOCKET_ERROR) {
-		rc = -1;
+	if (bind(socket->handle, address, length) == SOCKET_ERROR) {
 		errno = ERRNO_WINAPI_OFFSET + WSAGetLastError();
+
+		return -1;
 	}
 
-	return rc;
+	return socket_prepare(socket);
 }
 
 // sets errno on error
 int socket_listen_platform(Socket *socket, int backlog) {
-	int rc = listen(socket->handle, backlog);
-
-	if (rc == SOCKET_ERROR) {
-		rc = -1;
+	if (listen(socket->handle, backlog) == SOCKET_ERROR) {
 		errno = ERRNO_WINAPI_OFFSET + WSAGetLastError();
+
+		return -1;
 	}
 
-	return rc;
+	return 0;
 }
 
 // sets errno on error
 int socket_connect(Socket *socket, struct sockaddr *address, int length) {
-	int rc = connect(socket->handle, address, length);
-
-	if (rc == SOCKET_ERROR) {
-		rc = -1;
+	if (connect(socket->handle, address, length) == SOCKET_ERROR) {
 		errno = ERRNO_WINAPI_OFFSET + WSAGetLastError();
+
+		return -1;
 	}
 
-	return rc;
+	return socket_prepare(socket);
 }
 
 // sets errno on error

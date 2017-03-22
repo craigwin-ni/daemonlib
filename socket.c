@@ -63,6 +63,7 @@ int socket_create(Socket *socket) {
 	}
 
 	socket->handle = IO_HANDLE_INVALID;
+	socket->family = AF_UNSPEC;
 	socket->create_allocated = NULL;
 	socket->destroy = socket_destroy_platform;
 	socket->receive = socket_receive_platform;
