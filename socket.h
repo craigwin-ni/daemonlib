@@ -50,6 +50,7 @@ struct _Socket {
 	SocketSendFunction send;
 };
 
+// FIXME: maybe merge socket_create and socket_open
 int socket_create(Socket *socket);
 Socket *socket_create_allocated(void);
 void socket_destroy(Socket *socket);
@@ -60,8 +61,6 @@ Socket *socket_accept(Socket *socket, struct sockaddr *address, socklen_t *lengt
 int socket_bind(Socket *socket, const struct sockaddr *address, socklen_t length);
 int socket_listen(Socket *socket, int backlog,
                   SocketCreateAllocatedFunction create_allocated);
-
-// FIXME: add socket_open_client
 
 int socket_connect(Socket *socket, struct sockaddr *address, int length);
 
@@ -75,6 +74,8 @@ struct addrinfo *socket_hostname_to_address(const char *hostname, uint16_t port)
 int socket_address_to_hostname(struct sockaddr *address, socklen_t address_length,
                                char *hostname, int hostname_length,
                                char *port, int port_length);
+
+// FIXME: add socket_open_client
 
 int socket_open_server(Socket *socket, const char *address, uint16_t port, bool dual_stack,
                        SocketCreateAllocatedFunction create_allocated);
