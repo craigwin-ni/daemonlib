@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2014, 2016 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2014, 2016-2017 Matthias Bolte <matthias@tinkerforge.com>
  *
  * daemon.c: Daemon implementation
  *
@@ -164,7 +164,7 @@ int daemon_start(const char *log_filename, File *log_file,
 		goto cleanup;
 	}
 
-	stdout_fd = log_file->base.handle;
+	stdout_fd = log_file->handle;
 
 	if (dup2(stdin_fd, STDIN_FILENO) != STDIN_FILENO) {
 		fprintf(stderr, "Could not redirect stdin: %s (%d)\n",

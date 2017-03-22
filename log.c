@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012, 2014, 2016 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012, 2014, 2016-2017 Matthias Bolte <matthias@tinkerforge.com>
  * Copyright (C) 2014 Olaf Lüke <olaf@tinkerforge.com>
  *
  * log.c: Logging specific functions
@@ -71,13 +71,11 @@ static int stderr_write(IO *io, const void *buffer, int length) {
 }
 
 static int stderr_create(IO *io) {
-	int rc = io_create(io, "stderr", NULL, NULL, stderr_write);
-
-	if (rc < 0) {
-		return rc;
+	if (io_create(io, "stderr", NULL, NULL, stderr_write) < 0) {
+		return -1;
 	}
 
-	io->handle = fileno(stderr);
+	io->write_handle = fileno(stderr);
 
 	return 0;
 }
@@ -398,12 +396,12 @@ void log_format(char *buffer, int length, struct timeval *timestamp,
 	         formatted_timestamp, (int)timestamp->tv_usec, level_char,
 	         debug_group_name, source->name, line >= 0 ? line_str : function);
 
-	offset = strlen(buffer);
+	offset = strlen(buffer); // FIXME: avoid strlen call
 
 	// format message
 	vsnprintf(buffer + offset, MAX(length - offset, 0), format, arguments);
 
-	offset = strlen(buffer);
+	offset = strlen(buffer); // FIXME: avoid strlen call
 
 	// format newline
 	snprintf(buffer + offset, MAX(length - offset, 0), LOG_NEWLINE);

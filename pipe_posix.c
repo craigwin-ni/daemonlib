@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2014 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2014, 2017 Matthias Bolte <matthias@tinkerforge.com>
  *
  * pipe_posix.c: POSIX based pipe implementation
  *
@@ -42,23 +42,23 @@ int pipe_create(Pipe *pipe_, uint32_t flags) {
 		return -1;
 	}
 
-	pipe_->read_end = handles[0];
-	pipe_->write_end = handles[1];
+	pipe_->base.read_handle = handles[0];
+	pipe_->base.write_handle = handles[1];
 
 	if ((flags & PIPE_FLAG_NON_BLOCKING_READ) != 0) {
-		fcntl_flags = fcntl(pipe_->read_end, F_GETFL, 0);
+		fcntl_flags = fcntl(pipe_->base.read_handle, F_GETFL, 0);
 
 		if (fcntl_flags < 0 ||
-		    fcntl(pipe_->read_end, F_SETFL, fcntl_flags | O_NONBLOCK) < 0) {
+		    fcntl(pipe_->base.read_handle, F_SETFL, fcntl_flags | O_NONBLOCK) < 0) {
 			goto error;
 		}
 	}
 
 	if ((flags & PIPE_FLAG_NON_BLOCKING_WRITE) != 0) {
-		fcntl_flags = fcntl(pipe_->write_end, F_GETFL, 0);
+		fcntl_flags = fcntl(pipe_->base.write_handle, F_GETFL, 0);
 
 		if (fcntl_flags < 0 ||
-		    fcntl(pipe_->write_end, F_SETFL, fcntl_flags | O_NONBLOCK) < 0) {
+		    fcntl(pipe_->base.write_handle, F_SETFL, fcntl_flags | O_NONBLOCK) < 0) {
 			goto error;
 		}
 	}
@@ -68,8 +68,8 @@ int pipe_create(Pipe *pipe_, uint32_t flags) {
 error:
 	saved_errno = errno;
 
-	close(pipe_->read_end);
-	close(pipe_->write_end);
+	close(pipe_->base.read_handle);
+	close(pipe_->base.write_handle);
 
 	errno = saved_errno;
 
@@ -77,16 +77,16 @@ error:
 }
 
 void pipe_destroy(Pipe *pipe) {
-	close(pipe->read_end);
-	close(pipe->write_end);
+	close(pipe->base.read_handle);
+	close(pipe->base.write_handle);
 }
 
 // sets errno on error
 int pipe_read(Pipe *pipe, void *buffer, int length) {
-	return robust_read(pipe->read_end, buffer, length);
+	return robust_read(pipe->base.read_handle, buffer, length);
 }
 
 // sets errno on error
-int pipe_write(Pipe *pipe, void *buffer, int length) {
-	return robust_write(pipe->write_end, buffer, length);
+int pipe_write(Pipe *pipe, const void *buffer, int length) {
+	return robust_write(pipe->base.write_handle, buffer, length);
 }

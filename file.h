@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2014, 2016 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2014, 2016-2017 Matthias Bolte <matthias@tinkerforge.com>
  *
  * file.h: File based I/O device
  *
@@ -26,6 +26,8 @@
 
 typedef struct {
 	IO base;
+
+	IOHandle handle;
 } File;
 
 int file_create(File *file, const char *name, int flags, int mode); // takes open flags

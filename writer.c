@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2014 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2014, 2017 Matthias Bolte <matthias@tinkerforge.com>
  *
  * writer.c: Buffered packet writer for I/O devices
  *
@@ -84,7 +84,7 @@ static void writer_handle_write(void *opaque) {
 
 	if (writer->backlog.count == 0) {
 		// last queued packet handled, deregister for write events
-		event_modify_source(writer->io->handle, EVENT_SOURCE_TYPE_GENERIC,
+		event_modify_source(writer->io->write_handle, EVENT_SOURCE_TYPE_GENERIC,
 		                    EVENT_WRITE, 0, NULL, NULL);
 	}
 }
@@ -132,7 +132,7 @@ static int writer_push_packet_to_backlog(Writer *writer, Packet *packet, int wri
 
 	if (writer->backlog.count == 1) {
 		// first queued packet, register for write events
-		if (event_modify_source(writer->io->handle, EVENT_SOURCE_TYPE_GENERIC,
+		if (event_modify_source(writer->io->write_handle, EVENT_SOURCE_TYPE_GENERIC,
 		                        0, EVENT_WRITE, writer_handle_write, writer) < 0) {
 			// FIXME: how to handle this error?
 			return -1;
@@ -178,7 +178,7 @@ void writer_destroy(Writer *writer) {
 		         writer->backlog.count,
 		         writer->packet_type);
 
-		event_modify_source(writer->io->handle, EVENT_SOURCE_TYPE_GENERIC,
+		event_modify_source(writer->io->write_handle, EVENT_SOURCE_TYPE_GENERIC,
 		                    EVENT_WRITE, 0, NULL, NULL);
 	}
 

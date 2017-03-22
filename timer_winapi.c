@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2014. 2016 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2014, 2016-2017 Matthias Bolte <matthias@tinkerforge.com>
  *
  * timer_winapi.c: WinAPI based timer implementation
  *
@@ -189,8 +189,9 @@ int timer_create_(Timer *timer, TimerFunction function, void *opaque) {
 	timer->function = function;
 	timer->opaque = opaque;
 
-	if (event_add_source(timer->notification_pipe.read_end, EVENT_SOURCE_TYPE_GENERIC,
-	                     EVENT_READ, timer_handle_read, timer) < 0) {
+	if (event_add_source(timer->notification_pipe.base.read_handle,
+	                     EVENT_SOURCE_TYPE_GENERIC, EVENT_READ,
+	                     timer_handle_read, timer) < 0) {
 		goto cleanup;
 	}
 
@@ -243,7 +244,7 @@ void timer_destroy(Timer *timer) {
 		}
 	}
 
-	event_remove_source(timer->notification_pipe.read_end, EVENT_SOURCE_TYPE_GENERIC);
+	event_remove_source(timer->notification_pipe.base.read_handle, EVENT_SOURCE_TYPE_GENERIC);
 
 	semaphore_destroy(&timer->handshake);
 

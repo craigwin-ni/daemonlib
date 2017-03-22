@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2014 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2014, 2017 Matthias Bolte <matthias@tinkerforge.com>
  *
  * pipe_winapi.c: WinAPI based pipe implementation
  *
@@ -35,18 +35,22 @@
 // sets errno on error
 // FIXME: maybe use IPv6 if available
 int pipe_create(Pipe *pipe, uint32_t flags) {
-	SOCKET listener;
+	IOHandle listener = IO_HANDLE_INVALID;
 	struct sockaddr_in address;
 	int length = sizeof(address);
 	int rc;
 	unsigned long flag = 1;
 
-	pipe->read_end = INVALID_SOCKET;
-	pipe->write_end = INVALID_SOCKET;
+	if (io_create(&pipe->base, "pipe",
+	              (IODestroyFunction)pipe_destroy,
+	              (IOReadFunction)pipe_read,
+	              (IOWriteFunction)pipe_write) < 0) {
+		return -1;
+	}
 
 	listener = socket(AF_INET, SOCK_STREAM, 0);
 
-	if (listener == INVALID_SOCKET) {
+	if (listener == IO_HANDLE_INVALID) {
 		goto error;
 	}
 
@@ -72,31 +76,31 @@ int pipe_create(Pipe *pipe, uint32_t flags) {
 		goto error;
 	}
 
-	pipe->read_end = socket(AF_INET, SOCK_STREAM, 0);
+	pipe->base.read_handle = socket(AF_INET, SOCK_STREAM, 0);
 
-	if (pipe->read_end == INVALID_SOCKET) {
+	if (pipe->base.read_handle == IO_HANDLE_INVALID) {
 		goto error;
 	}
 
 	if ((flags & PIPE_FLAG_NON_BLOCKING_READ) != 0 &&
-	    ioctlsocket(pipe->read_end, FIONBIO, &flag) == SOCKET_ERROR) {
+	    ioctlsocket(pipe->base.read_handle, FIONBIO, &flag) == SOCKET_ERROR) {
 		goto error;
 	}
 
-	rc = connect(pipe->read_end, (const struct sockaddr *)&address, length);
+	rc = connect(pipe->base.read_handle, (const struct sockaddr *)&address, length);
 
 	if (rc == SOCKET_ERROR) {
 		goto error;
 	}
 
-	pipe->write_end = accept(listener, NULL, NULL);
+	pipe->base.write_handle = accept(listener, NULL, NULL);
 
-	if (pipe->write_end == INVALID_SOCKET) {
+	if (pipe->base.write_handle == IO_HANDLE_INVALID) {
 		goto error;
 	}
 
 	if ((flags & PIPE_FLAG_NON_BLOCKING_WRITE) != 0 &&
-	    ioctlsocket(pipe->write_end, FIONBIO, &flag) == SOCKET_ERROR) {
+	    ioctlsocket(pipe->base.write_handle, FIONBIO, &flag) == SOCKET_ERROR) {
 		goto error;
 	}
 
@@ -107,14 +111,16 @@ int pipe_create(Pipe *pipe, uint32_t flags) {
 error:
 	rc = WSAGetLastError();
 
-	closesocket(listener);
-
-	if (pipe->read_end != INVALID_SOCKET) {
-		closesocket(pipe->read_end);
+	if (listener != IO_HANDLE_INVALID) {
+		closesocket(listener);
 	}
 
-	if (pipe->write_end != INVALID_SOCKET) {
-		closesocket(pipe->write_end);
+	if (pipe->base.read_handle != IO_HANDLE_INVALID) {
+		closesocket(pipe->base.read_handle);
+	}
+
+	if (pipe->base.write_handle != IO_HANDLE_INVALID) {
+		closesocket(pipe->base.write_handle);
 	}
 
 	errno = ERRNO_WINAPI_OFFSET + rc;
@@ -123,14 +129,14 @@ error:
 }
 
 void pipe_destroy(Pipe *pipe) {
-	closesocket(pipe->read_end);
-	closesocket(pipe->write_end);
+	closesocket(pipe->base.read_handle);
+	closesocket(pipe->base.write_handle);
 }
 
 // sets errno on error
 int pipe_read(Pipe *pipe, void *buffer, int length) {
 	// FIXME: handle interruption
-	length = recv(pipe->read_end, (char *)buffer, length, 0);
+	length = recv(pipe->base.read_handle, (char *)buffer, length, 0);
 
 	if (length == SOCKET_ERROR) {
 		errno = ERRNO_WINAPI_OFFSET + WSAGetLastError();
@@ -140,9 +146,9 @@ int pipe_read(Pipe *pipe, void *buffer, int length) {
 }
 
 // sets errno on error
-int pipe_write(Pipe *pipe, void *buffer, int length) {
+int pipe_write(Pipe *pipe, const void *buffer, int length) {
 	// FIXME: handle partial write and interruption
-	length = send(pipe->write_end, (const char *)buffer, length, 0);
+	length = send(pipe->base.write_handle, (const char *)buffer, length, 0);
 
 	if (length == SOCKET_ERROR) {
 		errno = ERRNO_WINAPI_OFFSET + WSAGetLastError();

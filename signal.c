@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2014 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2014, 2017 Matthias Bolte <matthias@tinkerforge.com>
  *
  * signal.c: Signal specific functions
  *
@@ -92,7 +92,7 @@ int signal_init(SIGHUPFunction sighup, SIGUSR1Function sigusr1) {
 
 	phase = 1;
 
-	if (event_add_source(_signal_pipe.read_end, EVENT_SOURCE_TYPE_GENERIC,
+	if (event_add_source(_signal_pipe.base.read_handle, EVENT_SOURCE_TYPE_GENERIC,
 	                     EVENT_READ, signal_handle, NULL) < 0) {
 		goto cleanup;
 	}
@@ -164,7 +164,7 @@ cleanup:
 		signal(SIGINT, SIG_DFL);
 
 	case 2:
-		event_remove_source(_signal_pipe.read_end, EVENT_SOURCE_TYPE_GENERIC);
+		event_remove_source(_signal_pipe.base.read_handle, EVENT_SOURCE_TYPE_GENERIC);
 
 	case 1:
 		pipe_destroy(&_signal_pipe);
@@ -183,6 +183,6 @@ void signal_exit(void) {
 	signal(SIGTERM, SIG_DFL);
 	signal(SIGINT, SIG_DFL);
 
-	event_remove_source(_signal_pipe.read_end, EVENT_SOURCE_TYPE_GENERIC);
+	event_remove_source(_signal_pipe.base.read_handle, EVENT_SOURCE_TYPE_GENERIC);
 	pipe_destroy(&_signal_pipe);
 }

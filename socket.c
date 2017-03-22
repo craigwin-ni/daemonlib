@@ -55,15 +55,14 @@ static const char *socket_get_address_family_name(int family, bool dual_stack) {
 
 // sets errno on error
 int socket_create(Socket *socket) {
-	int rc = io_create(&socket->base, "plain-socket",
-	                   (IODestroyFunction)socket_destroy,
-	                   (IOReadFunction)socket_receive,
-	                   (IOWriteFunction)socket_send);
-
-	if (rc < 0) {
-		return rc;
+	if (io_create(&socket->base, "plain-socket",
+	              (IODestroyFunction)socket_destroy,
+	              (IOReadFunction)socket_receive,
+	              (IOWriteFunction)socket_send) < 0) {
+		return -1;
 	}
 
+	socket->handle = IO_HANDLE_INVALID;
 	socket->create_allocated = NULL;
 	socket->destroy = socket_destroy_platform;
 	socket->receive = socket_receive_platform;

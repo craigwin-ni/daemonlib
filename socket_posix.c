@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2016 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2017 Matthias Bolte <matthias@tinkerforge.com>
  * Copyright (C) 2014 Olaf Lüke <olaf@tinkerforge.com>
  *
  * socket_posix.c: POSIX based socket implementation
@@ -40,16 +40,16 @@ static int socket_prepare(Socket *socket, int family) {
 
 	// enable no-delay option
 	if (family == AF_INET || family == AF_INET6) {
-		if (setsockopt(socket->base.handle, IPPROTO_TCP, TCP_NODELAY,
+		if (setsockopt(socket->handle, IPPROTO_TCP, TCP_NODELAY,
 		               &no_delay, sizeof(no_delay)) < 0) {
 			return -1;
 		}
 	}
 
 	// enable non-blocking operation
-	flags = fcntl(socket->base.handle, F_GETFL, 0);
+	flags = fcntl(socket->handle, F_GETFL, 0);
 
-	if (flags < 0 || fcntl(socket->base.handle, F_SETFL, flags | O_NONBLOCK) < 0) {
+	if (flags < 0 || fcntl(socket->handle, F_SETFL, flags | O_NONBLOCK) < 0) {
 		return -1;
 	}
 
@@ -61,17 +61,20 @@ int socket_open(Socket *socket_, int family, int type, int protocol) {
 	int saved_errno;
 
 	// create socket
-	socket_->base.handle = socket(family, type, protocol);
+	socket_->handle = socket(family, type, protocol);
 
-	if (socket_->base.handle < 0) {
+	if (socket_->handle < 0) {
 		return -1;
 	}
+
+	socket_->base.read_handle = socket_->handle;
+	socket_->base.write_handle = socket_->handle;
 
 	// prepare socket
 	if (socket_prepare(socket_, family) < 0) {
 		saved_errno = errno;
 
-		close(socket_->base.handle);
+		close(socket_->handle);
 
 		errno = saved_errno;
 
@@ -87,17 +90,20 @@ int socket_accept_platform(Socket *socket, Socket *accepted_socket,
 	int saved_errno;
 
 	// accept socket
-	accepted_socket->base.handle = accept(socket->base.handle, address, length);
+	accepted_socket->handle = accept(socket->handle, address, length);
 
-	if (accepted_socket->base.handle < 0) {
+	if (accepted_socket->handle < 0) {
 		return -1;
 	}
+
+	accepted_socket->base.read_handle = accepted_socket->handle;
+	accepted_socket->base.write_handle = accepted_socket->handle;
 
 	// prepare socket
 	if (socket_prepare(accepted_socket, address->sa_family) < 0) {
 		saved_errno = errno;
 
-		close(accepted_socket->base.handle);
+		close(accepted_socket->handle);
 
 		errno = saved_errno;
 
@@ -110,30 +116,30 @@ int socket_accept_platform(Socket *socket, Socket *accepted_socket,
 void socket_destroy_platform(Socket *socket) {
 	// check if socket is actually open, as socket_create deviates from
 	// the common pattern of allocation the wrapped resource
-	if (socket->base.handle != IO_HANDLE_INVALID) {
-		shutdown(socket->base.handle, SHUT_RDWR);
-		close(socket->base.handle);
+	if (socket->handle != IO_HANDLE_INVALID) {
+		shutdown(socket->handle, SHUT_RDWR);
+		close(socket->handle);
 	}
 }
 
 // sets errno on error
 int socket_bind(Socket *socket, const struct sockaddr *address, socklen_t length) {
-	return bind(socket->base.handle, address, length);
+	return bind(socket->handle, address, length);
 }
 
 // sets errno on error
 int socket_listen_platform(Socket *socket, int backlog) {
-	return listen(socket->base.handle, backlog);
+	return listen(socket->handle, backlog);
 }
 
 // sets errno on error
 int socket_connect(Socket *socket, struct sockaddr *address, int length) {
-	return connect(socket->base.handle, (struct sockaddr *)address, length);
+	return connect(socket->handle, (struct sockaddr *)address, length);
 }
 
 // sets errno on error
 int socket_receive_platform(Socket *socket, void *buffer, int length) {
-	return recv(socket->base.handle, buffer, length, 0);
+	return recv(socket->handle, buffer, length, 0);
 }
 
 // sets errno on error
@@ -144,21 +150,21 @@ int socket_send_platform(Socket *socket, const void *buffer, int length) {
 	int flags = 0;
 #endif
 
-	return send(socket->base.handle, buffer, length, flags);
+	return send(socket->handle, buffer, length, flags);
 }
 
 // sets errno on error
 int socket_set_address_reuse(Socket *socket, bool address_reuse) {
 	int on = address_reuse ? 1 : 0;
 
-	return setsockopt(socket->base.handle, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
+	return setsockopt(socket->handle, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
 }
 
 // sets errno on error
 int socket_set_dual_stack(Socket *socket, bool dual_stack) {
 	int on = dual_stack ? 0 : 1;
 
-	return setsockopt(socket->base.handle, IPPROTO_IPV6, IPV6_V6ONLY, &on, sizeof(on));
+	return setsockopt(socket->handle, IPPROTO_IPV6, IPV6_V6ONLY, &on, sizeof(on));
 }
 
 // sets errno on error

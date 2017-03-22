@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012, 2014, 2016 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012, 2014, 2016-2017 Matthias Bolte <matthias@tinkerforge.com>
  *
  * log_posix.c: POSIX specific log handling
  *
@@ -49,7 +49,7 @@ void log_set_output_platform(IO *output) {
 		return;
 	}
 
-	if (!isatty(output->handle)) {
+	if (!isatty(output->write_handle)) {
 		return;
 	}
 

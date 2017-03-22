@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2014 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2014, 2017 Matthias Bolte <matthias@tinkerforge.com>
  *
  * pipe.h: Pipe specific functions
  *
@@ -32,14 +32,13 @@ typedef enum { // bitmask
 } PipeFlag;
 
 typedef struct {
-	IOHandle read_end;
-	IOHandle write_end;
+	IO base;
 } Pipe;
 
 int pipe_create(Pipe *pipe, uint32_t flags);
 void pipe_destroy(Pipe *pipe);
 
 int pipe_read(Pipe *pipe, void *buffer, int length);
-int pipe_write(Pipe *pipe, void *buffer, int length);
+int pipe_write(Pipe *pipe, const void *buffer, int length);
 
 #endif // DAEMONLIB_PIPE_H

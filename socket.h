@@ -43,6 +43,7 @@ typedef int (*SocketSendFunction)(Socket *socket, const void *buffer, int length
 struct _Socket {
 	IO base;
 
+	IOHandle handle;
 	SocketCreateAllocatedFunction create_allocated;
 	SocketDestroyFunction destroy;
 	SocketReceiveFunction receive;
@@ -59,6 +60,8 @@ Socket *socket_accept(Socket *socket, struct sockaddr *address, socklen_t *lengt
 int socket_bind(Socket *socket, const struct sockaddr *address, socklen_t length);
 int socket_listen(Socket *socket, int backlog,
                   SocketCreateAllocatedFunction create_allocated);
+
+// FIXME: add socket_open_client
 
 int socket_connect(Socket *socket, struct sockaddr *address, int length);
 

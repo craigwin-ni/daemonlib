@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2014, 2016 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2014, 2016-2017 Matthias Bolte <matthias@tinkerforge.com>
  *
  * file.c: File based I/O device
  *
@@ -34,42 +34,39 @@
 
 // sets errno on error
 int file_create(File *file, const char *name, int flags, int mode) { // takes open flags
-	int rc;
 #ifndef _WIN32
 	int fcntl_flags;
 	int saved_errno;
 #endif
 
-	rc = io_create(&file->base, "file",
-	               (IODestroyFunction)file_destroy,
-	               (IOReadFunction)file_read,
-	               (IOWriteFunction)file_write);
-
-	if (rc < 0) {
-		return rc;
+	if (io_create(&file->base, "file",
+	              (IODestroyFunction)file_destroy,
+	              (IOReadFunction)file_read,
+	              (IOWriteFunction)file_write) < 0) {
+		return -1;
 	}
 
 	// open file blocking
 #ifdef _WIN32
-	file->base.handle = open(name, flags, mode);
+	file->handle = open(name, flags, mode);
 #else
-	file->base.handle = open(name, flags & ~O_NONBLOCK, mode);
+	file->handle = open(name, flags & ~O_NONBLOCK, mode);
 #endif
 
-	if (file->base.handle == IO_HANDLE_INVALID) {
+	if (file->handle == IO_HANDLE_INVALID) {
 		return -1;
 	}
 
 #ifndef _WIN32
 	// enable non-blocking operation
 	if ((flags & O_NONBLOCK) != 0) {
-		fcntl_flags = fcntl(file->base.handle, F_GETFL, 0);
+		fcntl_flags = fcntl(file->handle, F_GETFL, 0);
 
 		if (fcntl_flags < 0 ||
-			fcntl(file->base.handle, F_SETFL, fcntl_flags | O_NONBLOCK) < 0) {
+			fcntl(file->handle, F_SETFL, fcntl_flags | O_NONBLOCK) < 0) {
 			saved_errno = errno;
 
-			close(file->base.handle);
+			close(file->handle);
 
 			errno = saved_errno;
 
@@ -78,24 +75,27 @@ int file_create(File *file, const char *name, int flags, int mode) { // takes op
 	}
 #endif
 
+	file->base.read_handle = file->handle;
+	file->base.write_handle = file->handle;
+
 	return 0;
 }
 
 void file_destroy(File *file) {
-	close(file->base.handle);
+	close(file->handle);
 }
 
 // sets errno on error
 int file_read(File *file, void *buffer, int length) {
-	return robust_read(file->base.handle, buffer, length);
+	return robust_read(file->handle, buffer, length);
 }
 
 // sets errno on error
 int file_write(File *file, const void *buffer, int length) {
-	return robust_write(file->base.handle, buffer, length);
+	return robust_write(file->handle, buffer, length);
 }
 
 // sets errno on error
 int file_seek(File *file, off_t offset, int origin) { // takes lseek origin
-	return lseek(file->base.handle, offset, origin);
+	return lseek(file->handle, offset, origin);
 }

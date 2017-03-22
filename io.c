@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2014, 2016 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2014, 2016-2017 Matthias Bolte <matthias@tinkerforge.com>
  *
  * io.c: Base for all I/O devices
  *
@@ -40,7 +40,8 @@ int io_create(IO *io, const char *type,
               IODestroyFunction destroy,
               IOReadFunction read,
               IOWriteFunction write) {
-	io->handle = IO_HANDLE_INVALID;
+	io->read_handle = IO_HANDLE_INVALID;
+	io->write_handle = IO_HANDLE_INVALID;
 	io->type = type;
 	io->destroy = destroy;
 	io->read = read;

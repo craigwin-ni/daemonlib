@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2014 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2014, 2017 Matthias Bolte <matthias@tinkerforge.com>
  *
  * timer_posix.c: Poll based timer implementation
  *
@@ -38,7 +38,7 @@ static void timer_handle_read(void *opaque) {
 	if (pipe_read(&timer->notification_pipe, &configuration_id,
 	              sizeof(configuration_id)) < 0) {
 		log_error("Could not read from notification pipe of poll timer (handle: %d): %s (%d)",
-		          timer->notification_pipe.read_end,
+		          timer->notification_pipe.base.read_handle,
 		          get_errno_name(errno), errno);
 
 		return;
@@ -46,7 +46,7 @@ static void timer_handle_read(void *opaque) {
 
 	if (configuration_id != timer->configuration_id) {
 		log_debug("Ignoring timer event for mismatching configuration of poll timer (handle: %d)",
-		          timer->notification_pipe.read_end);
+		          timer->notification_pipe.base.read_handle);
 
 		return;
 	}
@@ -65,7 +65,7 @@ static void timer_thread(void *opaque) {
 	int ready;
 	uint8_t byte;
 
-	pollfd.fd = timer->interrupt_pipe.read_end;
+	pollfd.fd = timer->interrupt_pipe.base.read_handle;
 	pollfd.events = POLLIN;
 
 	while (timer->running) {
@@ -101,7 +101,7 @@ static void timer_thread(void *opaque) {
 			}
 
 			log_debug("Could not poll on interrupt pipe of poll timer (handle: %d): %s (%d)",
-			          timer->notification_pipe.read_end,
+			          timer->notification_pipe.base.read_handle,
 			          get_errno_name(errno), errno);
 
 			break;
@@ -109,7 +109,7 @@ static void timer_thread(void *opaque) {
 			if (pipe_write(&timer->notification_pipe, &configuration_id,
 			               sizeof(configuration_id)) < 0) {
 				log_error("Could not write to notification pipe of poll timer (handle: %d): %s (%d)",
-				          timer->notification_pipe.read_end,
+				          timer->notification_pipe.base.read_handle,
 				          get_errno_name(errno), errno);
 
 				break;
@@ -117,7 +117,7 @@ static void timer_thread(void *opaque) {
 		} else {
 			if (pipe_read(&timer->interrupt_pipe, &byte, sizeof(byte)) < 0) {
 				log_error("Could not read from interrupt pipe of poll timer (handle: %d): %s (%d)",
-				          timer->notification_pipe.read_end,
+				          timer->notification_pipe.base.read_handle,
 				          get_errno_name(errno), errno);
 
 				break;
@@ -168,8 +168,9 @@ int timer_create_(Timer *timer, TimerFunction function, void *opaque) {
 	timer->function = function;
 	timer->opaque = opaque;
 
-	if (event_add_source(timer->notification_pipe.read_end, EVENT_SOURCE_TYPE_GENERIC,
-	                     EVENT_READ, timer_handle_read, timer) < 0) {
+	if (event_add_source(timer->notification_pipe.base.read_handle,
+	                     EVENT_SOURCE_TYPE_GENERIC, EVENT_READ,
+	                     timer_handle_read, timer) < 0) {
 		goto cleanup;
 	}
 
@@ -184,7 +185,8 @@ int timer_create_(Timer *timer, TimerFunction function, void *opaque) {
 	semaphore_create(&timer->handshake);
 	thread_create(&timer->thread, timer_thread, timer);
 
-	log_debug("Created poll timer (handle: %d)", timer->notification_pipe.read_end);
+	log_debug("Created poll timer (handle: %d)",
+	          timer->notification_pipe.base.read_handle);
 
 cleanup:
 	switch (phase) { // no breaks, all cases fall through intentionally
@@ -204,21 +206,22 @@ cleanup:
 void timer_destroy(Timer *timer) {
 	uint8_t byte = 0;
 
-	log_debug("Destroying poll timer (handle: %d)", timer->notification_pipe.read_end);
+	log_debug("Destroying poll timer (handle: %d)",
+	          timer->notification_pipe.base.read_handle);
 
 	if (timer->running) {
 		timer->running = false;
 
 		if (pipe_write(&timer->interrupt_pipe, &byte, sizeof(byte)) < 0) {
 			log_error("Could not write to interrupt pipe for poll timer (handle: %d): %s (%d)",
-			          timer->notification_pipe.read_end,
+			          timer->notification_pipe.base.read_handle,
 			          get_errno_name(errno), errno);
 		} else {
 			thread_join(&timer->thread);
 		}
 	}
 
-	event_remove_source(timer->notification_pipe.read_end, EVENT_SOURCE_TYPE_GENERIC);
+	event_remove_source(timer->notification_pipe.base.read_handle, EVENT_SOURCE_TYPE_GENERIC);
 
 	semaphore_destroy(&timer->handshake);
 
@@ -245,7 +248,7 @@ int timer_configure(Timer *timer, uint64_t delay, uint64_t interval) { // micros
 
 	if (!timer->running) {
 		log_error("Thread for poll timer (handle: %d) is not running",
-		          timer->notification_pipe.read_end);
+		          timer->notification_pipe.base.read_handle);
 
 		return -1;
 	}
@@ -257,7 +260,7 @@ int timer_configure(Timer *timer, uint64_t delay, uint64_t interval) { // micros
 
 	if (pipe_write(&timer->interrupt_pipe, &byte, sizeof(byte)) < 0) {
 		log_error("Could not write to interrupt pipe for poll timer (handle: %d): %s (%d)",
-		          timer->notification_pipe.read_end,
+		          timer->notification_pipe.base.read_handle,
 		          get_errno_name(errno), errno);
 
 		return -1;
@@ -267,7 +270,7 @@ int timer_configure(Timer *timer, uint64_t delay, uint64_t interval) { // micros
 
 	if (!timer->running) {
 		log_error("Thread for poll timer (handle: %d) exited due to an error",
-		          timer->notification_pipe.read_end);
+		          timer->notification_pipe.base.read_handle);
 
 		return -1;
 	}
