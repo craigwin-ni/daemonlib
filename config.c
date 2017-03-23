@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2016 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2017 Matthias Bolte <matthias@tinkerforge.com>
  * Copyright (C) 2014 Olaf Lüke <olaf@tinkerforge.com>
  *
  * config.c: Config file subsystem
@@ -222,6 +222,10 @@ void config_init(const char *filename) {
 	int integer;
 
 	config_reset();
+
+	if (filename == NULL) {
+		return;
+	}
 
 	// read config file
 	if (conf_file_create(&conf_file) < 0) {
