@@ -537,7 +537,6 @@ int red_brick_uid(uint32_t *uid /* always little endian */) {
 	uint8_t uid_u8_2;
 	uint8_t uid_u8_3;
 	uint16_t sid_u16[8];
-	char uid_str[BASE58_MAX_LENGTH + 1];
 
 	/*
 	 * With previous 3.4 series sunxi kernel the generated UID was read
