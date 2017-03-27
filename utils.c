@@ -529,40 +529,65 @@ char *strcasestr(char *haystack, char *needle) {
 
 // sets errno on error
 int red_brick_uid(uint32_t *uid /* always little endian */) {
-	FILE *fp;
-	char base58[BASE58_MAX_LENGTH + 1]; // +1 for the \n
 	int rc;
+	FILE *fp;
 	int saved_errno;
+	uint8_t uid_u8_0;
+	uint8_t uid_u8_1;
+	uint8_t uid_u8_2;
+	uint8_t uid_u8_3;
+	uint16_t sid_u16[8];
+	char uid_str[BASE58_MAX_LENGTH + 1];
 
-	// read UID from /proc/red_brick_uid
-	fp = fopen("/proc/red_brick_uid", "rb");
+	/*
+	 * With previous 3.4 series sunxi kernel the generated UID was read
+	 * from /proc/red_brick_uid which was provided by the RED Brick UID
+	 * kernel module.
+	 *
+	 * With the new mainline kernels this is not required as the chip ID
+	 * required to generate the UID can be read from
+	 * /sys/bus/nvmem/devices/sunxi-sid0/nvmem.
+	 */
+
+	fp = fopen("/sys/bus/nvmem/devices/sunxi-sid0/nvmem", "rb");
 
 	if (fp == NULL) {
 		return -1;
 	}
 
-	rc = robust_fread(fp, base58, sizeof(base58));
+	rc = robust_fread(fp, sid_u16, sizeof(sid_u16));
 	saved_errno = errno;
 
 	fclose(fp);
 
 	errno = saved_errno;
 
-	if (rc < 1) {
+	if (rc != 16) {
 		return -1;
 	}
 
-	if (base58[rc - 1] != '\n') {
-		errno = EINVAL;
-
-		return -1;
+	for(uint8_t i = 0; i < 8; i++) {
+		sid_u16[i] = ntohs(sid_u16[i]);
 	}
 
-	base58[rc - 1] = '\0';
+	uid_u8_0 = ((uint8_t *)&sid_u16[1])[0];
+	uid_u8_1 = ((uint8_t *)&sid_u16[6])[0];
+	uid_u8_2 = ((uint8_t *)&sid_u16[7])[1];
+	uid_u8_3 = ((uint8_t *)&sid_u16[7])[0];
 
-	if (base58_decode(uid, base58) < 0) {
-		return -1;
-	}
+	*uid = (uid_u8_0 << 24) | (uid_u8_1 << 16) | (uid_u8_2 << 8) | uid_u8_3;
+
+	// The following is for reference. Excerpt from previous code.
+	/*
+	uid = ((sid_u32_array[0] & 0x000000ff) << 24) |
+	       (sid_u32_array[3] & 0x00ffffff);
+	*/
+
+	/* avoid collisions with other Brick UIDs by clearing the 31th bit,
+	 * as other Brick UIDs should have the 31th bit set always. avoid
+	 * collisions with Bricklet UIDs by setting the 30th bit to get a
+	 * high UID, as Bricklets have a low UID */
+	*uid = (*uid & ~(1 << 31)) | (1 << 30);
 
 	*uid = uint32_to_le(*uid);
 
