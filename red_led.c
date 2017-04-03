@@ -32,7 +32,7 @@ static LogSource _log_source = LOG_SOURCE_INITIALIZER;
 
 #define LED_TRIGGER_NUM 6
 #define LED_TRIGGER_STR_MAX_LENGTH 11
-#define LED_PATH_STR_MAX_LENGTH 42
+#define LED_PATH_STR_MAX_LENGTH 64
 
 #define LED_TRIGGER_MAX_LENGTH 1024
 
@@ -46,8 +46,8 @@ static const char trigger_str[][LED_TRIGGER_STR_MAX_LENGTH] = {
 };
 
 static const char led_path[][LED_PATH_STR_MAX_LENGTH] = {
-	"/sys/class/leds/pc05:green:status/trigger",
-	"/sys/class/leds/pc06:red:error/trigger"
+	"/sys/class/leds/red-brick:led:running/trigger",
+	"/sys/class/leds/red-brick:led:error/trigger"
 };
 
 int red_led_set_trigger(REDLED led, REDLEDTrigger trigger) {
