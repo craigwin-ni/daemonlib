@@ -529,6 +529,7 @@ char *strcasestr(char *haystack, char *needle) {
 
 // sets errno on error
 int red_brick_uid(uint32_t *uid /* always little endian */) {
+	int i;
 	int rc;
 	FILE *fp;
 	int saved_errno;
@@ -565,7 +566,7 @@ int red_brick_uid(uint32_t *uid /* always little endian */) {
 		return -1;
 	}
 
-	for(uint8_t i = 0; i < 8; i++) {
+	for (i = 0; i < 8; i++) {
 		sid_u16[i] = ntohs(sid_u16[i]);
 	}
 
