@@ -49,6 +49,7 @@ static void timer_handle_read(void *opaque) {
 		return;
 	}
 
+	// this call might reconfigure or destroy the timer
 	timer->function(timer->opaque);
 }
 
