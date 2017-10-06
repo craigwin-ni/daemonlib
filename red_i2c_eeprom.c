@@ -149,7 +149,7 @@ int i2c_eeprom_read(I2CEEPROM *i2c_eeprom, uint16_t eeprom_memory_address,
                     uint8_t *buffer_to_store, int bytes_to_read) {
 	int bytes_read = 0;
 	uint8_t mem_address[2] = {eeprom_memory_address >> 8,
-	                          eeprom_memory_address & 0xFF};
+		                  eeprom_memory_address & 0xFF};
 
 	if (i2c_eeprom == NULL || i2c_eeprom->file < 0) {
 		log_error("I2C EEPROM structure uninitialized\n");

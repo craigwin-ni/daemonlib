@@ -63,7 +63,7 @@ int file_create(File *file, const char *name, int flags, int mode) { // takes op
 		fcntl_flags = fcntl(file->handle, F_GETFL, 0);
 
 		if (fcntl_flags < 0 ||
-			fcntl(file->handle, F_SETFL, fcntl_flags | O_NONBLOCK) < 0) {
+		    fcntl(file->handle, F_SETFL, fcntl_flags | O_NONBLOCK) < 0) {
 			saved_errno = errno;
 
 			close(file->handle);
