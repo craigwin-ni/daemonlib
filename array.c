@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2014 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2014, 2017 Matthias Bolte <matthias@tinkerforge.com>
  *
  * array.c: Array specific functions
  *
@@ -29,7 +29,7 @@
  *
  * for relocatable items you're not allowed to keep pointers to them while
  * performing array operations that change the array such as appending or
- * removing items. this operations may reallocate or memmoves the underlying
+ * removing items. this operations may reallocate or memmove the underlying
  * continuous block of memory and hence move the items in memory.
  */
 
@@ -250,4 +250,25 @@ void *array_get(Array *array, int index) {
 	} else {
 		return *(void **)(array->bytes + sizeof(void *) * index);
 	}
+}
+
+// swaps the content of an Array object with the content of another an Array object
+void array_swap(Array *array, Array *other) {
+	int allocated = other->allocated;
+	int count = other->count;
+	int size = other->size;
+	bool relocatable = other->relocatable;
+	uint8_t *bytes = other->bytes;
+
+	other->allocated = array->allocated;
+	other->count = array->count;
+	other->size = array->size;
+	other->relocatable = array->relocatable;
+	other->bytes = array->bytes;
+
+	array->allocated = allocated;
+	array->count = count;
+	array->size = size;
+	array->relocatable = relocatable;
+	array->bytes = bytes;
 }

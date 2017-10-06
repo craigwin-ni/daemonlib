@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2014 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2014, 2017 Matthias Bolte <matthias@tinkerforge.com>
  *
  * array.h: Array specific functions
  *
@@ -45,5 +45,7 @@ void *array_append(Array *array);
 void array_remove(Array *array, int i, ItemDestroyFunction destroy);
 
 void *array_get(Array *array, int i);
+
+void array_swap(Array *array, Array *other);
 
 #endif // DAEMONLIB_ARRAY_H
