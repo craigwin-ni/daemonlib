@@ -248,9 +248,11 @@ cleanup:
 	switch (phase) { // no breaks, all cases fall through intentionally
 	case 2:
 		socket_destroy(socket);
+		// fall through
 
 	case 1:
 		freeaddrinfo(resolved_address);
+		// fall through
 
 	default:
 		break;

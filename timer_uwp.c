@@ -182,9 +182,11 @@ cleanup:
 	switch (phase) { // no breaks, all cases fall through intentionally
 	case 2:
 		CloseHandle(timer->interrupt_event);
+		// fall through
 
 	case 1:
 		pipe_destroy(&timer->notification_pipe);
+		// fall through
 
 	default:
 		break;

@@ -153,21 +153,27 @@ cleanup:
 	switch (phase) { // no breaks, all cases fall through intentionally
 	case 6:
 		signal(SIGHUP, SIG_DFL);
+		// fall through
 
 	case 5:
 		signal(SIGPIPE, SIG_DFL);
+		// fall through
 
 	case 4:
 		signal(SIGTERM, SIG_DFL);
+		// fall through
 
 	case 3:
 		signal(SIGINT, SIG_DFL);
+		// fall through
 
 	case 2:
 		event_remove_source(_signal_pipe.base.read_handle, EVENT_SOURCE_TYPE_GENERIC);
+		// fall through
 
 	case 1:
 		pipe_destroy(&_signal_pipe);
+		// fall through
 
 	default:
 		break;
