@@ -530,7 +530,7 @@ char *strcasestr(char *haystack, char *needle) {
 
 // sets errno on error
 int red_brick_uid(uint32_t *uid /* always little endian */) {
-#if BRICKD_WITH_RED_BRICK == 9
+#if DAEMONLIB_WITH_RED_BRICK == 9
 	FILE *fp;
 	char base58[BASE58_MAX_LENGTH + 1]; // +1 for the \n
 	int rc;
