@@ -46,8 +46,13 @@ static const char trigger_str[][LED_TRIGGER_STR_MAX_LENGTH] = {
 };
 
 static const char led_path[][LED_PATH_STR_MAX_LENGTH] = {
+#if BRICKD_WITH_RED_BRICK == 9
+	"/sys/class/leds/pc05:green:status/trigger",
+	"/sys/class/leds/pc06:red:error/trigger"
+#else
 	"/sys/class/leds/red-brick:led:running/trigger",
 	"/sys/class/leds/red-brick:led:error/trigger"
+#endif
 };
 
 int red_led_set_trigger(REDLED led, REDLEDTrigger trigger) {

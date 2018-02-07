@@ -530,6 +530,42 @@ char *strcasestr(char *haystack, char *needle) {
 
 // sets errno on error
 int red_brick_uid(uint32_t *uid /* always little endian */) {
+#if BRICKD_WITH_RED_BRICK == 9
+	FILE *fp;
+	char base58[BASE58_MAX_LENGTH + 1]; // +1 for the \n
+	int rc;
+	int saved_errno;
+
+	// read UID from /proc/red_brick_uid
+	fp = fopen("/proc/red_brick_uid", "rb");
+
+	if (fp == NULL) {
+		return -1;
+	}
+
+	rc = robust_fread(fp, base58, sizeof(base58));
+	saved_errno = errno;
+
+	fclose(fp);
+
+	errno = saved_errno;
+
+	if (rc < 1) {
+		return -1;
+	}
+
+	if (base58[rc - 1] != '\n') {
+		errno = EINVAL;
+
+		return -1;
+	}
+
+	base58[rc - 1] = '\0';
+
+	if (base58_decode(uid, base58) < 0) {
+		return -1;
+	}
+#else
 	int i;
 	int rc;
 	FILE *fp;
@@ -589,6 +625,7 @@ int red_brick_uid(uint32_t *uid /* always little endian */) {
 	 * collisions with Bricklet UIDs by setting the 30th bit to get a
 	 * high UID, as Bricklets have a low UID */
 	*uid = (*uid & ~(1 << 31)) | (1 << 30);
+#endif
 
 	*uid = uint32_to_le(*uid);
 
