@@ -38,7 +38,7 @@
 
 static LogSource _log_source = LOG_SOURCE_INITIALIZER;
 
-#define I2C_EEPROM_BUS "/dev/i2c-2"
+#define I2C_EEPROM_BUS "/dev/i2c-3"
 #define I2C_EEPROM_DEVICE_ADDRESS 0x54
 
 static void i2c_eeprom_select(I2CEEPROM *i2c_eeprom) {
