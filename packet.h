@@ -77,7 +77,12 @@ typedef struct {
 typedef struct {
 	PacketHeader header;
 	uint8_t payload[64];
-	uint8_t optional_data[8];
+	union {
+		uint8_t optional_data[8];
+#ifdef DAEMONLIB_WITH_PACKET_TRACE
+		uint64_t trace_id; // zero == invalid, even == request, odd == response
+#endif
+	};
 } ATTRIBUTE_PACKED Packet;
 
 typedef struct {
@@ -144,5 +149,19 @@ char *packet_get_response_signature(char *signature, Packet *packet);
 char *packet_get_content_dump(char *content_dump, Packet *packet, int length);
 
 bool packet_is_matching_response(Packet *packet, PacketHeader *pending_request);
+
+#ifdef DAEMONLIB_WITH_PACKET_TRACE
+
+#define packet_add_trace(packet) packet_add_trace_(packet, __FILE__, __LINE__)
+
+uint64_t packet_get_next_request_trace_id(void);
+uint64_t packet_get_next_response_trace_id(void);
+void packet_add_trace_(Packet *packet, const char *filename, int line);
+
+#else
+
+#define packet_add_trace(packet) ((void)0)
+
+#endif
 
 #endif // DAEMONLIB_PACKET_H

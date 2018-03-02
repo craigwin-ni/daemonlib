@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2014 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2014, 2018 Matthias Bolte <matthias@tinkerforge.com>
  *
  * packet.c: Packet definiton for protocol version 2
  *
@@ -23,13 +23,23 @@
  * functions for validating, packing, unpacking and comparing packets.
  */
 
+#include <errno.h>
 #include <stdio.h>
+#include <string.h>
+#include <inttypes.h>
 
 #include "packet.h"
 
 #include "base58.h"
+#include "log.h"
 #include "macros.h"
 #include "utils.h"
+
+#ifdef DAEMONLIB_WITH_PACKET_TRACE
+
+static LogSource _log_source = LOG_SOURCE_INITIALIZER;
+
+#endif
 
 STATIC_ASSERT(sizeof(PacketHeader) == 8, "PacketHeader has invalid size");
 STATIC_ASSERT(sizeof(Packet) == 80, "Packet has invalid size");
@@ -39,6 +49,25 @@ STATIC_ASSERT(sizeof(GetAuthenticationNonceResponse) == 12, "GetAuthenticationNo
 STATIC_ASSERT(sizeof(AuthenticateRequest) == 32, "AuthenticateRequest has invalid size");
 STATIC_ASSERT(sizeof(StackEnumerateRequest) == 8, "StackEnumerateRequest has invalid size");
 STATIC_ASSERT(sizeof(StackEnumerateResponse) == 72, "StackEnumerateResponse has invalid size");
+
+#ifdef DAEMONLIB_WITH_PACKET_TRACE
+
+#define TRACE_BUFFER_SIZE 1000
+
+typedef struct {
+	uint64_t trace_id;
+	uint64_t timestamp; // microseconds
+	PacketHeader header;
+	const char *filename; // __FILE__
+	int line; // __LINE__
+} PacketTrace;
+
+static uint64_t _next_request_trace_id = 2; // start even
+static uint64_t _next_response_trace_id = UINT64_MAX; // start odd and high
+static PacketTrace _trace_buffer[TRACE_BUFFER_SIZE];
+static int _trace_buffer_used = 0;
+
+#endif
 
 int packet_header_is_valid_request(PacketHeader *header, const char **message) {
 	if (header->length < (int)sizeof(PacketHeader)) {
@@ -172,12 +201,17 @@ char *packet_get_request_signature(char *signature, Packet *packet) {
 	char base58[BASE58_MAX_LENGTH];
 
 	snprintf(signature, PACKET_MAX_SIGNATURE_LENGTH,
-	         "U: %s, L: %u, F: %u, S: %u, R: %d",
+	         "U: %s, L: %u, F: %u, S: %u, R: %d, I: %" PRIu64,
 	         base58_encode(base58, uint32_from_le(packet->header.uid)),
 	         packet->header.length,
 	         packet->header.function_id,
 	         packet_header_get_sequence_number(&packet->header),
-	         packet_header_get_response_expected(&packet->header) ? 1 : 0);
+	         packet_header_get_response_expected(&packet->header) ? 1 : 0,
+#ifdef DAEMONLIB_WITH_PACKET_TRACE
+	         packet->trace_id);
+#else
+	         0UL);
+#endif
 
 	return signature;
 }
@@ -187,18 +221,28 @@ char *packet_get_response_signature(char *signature, Packet *packet) {
 
 	if (packet_header_get_sequence_number(&packet->header) != 0) {
 		snprintf(signature, PACKET_MAX_SIGNATURE_LENGTH,
-		         "U: %s, L: %u, F: %u, S: %u, E: %d",
+		         "U: %s, L: %u, F: %u, S: %u, E: %d, I: %" PRIu64,
 		         base58_encode(base58, uint32_from_le(packet->header.uid)),
 		         packet->header.length,
 		         packet->header.function_id,
 		         packet_header_get_sequence_number(&packet->header),
-		         (int)packet_header_get_error_code(&packet->header));
+		         (int)packet_header_get_error_code(&packet->header),
+#ifdef DAEMONLIB_WITH_PACKET_TRACE
+		         packet->trace_id);
+#else
+		         0UL);
+#endif
 	} else {
 		snprintf(signature, PACKET_MAX_SIGNATURE_LENGTH,
-		         "U: %s, L: %u, F: %u",
+		         "U: %s, L: %u, F: %u, I: %" PRIu64,
 		         base58_encode(base58, uint32_from_le(packet->header.uid)),
 		         packet->header.length,
-		         packet->header.function_id);
+		         packet->header.function_id,
+#ifdef DAEMONLIB_WITH_PACKET_TRACE
+		         packet->trace_id);
+#else
+		         0UL);
+#endif
 	}
 
 	return signature;
@@ -240,3 +284,56 @@ bool packet_is_matching_response(Packet *packet, PacketHeader *pending_request) 
 
 	return true;
 }
+
+#ifdef DAEMONLIB_WITH_PACKET_TRACE
+
+uint64_t packet_get_next_request_trace_id(void) {
+	return __sync_fetch_and_add(&_next_request_trace_id, 2); // keep even
+}
+
+uint64_t packet_get_next_response_trace_id(void) {
+	return __sync_fetch_and_sub(&_next_response_trace_id, 2); // keep even
+}
+
+void packet_add_trace_(Packet *packet, const char *filename, int line) {
+	PacketTrace *trace = &_trace_buffer[_trace_buffer_used++];
+	FILE *fp;
+	int i;
+
+	trace->trace_id = packet->trace_id;
+	trace->timestamp = microseconds();
+	trace->header = packet->header;
+	trace->filename = filename;
+	trace->line = line;
+
+	if (_trace_buffer_used == TRACE_BUFFER_SIZE) {
+		log_info("Writing packet trace to /tmp/brick-packet-trace");
+
+		fp = fopen("/tmp/brick-packet-trace", "wb");
+
+		if (fp == NULL) {
+			_trace_buffer_used = 0;
+
+			log_error("Could not open /tmp/brick-packet-trace");
+
+			return;
+		}
+
+		for (i = 0; i < _trace_buffer_used; ++i) {
+			trace = &_trace_buffer[i];
+
+			fwrite(&trace->trace_id, 1, sizeof(trace->trace_id), fp);
+			fwrite(&trace->timestamp, 1, sizeof(trace->timestamp), fp);
+			fwrite(&trace->header, 1, sizeof(trace->header), fp);
+			fwrite(trace->filename, 1, strlen(trace->filename) + 1, fp);
+			fwrite(&trace->line, 1, sizeof(trace->line), fp);
+		}
+
+		fflush(fp);
+		fclose(fp);
+
+		_trace_buffer_used = 0;
+	}
+}
+
+#endif
