@@ -199,6 +199,11 @@ const char *packet_get_response_type(Packet *packet) {
 
 char *packet_get_request_signature(char *signature, Packet *packet) {
 	char base58[BASE58_MAX_LENGTH];
+#ifdef DAEMONLIB_WITH_PACKET_TRACE
+	uint64_t trace_id = packet->trace_id;
+#else
+	uint64_t trace_id = 0;
+#endif
 
 	snprintf(signature, PACKET_MAX_SIGNATURE_LENGTH,
 	         "U: %s, L: %u, F: %u, S: %u, R: %d, I: %" PRIu64,
@@ -207,17 +212,18 @@ char *packet_get_request_signature(char *signature, Packet *packet) {
 	         packet->header.function_id,
 	         packet_header_get_sequence_number(&packet->header),
 	         packet_header_get_response_expected(&packet->header) ? 1 : 0,
-#ifdef DAEMONLIB_WITH_PACKET_TRACE
-	         packet->trace_id);
-#else
-	         0UL);
-#endif
+	         trace_id);
 
 	return signature;
 }
 
 char *packet_get_response_signature(char *signature, Packet *packet) {
 	char base58[BASE58_MAX_LENGTH];
+#ifdef DAEMONLIB_WITH_PACKET_TRACE
+	uint64_t trace_id = packet->trace_id;
+#else
+	uint64_t trace_id = 0;
+#endif
 
 	if (packet_header_get_sequence_number(&packet->header) != 0) {
 		snprintf(signature, PACKET_MAX_SIGNATURE_LENGTH,
@@ -227,22 +233,14 @@ char *packet_get_response_signature(char *signature, Packet *packet) {
 		         packet->header.function_id,
 		         packet_header_get_sequence_number(&packet->header),
 		         (int)packet_header_get_error_code(&packet->header),
-#ifdef DAEMONLIB_WITH_PACKET_TRACE
-		         packet->trace_id);
-#else
-		         0UL);
-#endif
+		         trace_id);
 	} else {
 		snprintf(signature, PACKET_MAX_SIGNATURE_LENGTH,
 		         "U: %s, L: %u, F: %u, I: %" PRIu64,
 		         base58_encode(base58, uint32_from_le(packet->header.uid)),
 		         packet->header.length,
 		         packet->header.function_id,
-#ifdef DAEMONLIB_WITH_PACKET_TRACE
-		         packet->trace_id);
-#else
-		         0UL);
-#endif
+		         trace_id);
 	}
 
 	return signature;
