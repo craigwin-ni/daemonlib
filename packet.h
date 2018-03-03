@@ -160,7 +160,7 @@ void packet_add_trace_(Packet *packet, const char *filename, int line);
 
 #else
 
-#define packet_add_trace(packet) ((void)0)
+#define packet_add_trace(packet) ((void)(packet))
 
 #endif
 
