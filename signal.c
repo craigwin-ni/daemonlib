@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2014, 2017 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2014, 2017-2018 Matthias Bolte <matthias@tinkerforge.com>
  *
  * signal.c: Signal specific functions
  *
@@ -93,7 +93,7 @@ int signal_init(SIGHUPFunction sighup, SIGUSR1Function sigusr1) {
 	phase = 1;
 
 	if (event_add_source(_signal_pipe.base.read_handle, EVENT_SOURCE_TYPE_GENERIC,
-	                     EVENT_READ, signal_handle, NULL) < 0) {
+	                     "signal", EVENT_READ, signal_handle, NULL) < 0) {
 		goto cleanup;
 	}
 

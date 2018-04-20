@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2014, 2017 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2014, 2017-2018 Matthias Bolte <matthias@tinkerforge.com>
  *
  * timer_posix.c: Poll based timer implementation
  *
@@ -170,7 +170,7 @@ int timer_create_(Timer *timer, TimerFunction function, void *opaque) {
 	timer->opaque = opaque;
 
 	if (event_add_source(timer->notification_pipe.base.read_handle,
-	                     EVENT_SOURCE_TYPE_GENERIC, EVENT_READ,
+	                     EVENT_SOURCE_TYPE_GENERIC, "timer", EVENT_READ,
 	                     timer_handle_read, timer) < 0) {
 		goto cleanup;
 	}

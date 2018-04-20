@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2014 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2014, 2018 Matthias Bolte <matthias@tinkerforge.com>
  *
  * timer_linux.c: timerfd based timer implementation for Linux
  *
@@ -66,7 +66,7 @@ int timer_create_(Timer *timer, TimerFunction function, void *opaque) {
 	timer->function = function;
 	timer->opaque = opaque;
 
-	if (event_add_source(timer->handle, EVENT_SOURCE_TYPE_GENERIC,
+	if (event_add_source(timer->handle, EVENT_SOURCE_TYPE_GENERIC, "timer",
 	                     EVENT_READ, timer_handle_read, timer) < 0) {
 		close(timer->handle);
 

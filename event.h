@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012, 2014 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012, 2014, 2018 Matthias Bolte <matthias@tinkerforge.com>
  *
  * event.h: Event specific functions
  *
@@ -74,6 +74,7 @@ typedef enum {
 typedef struct {
 	IOHandle handle;
 	EventSourceType type;
+	const char *name;
 	uint32_t events;
 	EventSourceState state;
 	EventFunction read;
@@ -91,8 +92,8 @@ const char *event_get_source_type_name(EventSourceType type, bool upper);
 int event_init(void);
 void event_exit(void);
 
-int event_add_source(IOHandle handle, EventSourceType type, uint32_t events,
-                     EventFunction function, void *opaque);
+int event_add_source(IOHandle handle, EventSourceType type, const char *name,
+                     uint32_t events, EventFunction function, void *opaque);
 int event_modify_source(IOHandle handle, EventSourceType type, uint32_t events_to_remove,
                         uint32_t events_to_add, EventFunction function, void *opaque);
 void event_remove_source(IOHandle handle, EventSourceType type);
