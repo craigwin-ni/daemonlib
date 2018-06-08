@@ -36,6 +36,9 @@
 	#include <netdb.h>
 	#include <unistd.h>
 #endif
+#ifdef __ANDROID__
+	#include <arpa/inet.h>
+#endif
 
 #include "utils.h"
 
