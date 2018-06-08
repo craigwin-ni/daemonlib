@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2015, 2017 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2015, 2017-2018 Matthias Bolte <matthias@tinkerforge.com>
  * Copyright (C) 2014 Olaf Lüke <olaf@tinkerforge.com>
  *
  * utils.c: Utility functions
@@ -501,7 +501,7 @@ uint64_t microseconds(void) {
 #endif
 }
 
-#if !defined _GNU_SOURCE && !defined __APPLE__
+#if !defined _GNU_SOURCE && !defined __APPLE__ && !__ANDROID__
 
 #include <ctype.h>
 
