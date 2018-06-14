@@ -44,7 +44,7 @@
 
 #include "base58.h"
 
-#if !defined(_WIN32) && !defined(EAI_ADDRFAMILY)
+#if !defined _WIN32 && !defined EAI_ADDRFAMILY
 	#if EAI_AGAIN < 0
 		#define EAI_ADDRFAMILY -9
 	#else

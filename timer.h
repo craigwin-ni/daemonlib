@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2014, 2016 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2014, 2016, 2018 Matthias Bolte <matthias@tinkerforge.com>
  *
  * timer.h: Timer specific functions
  *
@@ -26,9 +26,9 @@
 
 #ifdef DAEMONLIB_UWP_BUILD
 	#include "timer_uwp.h"
-#elif defined (_WIN32)
+#elif defined _WIN32
 	#include "timer_winapi.h"
-#elif defined (__linux__)
+#elif defined __linux__
 	#include "timer_linux.h"
 #else
 	#include "timer_posix.h"

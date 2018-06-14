@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2014, 2016 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2014, 2016, 2018 Matthias Bolte <matthias@tinkerforge.com>
  *
  * macros.h: Preprocessor macros
  *
@@ -31,7 +31,7 @@
 		#define STATIC_ASSERT(condition, message) // FIXME
 	#endif
 	#define ATTRIBUTE_FMT_PRINTF(fmtpos, argpos) // FIXME
-#elif defined(__GNUC__)
+#elif defined __GNUC__
 	#ifndef __GNUC_PREREQ
 		#define __GNUC_PREREQ(major, minor) ((((__GNUC__) << 16) + (__GNUC_MINOR__)) >= (((major) << 16) + (minor)))
 	#endif
