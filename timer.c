@@ -23,7 +23,7 @@
 	#include "timer_uwp.c"
 #elif defined _WIN32
 	#include "timer_winapi.c"
-#elif defined __linux__
+#elif defined __linux__ && !defined __ANDROID__
 	#include "timer_linux.c"
 #else
 	#include "timer_posix.c"

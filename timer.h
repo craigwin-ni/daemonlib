@@ -28,7 +28,7 @@
 	#include "timer_uwp.h"
 #elif defined _WIN32
 	#include "timer_winapi.h"
-#elif defined __linux__
+#elif defined __linux__ && !defined __ANDROID__
 	#include "timer_linux.h"
 #else
 	#include "timer_posix.h"
