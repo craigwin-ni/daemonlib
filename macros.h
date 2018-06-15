@@ -70,11 +70,11 @@
 // with unsigned int SIZE - 1 would overflow to a big value if size is 0.
 #define GROW_ALLOCATION(size) ((((int)(size) - 1) / 16 + 1) * 16)
 
-// this is intentinally called containerof instead of container_of to avoid
+// this is intentionally called containerof instead of container_of to avoid
 // conflicts with potential other definitions of the container_of macro
 #ifdef __GNUC__
 	#define containerof(ptr, type, member) ({ \
-		const typeof(((type *)0)->member) *__ptr = ptr; \
+		const __typeof__(((type *)0)->member) *__ptr = ptr; \
 		(type *)((char *)__ptr - offsetof(type, member)); })
 #else
 	#define containerof(ptr, type, member) \
