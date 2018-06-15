@@ -25,6 +25,7 @@ extern "C" {
 
 }
 
+// FIXME: move to libusb_uwp.cpp?
 // sets errno on error
 extern "C" char *string_convert_ascii(Platform::String ^string) {
 	int length = string->Length();
@@ -33,6 +34,8 @@ extern "C" char *string_convert_ascii(Platform::String ^string) {
 	char *ascii = (char *)calloc(length + 1, 1);
 
 	if (ascii == nullptr) {
+		errno = ENOMEM;
+
 		return nullptr;
 	}
 
