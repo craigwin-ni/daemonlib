@@ -53,7 +53,7 @@ void mutex_unlock(Mutex *mutex) {
 // sets errno on error
 int semaphore_create(Semaphore *semaphore) {
 #ifdef __APPLE__
-	// Mac OS X does not support unnamed semaphores, so we fake them. unlink
+	// macOS does not support unnamed semaphores, so we fake them. unlink
 	// first to ensure that there is no existing semaphore with that name.
 	// then open the semaphore to create a new one. finally unlink it again to
 	// avoid leaking the name. the semaphore will work fine without a name

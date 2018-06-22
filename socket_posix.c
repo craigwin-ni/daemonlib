@@ -185,7 +185,7 @@ struct addrinfo *socket_hostname_to_address(const char *hostname, uint16_t port)
 		// getaddrinfo error codes are negative on Linux...
 		errno = ERRNO_ADDRINFO_OFFSET - rc;
 #else
-		// ...but positive on Mac OS X
+		// ...but positive on macOS
 		errno = ERRNO_ADDRINFO_OFFSET + rc;
 #endif
 
@@ -211,7 +211,7 @@ int socket_address_to_hostname(struct sockaddr *address, socklen_t address_lengt
 		// getnameinfo error codes are negative on Linux...
 		errno = ERRNO_ADDRINFO_OFFSET - rc;
 #else
-		// ...but positive on Mac OS X
+		// ...but positive on macOS
 		errno = ERRNO_ADDRINFO_OFFSET + rc;
 #endif
 
