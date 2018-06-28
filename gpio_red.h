@@ -2,7 +2,7 @@
  * daemonlib
  * Copyright (C) 2014, 2018 Olaf Lüke <olaf@tinkerforge.com>
  *
- * gpio_red.h: GPIO RED functions for RED Brick
+ * gpio_red.h: GPIO functions for RED Brick
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,8 +19,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef DAEMONLIB_RED_GPIO_RED_H
-#define DAEMONLIB_RED_GPIO_RED_H
+#ifndef DAEMONLIB_GPIO_RED_H
+#define DAEMONLIB_GPIO_RED_H
 
 #include <stdint.h>
 

@@ -2,7 +2,7 @@
  * daemonlib
  * Copyright (C) 2018 Olaf Lüke <olaf@tinkerforge.com>
  *
- * gpio_sysfs.h: GPIO functions for using linux sysfs
+ * gpio_sysfs.h: GPIO functions for using Linux sysfs
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
