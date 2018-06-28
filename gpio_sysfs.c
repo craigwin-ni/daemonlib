@@ -107,10 +107,10 @@ int gpio_sysfs_set_direction(GPIOSYSFS *gpio, GPIOSYSFSDirection direction) {
 	char buffer[GPIO_SYSFS_DIR_MAXLEN];
 	int rc;
 
-    if(direction >= GPIO_SYSFS_DIRECTION_NUM) {
+	if(direction >= GPIO_SYSFS_DIRECTION_NUM) {
 		log_error("Unknown direction: %d", direction);
-        return -1;
-    }
+		return -1;
+	}
 
 	snprintf(buffer, sizeof(buffer), "%s%s/direction", GPIO_SYSFS_DIR, gpio->name);
 
@@ -138,10 +138,10 @@ int gpio_sysfs_set_output(GPIOSYSFS *gpio, GPIOSYSFSValue value) {
 	char buffer[GPIO_SYSFS_DIR_MAXLEN];
 	int rc;
 
-    if(value >= GPIO_SYSFS_VALUE_NUM) {
+	if(value >= GPIO_SYSFS_VALUE_NUM) {
 		log_error("Unknown value: %d", value);
-        return -1;
-    }
+		return -1;
+	}
 
 	snprintf(buffer, sizeof(buffer), "%s%s/value", GPIO_SYSFS_DIR, gpio->name);
 
@@ -172,6 +172,7 @@ int gpio_sysfs_get_input(GPIOSYSFS *gpio, GPIOSYSFSValue *value) {
 	snprintf(buffer, sizeof(buffer), "%s%s/value", GPIO_SYSFS_DIR, gpio->name);
 
 	fd = open(buffer, O_RDONLY);
+
 	if (fd < 0) {
 		log_error("Could not open '%s': %s (%d)", buffer, get_errno_name(errno), errno);
 		return -1;
@@ -199,10 +200,10 @@ int gpio_sysfs_set_interrupt(GPIOSYSFS *gpio, GPIOSYSFSInterrupt interrupt) {
 	char buffer[GPIO_SYSFS_DIR_MAXLEN];
 	int rc;
 
-    if(interrupt >= GPIO_SYSFS_INTERRUPT_NUM) {
+	if(interrupt >= GPIO_SYSFS_INTERRUPT_NUM) {
 		log_error("Unknown interrupt: %d", interrupt);
-        return -1;
-    }
+		return -1;
+	}
 
 	snprintf(buffer, sizeof(buffer), "%s%s/edge", GPIO_SYSFS_DIR, gpio->name);
 
