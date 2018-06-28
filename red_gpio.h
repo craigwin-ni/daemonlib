@@ -107,9 +107,5 @@ void gpio_input_configure(const GPIOPin pin, const GPIOInputConfig input_config)
 void gpio_output_set(const GPIOPin pin);
 void gpio_output_clear(const GPIOPin pin);
 uint32_t gpio_input(const GPIOPin pin);
-int gpio_sysfs_export(int gpio_num);
-int gpio_sysfs_unexport(int gpio_num);
-int gpio_sysfs_set_edge(const char *gpio_name, const char *edge);
-int gpio_sysfs_get_value_fd(const char *gpio_name);
 
 #endif // DAEMONLIB_RED_GPIO_H
