@@ -26,12 +26,12 @@
 
 #include <stdint.h>
 
-#include "red_gpio.h"
+#include "gpio_red.h"
 
 typedef struct {
 	int extension;
 	int file;
-	GPIOPin address_pin;
+	GPIOREDPin address_pin;
 } I2CEEPROM;
 
 int i2c_eeprom_create(I2CEEPROM *i2c_eeprom, int extension);

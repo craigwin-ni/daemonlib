@@ -1,9 +1,9 @@
 /*
  * daemonlib
- * Copyright (C) 2014 Olaf Lüke <olaf@tinkerforge.com>
+ * Copyright (C) 2014, 2018 Olaf Lüke <olaf@tinkerforge.com>
  * Copyright (C) 2014-2016 Matthias Bolte <matthias@tinkerforge.com>
  *
- * red_gpio.c: GPIO functions for RED Brick
+ * gpio_red.c: GPIO RED functions for RED Brick
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,19 +28,18 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "red_gpio.h"
+#include "gpio_red.h"
 
 #include "log.h"
 #include "utils.h"
 
 static LogSource _log_source = LOG_SOURCE_INITIALIZER;
 
-#define GPIO_BASE 0x01c20800
-#define SYSFS_GPIO_DIR "/sys/class/gpio/"
+#define GPIO_RED_BASE 0x01c20800
 
-static volatile GPIOPort *_gpio_port;
+static volatile GPIOREDPort *_gpio_red_port;
 
-int gpio_init(void) {
+int gpio_red_init(void) {
 	int fd;
 	uint32_t address_start;
 	uint32_t address_offset;
@@ -59,10 +58,10 @@ int gpio_init(void) {
 
 	page_size = sysconf(_SC_PAGESIZE);
 	page_mask = ~(page_size - 1);
-	address_start = GPIO_BASE & page_mask;
-	address_offset = GPIO_BASE & ~page_mask;
+	address_start = GPIO_RED_BASE & page_mask;
+	address_offset = GPIO_RED_BASE & ~page_mask;
 
-	// FIXME: add gpio_exit() to munmap?
+	// FIXME: add gpio_red_exit() to munmap?
 	mapped_base = mmap(0, page_size * 2, PROT_READ | PROT_WRITE, MAP_SHARED,
 	                   fd, address_start);
 
@@ -75,43 +74,43 @@ int gpio_init(void) {
 		return -1;
 	}
 
-	_gpio_port = mapped_base + address_offset;
+	_gpio_red_port = mapped_base + address_offset;
 
 	close(fd);
 
 	return 0;
 }
 
-void gpio_mux_configure(const GPIOPin pin, const GPIOMux mux_config) {
+void gpio_red_mux_configure(const GPIOREDPin pin, const GPIOREDMux mux_config) {
 	uint32_t config_index = pin.pin_index >> 3;
 	uint32_t offset = (pin.pin_index & 0x7) << 2;
-	uint32_t config = _gpio_port[pin.port_index].config[config_index];
+	uint32_t config = _gpio_red_port[pin.port_index].config[config_index];
 
 	config &= ~(0xF << offset);
 	config |= mux_config << offset;
 
-	_gpio_port[pin.port_index].config[config_index] = config;
+	_gpio_red_port[pin.port_index].config[config_index] = config;
 }
 
-void gpio_input_configure(const GPIOPin pin, const GPIOInputConfig input_config) {
+void gpio_red_input_configure(const GPIOREDPin pin, const GPIOREDInputConfig input_config) {
 	uint32_t config_index = pin.pin_index >> 4;
 	uint32_t offset = (pin.pin_index * 2) % 32;
-	uint32_t config = _gpio_port[pin.port_index].pull[config_index];
+	uint32_t config = _gpio_red_port[pin.port_index].pull[config_index];
 
 	config &= ~(0x3 << offset);
 	config |= input_config << offset;
 
-	_gpio_port[pin.port_index].pull[config_index] = config;
+	_gpio_red_port[pin.port_index].pull[config_index] = config;
 }
 
-void gpio_output_set(const GPIOPin pin) {
-	_gpio_port[pin.port_index].value |= (1 << pin.pin_index);
+void gpio_red_output_set(const GPIOREDPin pin) {
+	_gpio_red_port[pin.port_index].value |= (1 << pin.pin_index);
 }
 
-void gpio_output_clear(const GPIOPin pin) {
-	_gpio_port[pin.port_index].value &= ~(1 << pin.pin_index);
+void gpio_red_output_clear(const GPIOREDPin pin) {
+	_gpio_red_port[pin.port_index].value &= ~(1 << pin.pin_index);
 }
 
-uint32_t gpio_input(const GPIOPin pin) {
-	return _gpio_port[pin.port_index].value & (1 << pin.pin_index);
+uint32_t gpio_red_input(const GPIOREDPin pin) {
+	return _gpio_red_port[pin.port_index].value & (1 << pin.pin_index);
 }

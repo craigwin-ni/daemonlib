@@ -42,11 +42,11 @@ static LogSource _log_source = LOG_SOURCE_INITIALIZER;
 #define I2C_EEPROM_DEVICE_ADDRESS 0x54
 
 static void i2c_eeprom_select(I2CEEPROM *i2c_eeprom) {
-	gpio_output_set(i2c_eeprom->address_pin); // address pin high
+	gpio_red_output_set(i2c_eeprom->address_pin); // address pin high
 }
 
 static void i2c_eeprom_deselect(I2CEEPROM *i2c_eeprom) {
-	gpio_output_clear(i2c_eeprom->address_pin); // address pin low
+	gpio_red_output_clear(i2c_eeprom->address_pin); // address pin low
 }
 
 static int i2c_eeprom_set_pointer(I2CEEPROM *i2c_eeprom,
@@ -78,7 +78,7 @@ static int i2c_eeprom_set_pointer(I2CEEPROM *i2c_eeprom,
 // TODO: If we want "real parallel accessibility" of the EEPROM we need to
 //       lock a mutex in the init function and unlock it in the release function
 int i2c_eeprom_create(I2CEEPROM *i2c_eeprom, int extension) {
-	GPIOPin pullup = {GPIO_PORT_B, GPIO_PIN_6};
+	GPIOREDPin pullup = {GPIO_RED_PORT_B, GPIO_RED_PIN_6};
 
 	log_debug("Initializing I2C EEPROM for extension %d", extension);
 
@@ -90,28 +90,28 @@ int i2c_eeprom_create(I2CEEPROM *i2c_eeprom, int extension) {
 	}
 
 	// Enable pullups
-	gpio_mux_configure(pullup, GPIO_MUX_OUTPUT);
-	gpio_output_clear(pullup);
+	gpio_red_mux_configure(pullup, GPIO_RED_MUX_OUTPUT);
+	gpio_red_output_clear(pullup);
 
 	// Initialize I2C EEPROM structure
 	i2c_eeprom->extension = extension;
 
 	switch (extension) {
 	case 0:
-		i2c_eeprom->address_pin.port_index = GPIO_PORT_G;
-		i2c_eeprom->address_pin.pin_index = GPIO_PIN_9;
+		i2c_eeprom->address_pin.port_index = GPIO_RED_PORT_G;
+		i2c_eeprom->address_pin.pin_index = GPIO_RED_PIN_9;
 
 		break;
 
 	case 1:
-		i2c_eeprom->address_pin.port_index = GPIO_PORT_G;
-		i2c_eeprom->address_pin.pin_index = GPIO_PIN_13;
+		i2c_eeprom->address_pin.port_index = GPIO_RED_PORT_G;
+		i2c_eeprom->address_pin.pin_index = GPIO_RED_PIN_13;
 
 		break;
 	}
 
-	// enable I2C bus with GPIO
-	gpio_mux_configure(i2c_eeprom->address_pin, GPIO_MUX_OUTPUT);
+	// enable I2C bus with GPIO_RED
+	gpio_red_mux_configure(i2c_eeprom->address_pin, GPIO_RED_MUX_OUTPUT);
 	i2c_eeprom_deselect(i2c_eeprom);
 
 	i2c_eeprom->file = open(I2C_EEPROM_BUS, O_RDWR);
