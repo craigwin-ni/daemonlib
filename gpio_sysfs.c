@@ -167,7 +167,8 @@ int gpio_sysfs_set_output(GPIOSYSFS *gpio, GPIOSYSFSValue value) {
 int gpio_sysfs_get_input(GPIOSYSFS *gpio, GPIOSYSFSValue *value) {
 	int fd;
 	char buffer[GPIO_SYSFS_DIR_MAXLEN];
-	char ret[3];
+	char input;
+	int rc;
 
 	snprintf(buffer, sizeof(buffer), "%s%s/value", GPIO_SYSFS_DIR, gpio->name);
 
@@ -178,17 +179,21 @@ int gpio_sysfs_get_input(GPIOSYSFS *gpio, GPIOSYSFSValue *value) {
 		return -1;
 	}
 
-	if (read(fd, ret, 3) < 0) {
+	rc = robust_read(fd, &input, 1);
+
+	robust_close(fd);
+
+	if (rc != 1) {
 		log_error("Could not read from '%s': %s (%d)", buffer, get_errno_name(errno), errno);
 		return -1;
 	}
 
-	if (ret[0] == '0') {
+	if (input == '0') {
 		*value = GPIO_SYSFS_VALUE_LOW;
-	} else if (ret[0] == '1') {
+	} else if (input == '1') {
 		*value = GPIO_SYSFS_VALUE_HIGH;
 	} else {
-		log_error("Unknown value: %c", ret[0]);
+		log_error("Read unknown value from '%s': %c", buffer, input);
 		return -1;
 	}
 
