@@ -537,7 +537,6 @@ int red_brick_uid(uint32_t *uid /* always little endian */) {
 	FILE *fp;
 	char base58[BASE58_MAX_LENGTH + 1]; // +1 for the \n
 	int rc;
-	int saved_errno;
 
 	// read UID from /proc/red_brick_uid
 	fp = fopen("/proc/red_brick_uid", "rb");
@@ -547,11 +546,8 @@ int red_brick_uid(uint32_t *uid /* always little endian */) {
 	}
 
 	rc = robust_fread(fp, base58, sizeof(base58));
-	saved_errno = errno;
 
-	fclose(fp);
-
-	errno = saved_errno;
+	robust_fclose(fp);
 
 	if (rc < 1) {
 		return -1;
@@ -572,7 +568,6 @@ int red_brick_uid(uint32_t *uid /* always little endian */) {
 	int i;
 	int rc;
 	FILE *fp;
-	int saved_errno;
 	uint8_t uid_u8_0;
 	uint8_t uid_u8_1;
 	uint8_t uid_u8_2;
@@ -596,11 +591,8 @@ int red_brick_uid(uint32_t *uid /* always little endian */) {
 	}
 
 	rc = robust_fread(fp, sid_u16, sizeof(sid_u16));
-	saved_errno = errno;
 
-	fclose(fp);
-
-	errno = saved_errno;
+	robust_fclose(fp);
 
 	if (rc != 16) {
 		return -1;
@@ -635,6 +627,16 @@ int red_brick_uid(uint32_t *uid /* always little endian */) {
 	return 0;
 }
 
+// calls close while preserving errno
+int robust_close(int fd) {
+	int saved_errno = errno;
+	int rc = close(fd);
+
+	errno = saved_errno;
+
+	return rc;
+}
+
 // sets errno on error
 int robust_read(int fd, void *buffer, int length) {
 	int rc;
@@ -654,6 +656,16 @@ int robust_write(int fd, const void *buffer, int length) {
 		// FIXME: handle partial write
 		rc = write(fd, buffer, length);
 	} while (rc < 0 && errno_interrupted());
+
+	return rc;
+}
+
+// calls fclose while preserving errno
+int robust_fclose(FILE *fp) {
+	int saved_errno = errno;
+	int rc = fclose(fp);
+
+	errno = saved_errno;
 
 	return rc;
 }

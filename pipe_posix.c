@@ -36,7 +36,6 @@
 int pipe_create(Pipe *pipe_, uint32_t flags) {
 	IOHandle handles[2];
 	int fcntl_flags;
-	int saved_errno;
 
 	if (io_create(&pipe_->base, "pipe",
 	              (IODestroyFunction)pipe_destroy,
@@ -73,12 +72,8 @@ int pipe_create(Pipe *pipe_, uint32_t flags) {
 	return 0;
 
 error:
-	saved_errno = errno;
-
-	close(pipe_->base.read_handle);
-	close(pipe_->base.write_handle);
-
-	errno = saved_errno;
+	robust_close(pipe_->base.read_handle);
+	robust_close(pipe_->base.write_handle);
 
 	return -1;
 }

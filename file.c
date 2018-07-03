@@ -36,7 +36,6 @@
 int file_create(File *file, const char *name, int flags, int mode) { // takes open flags
 #ifndef _WIN32
 	int fcntl_flags;
-	int saved_errno;
 #endif
 
 	if (io_create(&file->base, "file",
@@ -64,11 +63,7 @@ int file_create(File *file, const char *name, int flags, int mode) { // takes op
 
 		if (fcntl_flags < 0 ||
 		    fcntl(file->handle, F_SETFL, fcntl_flags | O_NONBLOCK) < 0) {
-			saved_errno = errno;
-
-			close(file->handle);
-
-			errno = saved_errno;
+			robust_close(file->handle);
 
 			return -1;
 		}

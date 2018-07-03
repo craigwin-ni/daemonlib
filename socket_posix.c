@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2017 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2018 Matthias Bolte <matthias@tinkerforge.com>
  * Copyright (C) 2014 Olaf Lüke <olaf@tinkerforge.com>
  *
  * socket_posix.c: POSIX based socket implementation
@@ -74,8 +74,6 @@ int socket_open(Socket *socket_, int family, int type, int protocol) {
 // sets errno on error
 int socket_accept_platform(Socket *socket, Socket *accepted_socket,
                            struct sockaddr *address, socklen_t *length) {
-	int saved_errno;
-
 	// accept socket
 	accepted_socket->handle = accept(socket->handle, address, length);
 
@@ -89,11 +87,7 @@ int socket_accept_platform(Socket *socket, Socket *accepted_socket,
 
 	// prepare socket
 	if (socket_prepare(accepted_socket) < 0) {
-		saved_errno = errno;
-
-		close(accepted_socket->handle);
-
-		errno = saved_errno;
+		robust_close(accepted_socket->handle);
 
 		return -1;
 	}
