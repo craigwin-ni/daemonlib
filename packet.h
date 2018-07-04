@@ -63,6 +63,8 @@ typedef enum {
 #define PACKET_MAX_SIGNATURE_LENGTH 64
 #define PACKET_MAX_CONTENT_DUMP_LENGTH ((int)sizeof(Packet) * 3 + 1)
 #define PACKET_MAX_STACK_ENUMERATE_UIDS 16
+#define PACKET_NO_CONNECTED_UID_STR "0\0\0\0\0\0\0\0"
+#define PACKET_NO_CONNECTED_UID_STR_LENGTH 8
 
 #include "packed_begin.h"
 
