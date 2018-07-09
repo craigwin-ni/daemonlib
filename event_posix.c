@@ -156,8 +156,3 @@ cleanup:
 
 	return result;
 }
-
-int event_stop_platform(void) {
-	// nothing to do, the signal pipe already interrupted the running poll
-	return 0;
-}

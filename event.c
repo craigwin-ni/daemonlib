@@ -32,6 +32,7 @@
 static LogSource _log_source = LOG_SOURCE_INITIALIZER;
 
 static Array _event_sources;
+static Pipe _stop_pipe;
 static bool _running = false;
 static bool _stop_requested = false;
 
@@ -42,7 +43,6 @@ extern int event_source_modified_platform(EventSource *event_source);
 extern void event_source_removed_platform(EventSource *event_source);
 extern int event_run_platform(Array *sources, bool *running,
                               EventCleanupFunction cleanup);
-extern int event_stop_platform(void);
 
 const char *event_get_source_type_name(EventSourceType type, bool upper) {
 	switch (type) {
@@ -54,6 +54,8 @@ const char *event_get_source_type_name(EventSourceType type, bool upper) {
 }
 
 int event_init(void) {
+	int phase = 0;
+
 	log_debug("Initializing event subsystem");
 
 	// create event source array, the EventSource struct is not relocatable
@@ -62,16 +64,53 @@ int event_init(void) {
 		log_error("Could not create event source array: %s (%d)",
 		          get_errno_name(errno), errno);
 
-		return -1;
+		goto cleanup;
 	}
+
+	phase = 1;
 
 	if (event_init_platform() < 0) {
-		array_destroy(&_event_sources, NULL);
-
-		return -1;
+		goto cleanup;
 	}
 
-	return 0;
+	phase = 2;
+
+	// create stop pipe
+	if (pipe_create(&_stop_pipe, 0) < 0) {
+		log_error("Could not create stop pipe: %s (%d)",
+		          get_errno_name(errno), errno);
+
+		goto cleanup;
+	}
+
+	phase = 3;
+
+	if (event_add_source(_stop_pipe.base.read_handle, EVENT_SOURCE_TYPE_GENERIC,
+	                     "event-stop", EVENT_READ, NULL, NULL) < 0) {
+		goto cleanup;
+	}
+
+	phase = 4;
+
+cleanup:
+	switch (phase) { // no breaks, all cases fall through intentionally
+	case 3:
+		pipe_destroy(&_stop_pipe);
+		// fall through
+
+	case 2:
+		event_exit_platform();
+		// fall through
+
+	case 1:
+		array_destroy(&_event_sources, NULL);
+		// fall through
+
+	default:
+		break;
+	}
+
+	return phase == 4 ? 0 : -1;
 }
 
 void event_exit(void) {
@@ -79,6 +118,9 @@ void event_exit(void) {
 	EventSource *event_source;
 
 	log_debug("Shutting down event subsystem");
+
+	event_remove_source(_stop_pipe.base.read_handle, EVENT_SOURCE_TYPE_GENERIC);
+	pipe_destroy(&_stop_pipe);
 
 	event_exit_platform();
 
@@ -498,7 +540,10 @@ int event_run(EventCleanupFunction cleanup) {
 	return rc;
 }
 
+// might be called from a non-main-thread
 void event_stop(void) {
+	uint8_t byte = 0;
+
 	_stop_requested = true;
 
 	if (!_running) {
@@ -507,7 +552,14 @@ void event_stop(void) {
 
 	_running = false;
 
-	log_debug("Stopping the event loop");
+	// write to the stop pipe to wake the event loop up to make it recognize
+	// the stop request
+	if (pipe_write(&_stop_pipe, &byte, sizeof(byte)) < 0) {
+		log_error("Could not write to stop pipe: %s (%d)",
+		          get_errno_name(errno), errno);
 
-	event_stop_platform();
+		return;
+	}
+
+	log_debug("Stopping the event loop");
 }

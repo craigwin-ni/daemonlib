@@ -73,6 +73,7 @@ static void signal_handle(void *opaque) {
 }
 
 static void signal_forward(int signal_number) {
+	// need to forward signal here with async-safe functions only
 	pipe_write(&_signal_pipe, &signal_number, sizeof(signal_number));
 }
 
