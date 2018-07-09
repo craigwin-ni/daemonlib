@@ -34,8 +34,8 @@
 
 static LogSource _log_source = LOG_SOURCE_INITIALIZER;
 
-static int _epollfd = -1;
-static int _epollfd_event_count = 0;
+static int _epollfd;
+static int _epollfd_event_count;
 
 int event_init_platform(void) {
 	// create epollfd
@@ -47,6 +47,8 @@ int event_init_platform(void) {
 
 		return -1;
 	}
+
+	_epollfd_event_count = 0;
 
 	return 0;
 }

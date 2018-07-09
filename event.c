@@ -31,10 +31,10 @@
 
 static LogSource _log_source = LOG_SOURCE_INITIALIZER;
 
+static bool _running;
+static bool _stop_requested;
 static Array _event_sources;
 static Pipe _stop_pipe;
-static bool _running = false;
-static bool _stop_requested = false;
 
 extern int event_init_platform(void);
 extern void event_exit_platform(void);
@@ -57,6 +57,9 @@ int event_init(void) {
 	int phase = 0;
 
 	log_debug("Initializing event subsystem");
+
+	_running = false;
+	_stop_requested = false;
 
 	// create event source array, the EventSource struct is not relocatable
 	// because epoll might store a pointer to it
