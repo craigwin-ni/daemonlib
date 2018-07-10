@@ -334,6 +334,7 @@ void config_exit(void) {
 		if (config_options[i].type == CONFIG_OPTION_TYPE_STRING) {
 			if (config_options[i].value.string != config_options[i].default_value.string) {
 				free(config_options[i].value.string);
+				config_options[i].value.string = NULL;
 			}
 		}
 	}
