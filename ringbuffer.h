@@ -44,4 +44,4 @@ bool ringbuffer_get(Ringbuffer *rb, uint8_t *data);
 void ringbuffer_init(Ringbuffer *rb, const uint16_t size, uint8_t *buffer);
 void ringbuffer_print(Ringbuffer *rb);
 
-#endif
+#endif // DAEMONLIB_RINGBUFFER_H
