@@ -19,11 +19,11 @@
  * Boston, MA 02111-1307, USA.
  */
 
+#include <stdio.h>
+
 #include "ringbuffer.h"
 
 #include "macros.h"
-
-#include <stdio.h>
 
 uint16_t ringbuffer_get_used(Ringbuffer *rb) {
 	if(rb->end < rb->start) {
@@ -106,19 +106,25 @@ void ringbuffer_init(Ringbuffer *rb, const uint16_t size, uint8_t *buffer) {
 
 void ringbuffer_print(Ringbuffer *rb) {
 	int32_t end = rb->end - rb->start;
+	uint16_t i;
+
 	if(end < 0) {
 		end += rb->size;
 	}
 
 	printf("Ringbuffer (start %d, end %d, size %d, low %d, overflows %d): [\n\r", rb->start, rb->end, rb->size, rb->low_watermark, rb->overflows);
-	for(uint16_t i = 0; i < end; i++) {
+
+	for(i = 0; i < end; i++) {
 		if((i % 16) == 0) {
 			printf("    ");
 		}
+
 		printf("%x, ", rb->buffer[(rb->start + i) % rb->size]);
+
 		if((i % 16) == 15) {
 			printf("\n\r");
 		}
 	}
+
 	printf("]\n\r");
 }
