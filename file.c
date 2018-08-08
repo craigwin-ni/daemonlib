@@ -77,7 +77,7 @@ int file_create(File *file, const char *name, int flags, int mode) { // takes op
 }
 
 void file_destroy(File *file) {
-	close(file->handle);
+	robust_close(file->handle);
 }
 
 // sets errno on error

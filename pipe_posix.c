@@ -79,8 +79,8 @@ error:
 }
 
 void pipe_destroy(Pipe *pipe) {
-	close(pipe->base.read_handle);
-	close(pipe->base.write_handle);
+	robust_close(pipe->base.read_handle);
+	robust_close(pipe->base.write_handle);
 }
 
 // sets errno on error

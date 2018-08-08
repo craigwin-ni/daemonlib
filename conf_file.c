@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2014-2015 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2014-2015, 2018 Matthias Bolte <matthias@tinkerforge.com>
  *
  * conf_file.c: Reads and writes .conf formatted files
  *
@@ -325,7 +325,6 @@ int conf_file_read(ConfFile *conf_file, const char *filename,
 	char *tmp;
 	int i;
 	ConfFileLine *line;
-	int saved_errno;
 
 	// open file
 	fp = fopen(filename, "rb");
@@ -432,15 +431,8 @@ int conf_file_read(ConfFile *conf_file, const char *filename,
 	success = true;
 
 cleanup:
-	saved_errno = errno;
-
-	if (fp != NULL) {
-		fclose(fp);
-	}
-
+	robust_fclose(fp);
 	free(buffer);
-
-	errno = saved_errno;
 
 	return success ? 0 : -1;
 }
@@ -452,7 +444,6 @@ int conf_file_write(ConfFile *conf_file, const char *filename) {
 	FILE *fp = NULL;
 	int i;
 	ConfFileLine *line;
-	int saved_errno;
 
 	if (robust_snprintf(filename_tmp, sizeof(filename_tmp), "%s.tmp", filename) < 0) {
 		goto cleanup;
@@ -499,7 +490,7 @@ int conf_file_write(ConfFile *conf_file, const char *filename) {
 		}
 	}
 
-	fclose(fp);
+	robust_fclose(fp);
 	fp = NULL;
 
 	// rename <filename>.tmp to <filename>. use MoveFileEx on Windows instead
@@ -519,13 +510,7 @@ int conf_file_write(ConfFile *conf_file, const char *filename) {
 	success = true;
 
 cleanup:
-	saved_errno = errno;
-
-	if (fp != NULL) {
-		fclose(fp);
-	}
-
-	errno = saved_errno;
+	robust_fclose(fp);
 
 	return success ? 0 : -1;
 }

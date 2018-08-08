@@ -66,17 +66,17 @@ int gpio_red_init(void) {
 	                   fd, address_start);
 
 	if (mapped_base == MAP_FAILED) {
+		robust_close(fd);
+
 		log_error("Could not mmap '/dev/mem': %s (%d)",
 		          get_errno_name(errno), errno);
-
-		close(fd);
 
 		return -1;
 	}
 
 	_gpio_red_port = mapped_base + address_offset;
 
-	close(fd);
+	robust_close(fd);
 
 	return 0;
 }

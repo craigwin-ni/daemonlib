@@ -140,7 +140,7 @@ void i2c_eeprom_destroy(I2CEEPROM *i2c_eeprom) {
 
 	if (i2c_eeprom != NULL) {
 		i2c_eeprom_deselect(i2c_eeprom);
-		close(i2c_eeprom->file);
+		robust_close(i2c_eeprom->file);
 		i2c_eeprom->file = -1;
 	}
 }

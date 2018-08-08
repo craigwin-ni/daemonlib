@@ -100,7 +100,7 @@ void socket_destroy_platform(Socket *socket) {
 	// the common pattern of allocation the wrapped resource
 	if (socket->handle != IO_HANDLE_INVALID) {
 		shutdown(socket->handle, SHUT_RDWR);
-		close(socket->handle);
+		robust_close(socket->handle);
 	}
 }
 

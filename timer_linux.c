@@ -68,7 +68,7 @@ int timer_create_(Timer *timer, TimerFunction function, void *opaque) {
 
 	if (event_add_source(timer->handle, EVENT_SOURCE_TYPE_GENERIC, "timer",
 	                     EVENT_READ, timer_handle_read, timer) < 0) {
-		close(timer->handle);
+		robust_close(timer->handle);
 
 		return -1;
 	}
@@ -83,7 +83,7 @@ void timer_destroy(Timer *timer) {
 
 	event_remove_source(timer->handle, EVENT_SOURCE_TYPE_GENERIC);
 
-	close(timer->handle);
+	robust_close(timer->handle);
 }
 
 // setting delay and interval to 0 stops the timer

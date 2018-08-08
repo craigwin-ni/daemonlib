@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2014 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2014, 2018 Matthias Bolte <matthias@tinkerforge.com>
  *
  * pid_file.c: PID file specific functions
  *
@@ -57,10 +57,10 @@ int pid_file_acquire(const char *filename, pid_t pid) {
 
 		// get pid file status
 		if (fstat(fd, &st1) < 0) {
+			robust_close(fd);
+
 			fprintf(stderr, "Could not get status of PID file '%s': %s (%d)\n",
 			        filename, get_errno_name(errno), errno);
-
-			close(fd);
 
 			return -1;
 		}
@@ -72,19 +72,21 @@ int pid_file_acquire(const char *filename, pid_t pid) {
 		lk.l_len = 1;
 
 		if (fcntl(fd, F_SETLK, &lk) < 0) {
+			robust_close(fd);
+
 			if (!errno_would_block()) {
 				fprintf(stderr, "Could not lock PID file '%s': %s (%d)\n",
 				        filename, get_errno_name(errno), errno);
+
+				return -1;
 			}
 
-			close(fd);
-
-			return errno_would_block() ? PID_FILE_ALREADY_ACQUIRED : -1;
+			return PID_FILE_ALREADY_ACQUIRED;
 		}
 
 		// get pid file status again
 		if (stat(filename, &st2) < 0) {
-			close(fd);
+			robust_close(fd);
 
 			continue;
 		}
@@ -92,7 +94,7 @@ int pid_file_acquire(const char *filename, pid_t pid) {
 		// if the inode mismatches then the file that got locked is not the
 		// one that was opened before, try again
 		if (st1.st_ino != st2.st_ino) {
-			close(fd);
+			robust_close(fd);
 
 			continue;
 		}
@@ -103,10 +105,10 @@ int pid_file_acquire(const char *filename, pid_t pid) {
 	snprintf(buffer, sizeof(buffer), "%"PRIi64, (int64_t)pid);
 
 	if (robust_write(fd, buffer, strlen(buffer)) < 0) {
+		robust_close(fd);
+
 		fprintf(stderr, "Could not write to PID file '%s': %s (%d)\n",
 		        filename, get_errno_name(errno), errno);
-
-		close(fd);
 
 		return -1;
 	}
@@ -116,5 +118,5 @@ int pid_file_acquire(const char *filename, pid_t pid) {
 
 void pid_file_release(const char *filename, int fd) {
 	unlink(filename);
-	close(fd);
+	robust_close(fd);
 }

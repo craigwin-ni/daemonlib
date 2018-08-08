@@ -630,8 +630,13 @@ int red_brick_uid(uint32_t *uid /* always little endian */) {
 // calls close while preserving errno
 int robust_close(int fd) {
 	int saved_errno = errno;
-	int rc = close(fd);
+	int rc;
 
+	if (fd < 0) {
+		return 0;
+	}
+
+	rc = close(fd);
 	errno = saved_errno;
 
 	return rc;
@@ -663,8 +668,13 @@ int robust_write(int fd, const void *buffer, int length) {
 // calls fclose while preserving errno
 int robust_fclose(FILE *fp) {
 	int saved_errno = errno;
-	int rc = fclose(fp);
+	int rc;
 
+	if (fp == NULL) {
+		return 0;
+	}
+
+	rc = fclose(fp);
 	errno = saved_errno;
 
 	return rc;

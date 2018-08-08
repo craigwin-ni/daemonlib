@@ -59,17 +59,17 @@ int daemon_start(const char *log_filename, File *log_file,
 		pid = fork();
 
 		if (pid < 0) { // error
+			robust_close(status_pipe[0]);
+			robust_close(status_pipe[1]);
+
 			fprintf(stderr, "Could not fork first child process: %s (%d)\n",
 			        get_errno_name(errno), errno);
-
-			close(status_pipe[0]);
-			close(status_pipe[1]);
 
 			return -1;
 		}
 
 		if (pid > 0) { // first parent
-			close(status_pipe[1]);
+			robust_close(status_pipe[1]);
 
 			// wait for first child to exit
 			while (waitpid(pid, NULL, 0) < 0 && errno_interrupted());
@@ -80,29 +80,29 @@ int daemon_start(const char *log_filename, File *log_file,
 				        get_errno_name(errno), errno);
 			}
 
-			close(status_pipe[0]);
+			robust_close(status_pipe[0]);
 
 			// exit first parent
 			exit(success ? EXIT_SUCCESS : EXIT_FAILURE);
 		}
 
 		// first child, decouple from parent environment
-		close(status_pipe[0]);
+		robust_close(status_pipe[0]);
 
 		if (chdir("/") < 0) {
+			robust_close(status_pipe[1]);
+
 			fprintf(stderr, "Could not change directory to '/': %s (%d)\n",
 			        get_errno_name(errno), errno);
-
-			close(status_pipe[1]);
 
 			exit(EXIT_FAILURE);
 		}
 
 		if (setsid() == (pid_t)-1) {
+			robust_close(status_pipe[1]);
+
 			fprintf(stderr, "Could not create new session: %s (%d)\n",
 			        get_errno_name(errno), errno);
-
-			close(status_pipe[1]);
 
 			exit(EXIT_FAILURE);
 		}
@@ -113,10 +113,10 @@ int daemon_start(const char *log_filename, File *log_file,
 		pid = fork();
 
 		if (pid < 0) {
+			robust_close(status_pipe[1]);
+
 			fprintf(stderr, "Could not fork second child process: %s (%d)\n",
 			        get_errno_name(errno), errno);
-
-			close(status_pipe[1]);
 
 			exit(EXIT_FAILURE);
 		}
@@ -190,9 +190,7 @@ int daemon_start(const char *log_filename, File *log_file,
 	success = 1;
 
 cleanup:
-	if (stdin_fd >= 0) {
-		close(stdin_fd);
-	}
+	robust_close(stdin_fd);
 
 	if (double_fork) {
 		if (robust_write(status_pipe[1], &success, sizeof(success)) < 0) {
@@ -200,7 +198,7 @@ cleanup:
 			        get_errno_name(errno), errno);
 		}
 
-		close(status_pipe[1]);
+		robust_close(status_pipe[1]);
 	}
 
 	if (success == 0) {
@@ -209,9 +207,7 @@ cleanup:
 			file_destroy(log_file);
 		}
 
-		if (pid_fd >= 0) {
-			close(pid_fd);
-		}
+		robust_close(pid_fd);
 
 		return -1;
 	}

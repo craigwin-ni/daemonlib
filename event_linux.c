@@ -54,7 +54,7 @@ int event_init_platform(void) {
 }
 
 void event_exit_platform(void) {
-	close(_epollfd); // FIXME: remove remaining events (if any) from epollfd?
+	robust_close(_epollfd); // FIXME: remove remaining events (if any) from epollfd?
 }
 
 int event_source_added_platform(EventSource *event_source) {

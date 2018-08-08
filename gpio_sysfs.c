@@ -65,7 +65,7 @@ int gpio_sysfs_export(GPIOSYSFS *gpio) {
 	length = snprintf(buffer, sizeof(buffer), "%d", gpio->num);
 	rc = robust_write(fd, buffer, length);
 
-	close(fd);
+	robust_close(fd);
 
 	if (rc < 0) {
 		if (errno == EBUSY) {
@@ -99,7 +99,7 @@ int gpio_sysfs_unexport(GPIOSYSFS *gpio) {
 	length = snprintf(buffer, sizeof(buffer), "%d", gpio->num);
 	rc = robust_write(fd, buffer, length);
 
-	close(fd);
+	robust_close(fd);
 
 	if (rc < 0) {
 		log_error("Could not write to '%sunexport' to unexport GPIO %d: %s (%d)",
@@ -132,7 +132,7 @@ int gpio_sysfs_set_direction(GPIOSYSFS *gpio, GPIOSYSFSDirection direction) {
 
 	rc = robust_write(fd, gpio_sysfs_direction[direction], strlen(gpio_sysfs_direction[direction]));
 
-	close(fd);
+	robust_close(fd);
 
 	if (rc < 0) {
 		log_error("Could not write to '%s': %s (%d)", buffer, get_errno_name(errno), errno);
@@ -163,7 +163,7 @@ int gpio_sysfs_set_output(GPIOSYSFS *gpio, GPIOSYSFSValue value) {
 
 	rc = robust_write(fd, gpio_sysfs_value[value], strlen(gpio_sysfs_value[value]));
 
-	close(fd);
+	robust_close(fd);
 
 	if (rc < 0) {
 		log_error("Could not write to '%s': %s (%d)", buffer, get_errno_name(errno), errno);
@@ -230,7 +230,7 @@ int gpio_sysfs_set_interrupt(GPIOSYSFS *gpio, GPIOSYSFSInterrupt interrupt) {
 
 	rc = robust_write(fd, gpio_sysfs_interrupt[interrupt], strlen(gpio_sysfs_interrupt[interrupt]));
 
-	close(fd);
+	robust_close(fd);
 
 	if (rc < 0) {
 		log_error("Could not write to '%s': %s (%d)", buffer, get_errno_name(errno), errno);

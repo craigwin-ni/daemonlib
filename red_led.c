@@ -56,7 +56,7 @@ static const char led_path[][LED_PATH_STR_MAX_LENGTH] = {
 };
 
 int red_led_set_trigger(REDLED led, REDLEDTrigger trigger) {
-	FILE *f;
+	FILE *fp;
 	int length;
 
 	if (!((trigger >= RED_LED_TRIGGER_CPU) && (trigger <= RED_LED_TRIGGER_ON))) {
@@ -73,25 +73,25 @@ int red_led_set_trigger(REDLED led, REDLEDTrigger trigger) {
 		return -1;
 	}
 
-	if ((f = fopen(led_path[led], "w")) == NULL) {
+	fp = fopen(led_path[led], "w");
+
+	if (fp == NULL) {
 		log_error("Could not open file %s", led_path[led]);
 
 		return -1;
 	}
 
-	if ((length = fprintf(f, "%s\n", trigger_str[trigger])) < ((int)strlen(trigger_str[trigger]))) {
+	length = fprintf(fp, "%s\n", trigger_str[trigger]);
+
+	if (length < (int)strlen(trigger_str[trigger])) {
+		robust_fclose(fp);
+
 		log_error("Could not write to file %s", led_path[led]);
 
-		fclose(f);
-
 		return -1;
 	}
 
-	if (fclose(f) < 0) {
-		log_error("Could not close file %s", led_path[led]);
-
-		return -1;
-	}
+	robust_fclose(fp);
 
 	return 0;
 }
@@ -120,20 +120,16 @@ REDLEDTrigger red_led_get_trigger(REDLED led) {
 	length = robust_fread(fp, buf, LED_TRIGGER_MAX_LENGTH);
 
 	if (length <= 0) {
-		log_error("Could not read from file %s", led_path[led]);
+		robust_fclose(fp);
 
-		fclose(fp);
+		log_error("Could not read from file %s", led_path[led]);
 
 		return RED_LED_TRIGGER_ERROR;
 	}
 
 	buf[length] = '\0';
 
-	if (fclose(fp) < 0) {
-		log_error("Could not close file %s", led_path[led]);
-
-		return RED_LED_TRIGGER_ERROR;
-	}
+	robust_fclose(fp);
 
 	char *start = strchr(buf, '[');
 	char *end = strchr(buf, ']');
