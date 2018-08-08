@@ -1,6 +1,7 @@
 /*
  * daemonlib
  * Copyright (C) 2018 Olaf Lüke <olaf@tinkerforge.com>
+ * Copyright (C) 2018 Matthias Bolte <matthias@tinkerforge.com>
  *
  * gpio_sysfs.c: GPIO functions for using Linux sysfs
  *
@@ -48,14 +49,16 @@ static const char * const gpio_sysfs_value[GPIO_SYSFS_DIRECTION_NUM] = {"0", "1"
 
 int gpio_sysfs_export(GPIOSYSFS *gpio) {
 	int fd;
-	char buffer[GPIO_SYSFS_DIR_MAXLEN];
+	char buffer[16];
 	int length;
 	int rc;
 
 	fd = open(GPIO_SYSFS_DIR "export", O_WRONLY);
 
 	if (fd < 0) {
-		log_error("Could not open '%s': %s (%d)", GPIO_SYSFS_DIR "export", get_errno_name(errno), errno);
+		log_error("Could not open '%s' for writing: %s (%d)",
+		          GPIO_SYSFS_DIR "export", get_errno_name(errno), errno);
+
 		return -1;
 	}
 
@@ -64,12 +67,14 @@ int gpio_sysfs_export(GPIOSYSFS *gpio) {
 
 	close(fd);
 
-	if (rc < 0 && errno == EBUSY) {
-		return 0; // gpio was already exported
-	}
-
 	if (rc < 0) {
-		log_error("Could not write to '%s': %s (%d)", buffer, get_errno_name(errno), errno);
+		if (errno == EBUSY) {
+			return 0; // GPIO was already exported
+		}
+
+		log_error("Could not write to '%sexport' to export GPIO %d: %s (%d)",
+		          GPIO_SYSFS_DIR, gpio->num, get_errno_name(errno), errno);
+
 		return -1;
 	}
 
@@ -78,14 +83,16 @@ int gpio_sysfs_export(GPIOSYSFS *gpio) {
 
 int gpio_sysfs_unexport(GPIOSYSFS *gpio) {
 	int fd;
-	char buffer[GPIO_SYSFS_DIR_MAXLEN];
+	char buffer[16];
 	int length;
 	int rc;
 
 	fd = open(GPIO_SYSFS_DIR "unexport", O_WRONLY);
 
 	if (fd < 0) {
-		log_error("Could not open '%s': %s (%d)", GPIO_SYSFS_DIR "unexport", get_errno_name(errno), errno);
+		log_error("Could not open '%s' for writing: %s (%d)",
+		          GPIO_SYSFS_DIR "unexport", get_errno_name(errno), errno);
+
 		return -1;
 	}
 
@@ -95,7 +102,9 @@ int gpio_sysfs_unexport(GPIOSYSFS *gpio) {
 	close(fd);
 
 	if (rc < 0) {
-		log_error("Could not write to '%s': %s (%d)", buffer, get_errno_name(errno), errno);
+		log_error("Could not write to '%sunexport' to unexport GPIO %d: %s (%d)",
+		          GPIO_SYSFS_DIR, gpio->num, get_errno_name(errno), errno);
+
 		return -1;
 	}
 
