@@ -1,5 +1,7 @@
-/* daemonlib
+/*
+ * daemonlib
  * Copyright (C) 2018 Olaf Lüke <olaf@tinkerforge.com>
+ * Copyright (C) 2018 Matthias Bolte <matthias@tinkerforge.com>
  *
  * ringbuffer.c: Simple uint8 ringbuffer implementation
  *

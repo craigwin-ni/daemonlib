@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2014, 2016-2017 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2014, 2016-2018 Matthias Bolte <matthias@tinkerforge.com>
  *
  * file.c: File based I/O device
  *

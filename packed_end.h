@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2013 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2014 Matthias Bolte <matthias@tinkerforge.com>
  *
  * packed_end.h: Disable struct packing
  *

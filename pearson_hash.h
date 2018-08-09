@@ -1,6 +1,7 @@
 /*
  * daemonlib
  * Copyright (C) 2018 Olaf Lüke <olaf@tinkerforge.com>
+ * Copyright (C) 2018 Matthias Bolte <matthias@tinkerforge.com>
  *
  * pearson_hash.h: Implementation of fast Pearson Hash
  *

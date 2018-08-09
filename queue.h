@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2013 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2013-2014 Matthias Bolte <matthias@tinkerforge.com>
  *
  * queue.h: Queue specific functions
  *

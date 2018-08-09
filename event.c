@@ -1,6 +1,7 @@
 /*
  * daemonlib
  * Copyright (C) 2012-2015, 2018 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2014 Olaf Lüke <olaf@tinkerforge.com>
  *
  * event.c: Event specific functions
  *

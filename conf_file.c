@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2014-2015, 2018 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2014-2015, 2017-2018 Matthias Bolte <matthias@tinkerforge.com>
  *
  * conf_file.c: Reads and writes .conf formatted files
  *

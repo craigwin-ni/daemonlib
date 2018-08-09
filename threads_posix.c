@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2014 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2014, 2018 Matthias Bolte <matthias@tinkerforge.com>
  *
  * threads_posix.c: PThread based thread and locking implementation
  *

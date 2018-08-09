@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2014-2017 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2014-2018 Matthias Bolte <matthias@tinkerforge.com>
  *
  * socket.c: Socket implementation
  *

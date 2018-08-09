@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2017 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2017-2018 Matthias Bolte <matthias@tinkerforge.com>
  *
  * utils_uwp.c: Utility functions for Universal Windows Platform
  *

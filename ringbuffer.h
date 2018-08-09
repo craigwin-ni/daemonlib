@@ -1,7 +1,9 @@
-/* daemonlib
+/*
+ * daemonlib
  * Copyright (C) 2018 Olaf Lüke <olaf@tinkerforge.com>
+ * Copyright (C) 2018 Matthias Bolte <matthias@tinkerforge.com>
  *
- * ringbuffer.h: simple uint8 ringbuffer implementation
+ * ringbuffer.h: Simple uint8 ringbuffer implementation
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public

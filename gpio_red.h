@@ -1,6 +1,7 @@
 /*
  * daemonlib
  * Copyright (C) 2014, 2018 Olaf Lüke <olaf@tinkerforge.com>
+ * Copyright (C) 2018 Matthias Bolte <matthias@tinkerforge.com>
  *
  * gpio_red.h: GPIO functions for RED Brick
  *

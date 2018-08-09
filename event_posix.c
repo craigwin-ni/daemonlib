@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2014 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2015, 2018 Matthias Bolte <matthias@tinkerforge.com>
  *
  * event_posix.c: poll based event loop
  *

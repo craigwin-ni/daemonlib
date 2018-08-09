@@ -1,8 +1,8 @@
 /*
  * daemonlib
  * Copyright (C) 2014 Ishraq Ibne Ashraf <ishraq@tinkerforge.com>
- * Copyright (C) 2014 Olaf Lüke <olaf@tinkerforge.com>
- * Copyright (C) 2015 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2014-2015 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2014, 2018 Olaf Lüke <olaf@tinkerforge.com>
  *
  * red_i2c_eeprom.h: I2C EEPROM specific functions
  *

@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012, 2014 Matthias Bolte <matthias@tinkerforge.com>
  *
  * threads.h: Thread and locking specific functions
  *

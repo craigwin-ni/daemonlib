@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2014 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2014, 2017 Matthias Bolte <matthias@tinkerforge.com>
  *
  * writer.h: Buffered packet writer for I/O devices
  *

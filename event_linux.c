@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2014, 2016 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2014-2016, 2018 Matthias Bolte <matthias@tinkerforge.com>
  *
  * event_linux.c: epoll based event loop
  *

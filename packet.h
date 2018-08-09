@@ -1,6 +1,7 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2014 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2014, 2018 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2014, 2018 Olaf Lüke <olaf@tinkerforge.com>
  *
  * packet.h: Packet definiton for protocol version 2
  *
