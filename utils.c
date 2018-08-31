@@ -69,6 +69,14 @@ bool errno_would_block(void) {
 #endif
 }
 
+bool errno_connection_reset(void) {
+#ifdef _WIN32
+	return errno == ERRNO_WINAPI_OFFSET + WSAECONNRESET;
+#else
+	return errno == ECONNRESET;
+#endif
+}
+
 const char *get_errno_name(int error_code) {
 	#define ERRNO_NAME(code) case code: return #code
 	#define WINAPI_ERROR_NAME(code) case ERRNO_WINAPI_OFFSET + code: return #code

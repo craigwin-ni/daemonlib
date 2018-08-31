@@ -36,6 +36,7 @@ typedef void (*ItemDestroyFunction)(void *item);
 
 bool errno_interrupted(void);
 bool errno_would_block(void);
+bool errno_connection_reset(void);
 
 const char *get_errno_name(int error_code);
 
