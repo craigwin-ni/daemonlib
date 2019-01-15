@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2018 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2019 Matthias Bolte <matthias@tinkerforge.com>
  * Copyright (C) 2014 Olaf Lüke <olaf@tinkerforge.com>
  * Copyright (C) 2017 Ishraq Ibne Ashraf <ishraq@tinkerforge.com>
  *
@@ -574,24 +574,15 @@ int red_brick_uid(uint32_t *uid /* always little endian */) {
 		return -1;
 	}
 #else
-	int i;
-	int rc;
 	FILE *fp;
-	uint8_t uid_u8_0;
-	uint8_t uid_u8_1;
-	uint8_t uid_u8_2;
-	uint8_t uid_u8_3;
-	uint16_t sid_u16[8];
+	uint16_t sid[8];
+	int rc;
 
-	/*
-	 * With previous 3.4 series sunxi kernel the generated UID was read
-	 * from /proc/red_brick_uid which was provided by the RED Brick UID
-	 * kernel module.
-	 *
-	 * With the new mainline kernels this is not required as the chip ID
-	 * required to generate the UID can be read from
-	 * /sys/bus/nvmem/devices/sunxi-sid0/nvmem.
-	 */
+	// with previous 3.4 series sunxi kernel the generated UID was read from
+	// /proc/red_brick_uid which was provided by the RED Brick UIDkernel module.
+	// with the new mainline kernels this is not required as the chip ID
+	// required to generate the UID can be read from
+	// /sys/bus/nvmem/devices/sunxi-sid0/nvmem.
 
 	fp = fopen("/sys/bus/nvmem/devices/sunxi-sid0/nvmem", "rb");
 
@@ -599,35 +590,22 @@ int red_brick_uid(uint32_t *uid /* always little endian */) {
 		return -1;
 	}
 
-	rc = robust_fread(fp, sid_u16, sizeof(sid_u16));
+	rc = robust_fread(fp, sid, sizeof(sid));
 
 	robust_fclose(fp);
 
-	if (rc != 16) {
+	if (rc != sizeof(sid)) {
 		return -1;
 	}
 
-	for (i = 0; i < 8; i++) {
-		sid_u16[i] = ntohs(sid_u16[i]);
-	}
+	*uid = (((uint32_t)ntohs(sid[1]) & 0xFF) << 24) |
+	       (((uint32_t)ntohs(sid[6]) & 0xFF) << 16) |
+	         (uint32_t)ntohs(sid[7]);
 
-	uid_u8_0 = ((uint8_t *)&sid_u16[1])[0];
-	uid_u8_1 = ((uint8_t *)&sid_u16[6])[0];
-	uid_u8_2 = ((uint8_t *)&sid_u16[7])[1];
-	uid_u8_3 = ((uint8_t *)&sid_u16[7])[0];
-
-	*uid = (uid_u8_0 << 24) | (uid_u8_1 << 16) | (uid_u8_2 << 8) | uid_u8_3;
-
-	// The following is for reference. Excerpt from previous code.
-	/*
-	uid = ((sid_u32_array[0] & 0x000000ff) << 24) |
-	       (sid_u32_array[3] & 0x00ffffff);
-	*/
-
-	/* avoid collisions with other Brick UIDs by clearing the 31th bit,
-	 * as other Brick UIDs should have the 31th bit set always. avoid
-	 * collisions with Bricklet UIDs by setting the 30th bit to get a
-	 * high UID, as Bricklets have a low UID */
+	// avoid collisions with other Brick UIDs by clearing the 31th bit, as other
+	// Brick UIDs should have the 31th bit always set. avoid collisions with
+	// Bricklet UIDs by setting the 30th bit to get a high UID, as Bricklets
+	// have a low UID
 	*uid = (*uid & ~(1 << 31)) | (1 << 30);
 #endif
 
