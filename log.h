@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2014, 2016 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2014, 2016, 2019 Matthias Bolte <matthias@tinkerforge.com>
  * Copyright (C) 2014 Olaf Lüke <olaf@tinkerforge.com>
  *
  * log.h: Logging specific functions
@@ -62,13 +62,15 @@ typedef struct {
 	const char *name; // last part of __FILE__
 	int debug_filter_version;
 	uint32_t included_debug_groups;
+	bool libusb;
 } LogSource;
 
 #define LOG_SOURCE_INITIALIZER { \
 		__FILE__, \
 		NULL, \
 		-1, \
-		LOG_DEBUG_GROUP_ALL \
+		LOG_DEBUG_GROUP_ALL, \
+		false \
 	}
 
 #ifdef _WIN32
