@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2014, 2018 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2014, 2018-2019 Matthias Bolte <matthias@tinkerforge.com>
  * Copyright (C) 2014 Olaf Lüke <olaf@tinkerforge.com>
  *
  * packet.c: Packet definiton for protocol version 2
@@ -205,15 +205,17 @@ char *packet_get_request_signature(char *signature, Packet *packet) {
 #else
 	uint64_t trace_id = 0;
 #endif
+	char dump[PACKET_MAX_DUMP_LENGTH];
 
 	snprintf(signature, PACKET_MAX_SIGNATURE_LENGTH,
-	         "U: %s, L: %u, F: %u, S: %u, R: %d, I: %" PRIu64,
+	         "U: %s, L: %u, F: %u, S: %u, R: %d, I: %" PRIu64 ", D: %s",
 	         base58_encode(base58, uint32_from_le(packet->header.uid)),
 	         packet->header.length,
 	         packet->header.function_id,
 	         packet_header_get_sequence_number(&packet->header),
 	         packet_header_get_response_expected(&packet->header) ? 1 : 0,
-	         trace_id);
+	         trace_id,
+	         packet_get_dump(dump, packet, packet->header.length));
 
 	return signature;
 }
@@ -225,29 +227,32 @@ char *packet_get_response_signature(char *signature, Packet *packet) {
 #else
 	uint64_t trace_id = 0;
 #endif
+	char dump[PACKET_MAX_DUMP_LENGTH];
 
 	if (packet_header_get_sequence_number(&packet->header) != 0) {
 		snprintf(signature, PACKET_MAX_SIGNATURE_LENGTH,
-		         "U: %s, L: %u, F: %u, S: %u, E: %d, I: %" PRIu64,
+		         "U: %s, L: %u, F: %u, S: %u, E: %d, I: %" PRIu64 ", D: %s",
 		         base58_encode(base58, uint32_from_le(packet->header.uid)),
 		         packet->header.length,
 		         packet->header.function_id,
 		         packet_header_get_sequence_number(&packet->header),
 		         (int)packet_header_get_error_code(&packet->header),
-		         trace_id);
+		         trace_id,
+		         packet_get_dump(dump, packet, packet->header.length));
 	} else {
 		snprintf(signature, PACKET_MAX_SIGNATURE_LENGTH,
-		         "U: %s, L: %u, F: %u, I: %" PRIu64,
+		         "U: %s, L: %u, F: %u, I: %" PRIu64 ", D: %s",
 		         base58_encode(base58, uint32_from_le(packet->header.uid)),
 		         packet->header.length,
 		         packet->header.function_id,
-		         trace_id);
+		         trace_id,
+		         packet_get_dump(dump, packet, packet->header.length));
 	}
 
 	return signature;
 }
 
-char *packet_get_content_dump(char *content_dump, Packet *packet, int length) {
+char *packet_get_dump(char *dump, Packet *packet, int length) {
 	int i;
 
 	if (length > (int)sizeof(Packet)) {
@@ -255,16 +260,16 @@ char *packet_get_content_dump(char *content_dump, Packet *packet, int length) {
 	}
 
 	for (i = 0; i < length; ++i) {
-		snprintf(content_dump + i * 3, 4, "%02X ", ((uint8_t *)packet)[i]);
+		snprintf(dump + i * 3, 4, "%02X ", ((uint8_t *)packet)[i]);
 	}
 
 	if (length > 0) {
-		content_dump[length * 3 - 1] = '\0';
+		dump[length * 3 - 1] = '\0';
 	} else {
-		content_dump[0] = '\0';
+		dump[0] = '\0';
 	}
 
-	return content_dump;
+	return dump;
 }
 
 bool packet_is_matching_response(Packet *packet, PacketHeader *pending_request) {

@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2014, 2018 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2014, 2018-2019 Matthias Bolte <matthias@tinkerforge.com>
  * Copyright (C) 2014, 2018 Olaf Lüke <olaf@tinkerforge.com>
  *
  * packet.h: Packet definiton for protocol version 2
@@ -61,8 +61,8 @@ typedef enum {
 	PACKET_E_UNKNOWN_ERROR
 } PacketE;
 
-#define PACKET_MAX_SIGNATURE_LENGTH 64
-#define PACKET_MAX_CONTENT_DUMP_LENGTH ((int)sizeof(Packet) * 3 + 1)
+#define PACKET_MAX_DUMP_LENGTH ((int)sizeof(Packet) * 3 + 1)
+#define PACKET_MAX_SIGNATURE_LENGTH (64 + PACKET_MAX_DUMP_LENGTH)
 #define PACKET_MAX_STACK_ENUMERATE_UIDS 16
 #define PACKET_NO_CONNECTED_UID_STR "0\0\0\0\0\0\0\0"
 #define PACKET_NO_CONNECTED_UID_STR_LENGTH 8
@@ -149,7 +149,7 @@ const char *packet_get_response_type(Packet *packet);
 
 char *packet_get_request_signature(char *signature, Packet *packet);
 char *packet_get_response_signature(char *signature, Packet *packet);
-char *packet_get_content_dump(char *content_dump, Packet *packet, int length);
+char *packet_get_dump(char *dump, Packet *packet, int length);
 
 bool packet_is_matching_response(Packet *packet, PacketHeader *pending_request);
 
