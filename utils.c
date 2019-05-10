@@ -579,10 +579,9 @@ int red_brick_uid(uint32_t *uid /* always little endian */) {
 	int rc;
 
 	// with previous 3.4 series sunxi kernel the generated UID was read from
-	// /proc/red_brick_uid which was provided by the RED Brick UIDkernel module.
-	// with the new mainline kernels this is not required as the chip ID
-	// required to generate the UID can be read from
-	// /sys/bus/nvmem/devices/sunxi-sid0/nvmem.
+	// /proc/red_brick_uid which was provided by the RED Brick UID kernel module.
+	// with the new mainline kernels this is not required as the chip ID required
+	// to generate the UID can be read from /sys/bus/nvmem/devices/sunxi-sid0/nvmem
 
 	fp = fopen("/sys/bus/nvmem/devices/sunxi-sid0/nvmem", "rb");
 
