@@ -306,14 +306,14 @@ void packet_add_trace_(Packet *packet, const char *filename, int line) {
 	trace->line = line;
 
 	if (_trace_buffer_used == TRACE_BUFFER_SIZE) {
-		log_info("Writing packet trace to /tmp/brick-packet-trace");
+		log_info("Writing packet trace to /tmp/daemonlib-packet-trace");
 
-		fp = fopen("/tmp/brick-packet-trace", "wb");
+		fp = fopen("/tmp/daemonlib-packet-trace", "wb");
 
 		if (fp == NULL) {
 			_trace_buffer_used = 0;
 
-			log_error("Could not open /tmp/brick-packet-trace");
+			log_error("Could not open /tmp/daemonlib-packet-trace");
 
 			return;
 		}
