@@ -71,10 +71,10 @@ typedef enum {
 
 typedef struct {
 	uint32_t uid; // always little endian
-	uint8_t length;
+	uint8_t length; // packet length including header
 	uint8_t function_id;
-	uint8_t sequence_number_and_options;
-	uint8_t error_code_and_future_use;
+	uint8_t sequence_number_and_options; // 4 bit sequence number, 1 bit response expected, 3 bit unused
+	uint8_t error_code_and_future_use; // 2 bit error code, 6 bit unused
 } ATTRIBUTE_PACKED PacketHeader;
 
 typedef struct {

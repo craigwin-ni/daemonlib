@@ -155,6 +155,7 @@ uint8_t packet_header_get_sequence_number(PacketHeader *header) {
 }
 
 void packet_header_set_sequence_number(PacketHeader *header, uint8_t sequence_number) {
+	header->sequence_number_and_options &= ~0xF0;
 	header->sequence_number_and_options |= (sequence_number << 4) & 0xF0;
 }
 
@@ -163,7 +164,11 @@ bool packet_header_get_response_expected(PacketHeader *header) {
 }
 
 void packet_header_set_response_expected(PacketHeader *header, bool response_expected) {
-	header->sequence_number_and_options |= response_expected ? 0x08 : 0x00;
+	if (response_expected) {
+		header->sequence_number_and_options |= 0x01 << 3;
+	} else {
+		header->sequence_number_and_options &= ~(0x01 << 3);
+	}
 }
 
 PacketE packet_header_get_error_code(PacketHeader *header) {
@@ -171,6 +176,7 @@ PacketE packet_header_get_error_code(PacketHeader *header) {
 }
 
 void packet_header_set_error_code(PacketHeader *header, PacketE error_code) {
+	header->error_code_and_future_use &= ~0xC0;
 	header->error_code_and_future_use |= (error_code << 6) & 0xC0;
 }
 
