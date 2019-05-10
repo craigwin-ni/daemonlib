@@ -70,13 +70,13 @@ static int _trace_buffer_used = 0;
 
 #endif
 
-int packet_header_is_valid_request(PacketHeader *header, const char **message) {
+bool packet_header_is_valid_request(PacketHeader *header, const char **message) {
 	if (header->length < (int)sizeof(PacketHeader)) {
 		if (message != NULL) {
 			*message = "Length is too small";
 		}
 
-		return 0;
+		return false;
 	}
 
 	if (header->length > (int)sizeof(Packet)) {
@@ -84,7 +84,7 @@ int packet_header_is_valid_request(PacketHeader *header, const char **message) {
 			*message = "Length is too big";
 		}
 
-		return 0;
+		return false;
 	}
 
 	if (header->function_id == 0) {
@@ -92,7 +92,7 @@ int packet_header_is_valid_request(PacketHeader *header, const char **message) {
 			*message = "Invalid function ID";
 		}
 
-		return 0;
+		return false;
 	}
 
 	if (packet_header_get_sequence_number(header) == 0) {
@@ -100,19 +100,19 @@ int packet_header_is_valid_request(PacketHeader *header, const char **message) {
 			*message = "Invalid sequence number";
 		}
 
-		return 0;
+		return false;
 	}
 
-	return 1;
+	return true;
 }
 
-int packet_header_is_valid_response(PacketHeader *header, const char **message) {
+bool packet_header_is_valid_response(PacketHeader *header, const char **message) {
 	if (header->length < (int)sizeof(PacketHeader)) {
 		if (message != NULL) {
 			*message = "Length is too small";
 		}
 
-		return 0;
+		return false;
 	}
 
 	if (header->length > (int)sizeof(Packet)) {
@@ -120,7 +120,7 @@ int packet_header_is_valid_response(PacketHeader *header, const char **message) 
 			*message = "Length is too big";
 		}
 
-		return 0;
+		return false;
 	}
 
 	if (uint32_from_le(header->uid) == 0) {
@@ -128,7 +128,7 @@ int packet_header_is_valid_response(PacketHeader *header, const char **message) 
 			*message = "Invalid UID";
 		}
 
-		return 0;
+		return false;
 	}
 
 	if (header->function_id == 0) {
@@ -136,7 +136,7 @@ int packet_header_is_valid_response(PacketHeader *header, const char **message) 
 			*message = "Invalid function ID";
 		}
 
-		return 0;
+		return false;
 	}
 
 	if (!packet_header_get_response_expected(header)) {
@@ -144,10 +144,10 @@ int packet_header_is_valid_response(PacketHeader *header, const char **message) 
 			*message = "Invalid response expected bit";
 		}
 
-		return 0;
+		return false;
 	}
 
-	return 1;
+	return true;
 }
 
 uint8_t packet_header_get_sequence_number(PacketHeader *header) {

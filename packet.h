@@ -133,8 +133,8 @@ typedef struct {
 
 #include "packed_end.h"
 
-int packet_header_is_valid_request(PacketHeader *header, const char **message);
-int packet_header_is_valid_response(PacketHeader *header, const char **message);
+bool packet_header_is_valid_request(PacketHeader *header, const char **message);
+bool packet_header_is_valid_response(PacketHeader *header, const char **message);
 
 uint8_t packet_header_get_sequence_number(PacketHeader *header);
 void packet_header_set_sequence_number(PacketHeader *header, uint8_t sequence_number);
