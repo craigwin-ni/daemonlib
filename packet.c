@@ -214,7 +214,7 @@ char *packet_get_request_signature(char *signature, Packet *packet) {
 	char dump[PACKET_MAX_DUMP_LENGTH];
 
 	snprintf(signature, PACKET_MAX_SIGNATURE_LENGTH,
-	         "U: %s, L: %u, F: %u, S: %u, R: %d, I: %" PRIu64 ", D: %s",
+	         "U: %s, L: %u, F: %u, S: %u, R: %d, I: %" PRIu64 ", packet: %s",
 	         base58_encode(base58, uint32_from_le(packet->header.uid)),
 	         packet->header.length,
 	         packet->header.function_id,
@@ -237,7 +237,7 @@ char *packet_get_response_signature(char *signature, Packet *packet) {
 
 	if (packet_header_get_sequence_number(&packet->header) != 0) {
 		snprintf(signature, PACKET_MAX_SIGNATURE_LENGTH,
-		         "U: %s, L: %u, F: %u, S: %u, E: %d, I: %" PRIu64 ", D: %s",
+		         "U: %s, L: %u, F: %u, S: %u, E: %d, I: %" PRIu64 ", packet: %s",
 		         base58_encode(base58, uint32_from_le(packet->header.uid)),
 		         packet->header.length,
 		         packet->header.function_id,
@@ -247,7 +247,7 @@ char *packet_get_response_signature(char *signature, Packet *packet) {
 		         packet_get_dump(dump, packet, packet->header.length));
 	} else {
 		snprintf(signature, PACKET_MAX_SIGNATURE_LENGTH,
-		         "U: %s, L: %u, F: %u, I: %" PRIu64 ", D: %s",
+		         "U: %s, L: %u, F: %u, I: %" PRIu64 ", packet: %s",
 		         base58_encode(base58, uint32_from_le(packet->header.uid)),
 		         packet->header.length,
 		         packet->header.function_id,
