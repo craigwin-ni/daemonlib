@@ -326,23 +326,25 @@ void log_message(LogLevel level, LogSource *source, LogDebugGroup debug_group,
 	}
 
 	// call log handlers
-	va_start(arguments, format);
 	log_lock();
 
 	if ((level <= _level || _debug_override) &&
 	    (level != LOG_LEVEL_DEBUG ||
 	     (source->included_debug_groups & debug_group) != 0)) {
+		va_start(arguments, format);
 		log_write(&timestamp, level, source, debug_group, function, line,
 		          format, arguments);
+		va_end(arguments);
 	}
 
 	if (log_is_included_platform(level, source, debug_group)) {
+		va_start(arguments, format);
 		log_write_platform(&timestamp, level, source, debug_group, function,
 		                   line, format, arguments);
+		va_end(arguments);
 	}
 
 	log_unlock();
-	va_end(arguments);
 }
 
 void log_format(char *buffer, int length, struct timeval *timestamp,
