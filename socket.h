@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2017 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2017, 2019 Matthias Bolte <matthias@tinkerforge.com>
  * Copyright (C) 2014 Olaf Lüke <olaf@tinkerforge.com>
  *
  * socket.h: Socket specific functions
@@ -31,6 +31,7 @@
 	#include <netinet/in.h>
 #endif
 
+#include "array.h"
 #include "io.h"
 
 typedef struct _Socket Socket;
@@ -78,7 +79,7 @@ int socket_address_to_hostname(struct sockaddr *address, socklen_t address_lengt
 
 // FIXME: add socket_open_client
 
-int socket_open_server(Socket *socket, const char *address, uint16_t port, bool dual_stack,
-                       SocketCreateAllocatedFunction create_allocated);
+void socket_open_server(Array *sockets, const char *address, uint16_t port, bool dual_stack,
+                        SocketCreateAllocatedFunction create_allocated);
 
 #endif // DAEMONLIB_SOCKET_H

@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2014-2018 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2014-2019 Matthias Bolte <matthias@tinkerforge.com>
  *
  * socket.c: Socket implementation
  *
@@ -152,111 +152,116 @@ int socket_send(Socket *socket, const void *buffer, int length) {
 }
 
 // logs errors
-int socket_open_server(Socket *socket, const char *address, uint16_t port, bool dual_stack,
-                       SocketCreateAllocatedFunction create_allocated) {
-	int phase = 0;
-	struct addrinfo *resolved_address = NULL;
+void socket_open_server(Array *sockets, const char *address, uint16_t port, bool dual_stack,
+                        SocketCreateAllocatedFunction create_allocated) {
+	struct addrinfo *resolved_address_first;
+	struct addrinfo *resolved_address;
+	Socket *socket;
+	char hostname[NI_MAXHOST];
+	const char *hostname_ptr = hostname;
 
-	log_debug("Opening server socket on port %u", port);
+	log_debug("Opening server socket(s) for address '%s' on port %u", address, port);
 
 	// resolve listen address
-	// FIXME: bind to all returned addresses, instead of just the first one.
-	//        requires special handling if IPv4 and IPv6 addresses are returned
-	//        and dual-stack mode is enabled
-	resolved_address = socket_hostname_to_address(address, port);
+	resolved_address_first = socket_hostname_to_address(address, port);
 
-	if (resolved_address == NULL) {
-		log_error("Could not resolve listen address '%s' (port: %u): %s (%d)",
+	if (resolved_address_first == NULL) {
+		log_error("Could not resolve address '%s' (port: %u): %s (%d)",
 		          address, port, get_errno_name(errno), errno);
-
-		goto cleanup;
 	}
 
-	phase = 1;
+	for (resolved_address = resolved_address_first; resolved_address != NULL;
+	     resolved_address = resolved_address->ai_next) {
+		socket = array_append(sockets);
 
-	// create socket
-	if (socket_create(socket) < 0) {
-		log_error("Could not create socket: %s (%d)",
-		          get_errno_name(errno), errno);
+		if (socket == NULL) {
+			log_error("Could not append to socket array: %s (%d)",
+			          get_errno_name(errno), errno);
 
-		goto cleanup;
-	}
+			break;
+		}
 
-	phase = 2;
+		if (socket_address_to_hostname(resolved_address->ai_addr, resolved_address->ai_addrlen,
+		                               hostname, sizeof(hostname), NULL, 0) < 0) {
+			log_warn("Could not reformat address '%s': %s (%d)",
+			         address, get_errno_name(errno), errno);
 
-	if (socket_open(socket, resolved_address->ai_family,
-	                resolved_address->ai_socktype, resolved_address->ai_protocol) < 0) {
-		log_error("Could not open %s server socket: %s (%d)",
-		          socket_get_address_family_name(resolved_address->ai_family, false),
-		          get_errno_name(errno), errno);
+			hostname_ptr = "<unknown>";
+		}
 
-		goto cleanup;
-	}
+		// create socket
+		if (socket_create(socket) < 0) {
+			log_error("Could not create socket: %s (%d)",
+			          get_errno_name(errno), errno);
 
-	if (resolved_address->ai_family == AF_INET6) {
-		if (socket_set_dual_stack(socket, dual_stack) < 0) {
+			array_remove(sockets, sockets->count - 1, NULL);
+
+			continue;
+		}
+
+		if (socket_open(socket, resolved_address->ai_family,
+		                resolved_address->ai_socktype, resolved_address->ai_protocol) < 0) {
+			log_error("Could not open %s server socket: %s (%d)",
+			          socket_get_address_family_name(resolved_address->ai_family, false),
+			          get_errno_name(errno), errno);
+
+			array_remove(sockets, sockets->count - 1, (ItemDestroyFunction)socket_destroy);
+
+			continue;
+		}
+
+		if (resolved_address->ai_family == AF_INET6 && socket_set_dual_stack(socket, dual_stack) < 0) {
 			log_error("Could not %s dual-stack mode for IPv6 server socket: %s (%d)",
 			          dual_stack ? "enable" : "disable",
 			          get_errno_name(errno), errno);
 
-			goto cleanup;
+			array_remove(sockets, sockets->count - 1, (ItemDestroyFunction)socket_destroy);
+
+			continue;
 		}
-	}
 
 #ifndef _WIN32
-	// on Unix the SO_REUSEADDR socket option allows to rebind sockets in
-	// CLOSE-WAIT state. this is a desired effect. on Windows SO_REUSEADDR
-	// allows to rebind sockets in any state. this is dangerous. therefore,
-	// don't set SO_REUSEADDR on Windows. sockets can be rebound in CLOSE-WAIT
-	// state on Windows by default.
-	if (socket_set_address_reuse(socket, true) < 0) {
-		log_error("Could not enable address-reuse mode for server socket: %s (%d)",
-		          get_errno_name(errno), errno);
+		// on Unix the SO_REUSEADDR socket option allows to rebind sockets in
+		// CLOSE-WAIT state. this is a desired effect. on Windows SO_REUSEADDR
+		// allows to rebind sockets in any state. this is dangerous. therefore,
+		// don't set SO_REUSEADDR on Windows. sockets can be rebound in CLOSE-WAIT
+		// state on Windows by default.
+		if (socket_set_address_reuse(socket, true) < 0) {
+			log_error("Could not enable address-reuse mode for server socket: %s (%d)",
+			          get_errno_name(errno), errno);
 
-		goto cleanup;
-	}
+			array_remove(sockets, sockets->count - 1, (ItemDestroyFunction)socket_destroy);
+
+			continue;
+		}
 #endif
 
-	// bind socket and start to listen
-	if (socket_bind(socket, resolved_address->ai_addr,
-	                resolved_address->ai_addrlen) < 0) {
-		log_error("Could not bind %s server socket to '%s' on port %u: %s (%d)",
+		// bind socket and start to listen
+		if (socket_bind(socket, resolved_address->ai_addr, resolved_address->ai_addrlen) < 0) {
+			log_error("Could not bind %s server socket to '%s' resolved from '%s' on port %u: %s (%d)",
+			          socket_get_address_family_name(resolved_address->ai_family, dual_stack),
+			          hostname_ptr, address, port, get_errno_name(errno), errno);
+
+			array_remove(sockets, sockets->count - 1, (ItemDestroyFunction)socket_destroy);
+
+			continue;
+		}
+
+		if (socket_listen(socket, 10, create_allocated) < 0) {
+			log_error("Could not listen to %s server socket bound to '%s' resolved from '%s' on port %u: %s (%d)",
+			          socket_get_address_family_name(resolved_address->ai_family, dual_stack),
+			          hostname_ptr, address, port, get_errno_name(errno), errno);
+
+			array_remove(sockets, sockets->count - 1, (ItemDestroyFunction)socket_destroy);
+
+			continue;
+		}
+
+		log_debug("Started listening to '%s' (%s) resolved from '%s' on port %u",
+		          hostname_ptr,
 		          socket_get_address_family_name(resolved_address->ai_family, dual_stack),
-		          address, port, get_errno_name(errno), errno);
-
-		goto cleanup;
+		          address, port);
 	}
 
-	if (socket_listen(socket, 10, create_allocated) < 0) {
-		log_error("Could not listen to %s server socket bound to '%s' on port %u: %s (%d)",
-		          socket_get_address_family_name(resolved_address->ai_family, dual_stack),
-		          address, port, get_errno_name(errno), errno);
-
-		goto cleanup;
-	}
-
-	phase = 3;
-
-	log_debug("Started listening to '%s' (%s) on port %u",
-	          address,
-	          socket_get_address_family_name(resolved_address->ai_family, dual_stack),
-	          port);
-
-	freeaddrinfo(resolved_address);
-
-cleanup:
-	switch (phase) { // no breaks, all cases fall through intentionally
-	case 2:
-		socket_destroy(socket);
-		// fall through
-
-	case 1:
-		freeaddrinfo(resolved_address);
-		// fall through
-
-	default:
-		break;
-	}
-
-	return phase == 3 ? 0 : -1;
+	freeaddrinfo(resolved_address_first);
 }
