@@ -22,12 +22,9 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/time.h>
 #include <unistd.h>
 
 #include "log.h"
-
-bool _log_debug_override_platform = false;
 
 static IO *_output = NULL;
 
