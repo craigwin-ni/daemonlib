@@ -311,7 +311,7 @@ void packet_add_trace_(Packet *packet, const char *filename, int line) {
 	int i;
 
 	trace->trace_id = packet->trace_id;
-	trace->timestamp = microseconds();
+	trace->timestamp = microtime();
 	trace->header = packet->header;
 	trace->filename = filename;
 	trace->line = line;

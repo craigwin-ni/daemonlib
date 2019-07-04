@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2015, 2017-2018 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2015, 2017-2019 Matthias Bolte <matthias@tinkerforge.com>
  * Copyright (C) 2014 Olaf Lüke <olaf@tinkerforge.com>
  *
  * utils.h: Utility functions
@@ -52,9 +52,11 @@ uint32_t uint32_to_le(uint32_t native);
 
 uint32_t uint32_from_le(uint32_t value);
 
-void millisleep(uint32_t milliseconds);
+void microsleep(uint32_t duration);
+void millisleep(uint32_t duration);
 
-uint64_t microseconds(void);
+uint64_t microtime(void);
+uint64_t millitime(void);
 
 #if !defined _GNU_SOURCE && !defined __APPLE__ && !defined __ANDROID__
 char *strcasestr(char *haystack, char *needle);

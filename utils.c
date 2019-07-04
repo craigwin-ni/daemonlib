@@ -40,6 +40,10 @@
 #ifdef __ANDROID__
 	#include <arpa/inet.h>
 #endif
+#ifdef __APPLE__
+	#include <mach/mach_time.h>
+	#include <sys/select.h>
+#endif
 
 #include "utils.h"
 
@@ -473,44 +477,75 @@ uint32_t uint32_from_le(uint32_t value) {
 	       ((uint32_t)bytes[0] <<  0);
 }
 
-void millisleep(uint32_t milliseconds) {
-#ifdef _WIN32
-	Sleep(milliseconds);
-#else
-	// FIXME: (u)sleep can be interrupted, might have to deal with that
-	if (milliseconds >= 1000) {
-		sleep(milliseconds / 1000);
+void microsleep(uint32_t duration) {
+#ifdef __linux__
+	struct timespec ts;
+	struct timespec tsr;
 
-		milliseconds %= 1000;
+	ts.tv_sec = duration / 1000000;
+	ts.tv_nsec = (duration % 1000000) * 1000;
+
+	while (clock_nanosleep(CLOCK_MONOTONIC, 0, &ts, &tsr) < 0 && errno == EINTR) {
+		memcpy(&ts, &tsr, sizeof(ts));
 	}
+#elif defined _WIN32
+	// FIXME: there is no real sleep function on Windows with microsecond resolution
+	if (duration > 1000) {
+		Sleep(duration / 1000);
+	} else if (duration > 0) {
+		Sleep(1);
+	} else {
+		Sleep(0);
+	}
+#else
+	struct timespec ts;
+	struct timespec tsr;
 
-	usleep(milliseconds * 1000);
+	ts.tv_sec = duration / 1000000;
+	ts.tv_nsec = (duration % 1000000) * 1000;
+
+	while (nanosleep(&ts, &tsr) < 0 && errno == EINTR) {
+		memcpy(&ts, &tsr, sizeof(ts));
+	}
 #endif
 }
 
-uint64_t microseconds(void) {
+void millisleep(uint32_t duration) {
+	microsleep(duration * 1000);
+}
+
+uint64_t microtime(void) {
 #ifdef __linux__
 	struct timespec ts;
 
-	#ifdef CLOCK_MONOTONIC_RAW
 	if (clock_gettime(CLOCK_MONOTONIC_RAW, &ts) < 0) {
-	#else
-	if (clock_gettime(CLOCK_MONOTONIC, &ts) < 0) {
-	#endif
 		return 0;
 	} else {
 		return ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
 	}
+#elif defined __APPLE__
+	// https://developer.apple.com/library/archive/qa/qa1398/_index.html
+	static mach_timebase_info_data_t mtibd;
+
+	if (mtibd.denom == 0) {
+		mach_timebase_info(&mtibd);
+	}
+
+	return (mach_absolute_time() / 1000) * mtibd.numer / mtibd.denom;
 #else
 	struct timeval tv;
 
 	// FIXME: use a monotonic source such as QueryPerformanceCounter() or mach_absolute_time()
 	if (gettimeofday(&tv, NULL) < 0) {
 		return 0;
-	} else {
-		return (uint64_t)tv.tv_sec * 1000000 + tv.tv_usec;
 	}
+
+	return (uint64_t)tv.tv_sec * 1000000 + tv.tv_usec;
 #endif
+}
+
+uint64_t millitime(void) {
+	return microtime() / 1000;
 }
 
 #if !defined _GNU_SOURCE && !defined __APPLE__ && !__ANDROID__
