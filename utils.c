@@ -523,6 +523,21 @@ uint64_t microtime(void) {
 	} else {
 		return ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
 	}
+#elif defined _WIN32
+	// https://docs.microsoft.com/de-de/windows/win32/sysinfo/acquiring-high-resolution-time-stamps
+	static bool initialized = false;
+	static LARGE_INTEGER frequency;
+	LARGE_INTEGER counter;
+
+	if (!initialized) {
+		initialized = true;
+
+		QueryPerformanceFrequency(&frequency); // cannot fail since Windows XP, stable across cores
+	}
+
+	QueryPerformanceCounter(&counter); // cannot fail since Windows XP
+
+	return (uint64_t)counter.QuadPart * 1000000 / frequency.QuadPart;
 #elif defined __APPLE__
 	// https://developer.apple.com/library/archive/qa/qa1398/_index.html
 	static mach_timebase_info_data_t mtibd;
@@ -535,7 +550,7 @@ uint64_t microtime(void) {
 #else
 	struct timeval tv;
 
-	// FIXME: use a monotonic source such as QueryPerformanceCounter() or mach_absolute_time()
+	// FIXME: gettimeofday is not a monotonic clock
 	if (gettimeofday(&tv, NULL) < 0) {
 		return 0;
 	}
