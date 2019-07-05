@@ -489,11 +489,21 @@ void microsleep(uint32_t duration) {
 		memcpy(&ts, &tsr, sizeof(ts));
 	}
 #elif defined _WIN32
-	// FIXME: there is no real sleep function on Windows with microsecond resolution
-	if (duration > 1000) {
+	uint64_t end;
+
+	// there is no real sleep function with microsecond resolution on Windows.
+	// at least on the Windows 10 laptop this was tested on the Sleep function
+	// has an average jitter of about +5ms. this is no good for short sleep
+	// durations. therefore, busy wait for sleep durations of 10ms and below.
+	// this is wasteful but provides reasonable microsecond sleep resolution.
+	if (duration > 10000) {
 		Sleep(duration / 1000);
 	} else if (duration > 0) {
-		Sleep(1);
+		end = microtime() + duration;
+
+		while (end > microtime()) {
+			Sleep(0);
+		}
 	} else {
 		Sleep(0);
 	}
