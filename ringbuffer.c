@@ -1,7 +1,7 @@
 /*
  * daemonlib
  * Copyright (C) 2018 Olaf Lüke <olaf@tinkerforge.com>
- * Copyright (C) 2018 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2018-2019 Matthias Bolte <matthias@tinkerforge.com>
  *
  * ringbuffer.c: Simple uint8 ringbuffer implementation
  *
@@ -114,7 +114,8 @@ void ringbuffer_print(Ringbuffer *rb) {
 		end += rb->size;
 	}
 
-	printf("Ringbuffer (start %d, end %d, size %d, low %d, overflows %d): [\n\r", rb->start, rb->end, rb->size, rb->low_watermark, rb->overflows);
+	printf("Ringbuffer (start %u, end %u, size %u, low %u, overflows %u): [\n",
+	       rb->start, rb->end, rb->size, rb->low_watermark, rb->overflows);
 
 	for(i = 0; i < end; i++) {
 		if((i % 16) == 0) {
@@ -124,9 +125,9 @@ void ringbuffer_print(Ringbuffer *rb) {
 		printf("%x, ", rb->buffer[(rb->start + i) % rb->size]);
 
 		if((i % 16) == 15) {
-			printf("\n\r");
+			printf("\n");
 		}
 	}
 
-	printf("]\n\r");
+	printf("]\n");
 }
