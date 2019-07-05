@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2016-2018 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2016-2019 Matthias Bolte <matthias@tinkerforge.com>
  *
  * timer_uwp.c: Universal Windows Platform timer implementation
  *
@@ -56,8 +56,8 @@ static void timer_thread(void *opaque) {
 	Timer *timer = opaque;
 	int rc;
 	uint32_t configuration_id = timer->configuration_id;
-	uint64_t delay = 0; // in milliseconds
-	uint64_t interval = 0; // in milliseconds
+	DWORD delay = 0; // in milliseconds
+	DWORD interval = 0; // in milliseconds
 	DWORD timeout = INFINITE; // in milliseconds
 
 	while (timer->running) {
@@ -96,7 +96,7 @@ static void timer_thread(void *opaque) {
 				} else if (timer->delay < 1000) {
 					delay = 1;
 				} else {
-					delay = (timer->delay + 500) / 1000;
+					delay = (DWORD)((timer->delay + 500) / 1000);
 				}
 
 				if (timer->interval == 0) {
@@ -104,7 +104,7 @@ static void timer_thread(void *opaque) {
 				} else if (timer->interval < 1000) {
 					interval = 1;
 				} else {
-					interval = (timer->interval + 500) / 1000;
+					interval = (DWORD)((timer->interval + 500) / 1000);
 				}
 
 				timeout = delay;
