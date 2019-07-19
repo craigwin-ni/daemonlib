@@ -95,14 +95,14 @@ static int writer_push_packet_to_backlog(Writer *writer, Packet *packet, int wri
 	char packet_signature[PACKET_MAX_SIGNATURE_LENGTH];
 	uint32_t packets_to_drop;
 
-	log_packet_debug("%s is not ready to receive, pushing %s to write backlog (count: %d +1)",
+	log_packet_debug("%s is not ready to receive, pushing %s to write backlog (count: %d + 1)",
 	                 writer->recipient_signature(recipient_signature, true, writer->opaque),
 	                 writer->packet_type, writer->backlog.count);
 
 	if (writer->backlog.count >= MAX_QUEUED_WRITES) {
 		packets_to_drop = writer->backlog.count - MAX_QUEUED_WRITES + 1;
 
-		log_warn("Write backlog for %s is full, dropping %u queued %s(s), %u +%u dropped in total",
+		log_warn("Write backlog for %s is full, dropping %u queued %s(s), %u + %u dropped in total",
 		         writer->recipient_signature(recipient_signature, false, writer->opaque),
 		         packets_to_drop, writer->packet_type,
 		         writer->dropped_packets, packets_to_drop);
