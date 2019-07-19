@@ -507,7 +507,7 @@ void microsleep(uint32_t duration) {
 	} else {
 		Sleep(0);
 	}
-#else
+#else // POSIX
 	struct timespec ts;
 	struct timespec tsr;
 
@@ -524,15 +524,15 @@ void millisleep(uint32_t duration) {
 	microsleep(duration * 1000);
 }
 
-uint64_t microtime(void) {
+uint64_t microtime(void) { // monotonic
 #ifdef __linux__
 	struct timespec ts;
 
 	if (clock_gettime(CLOCK_MONOTONIC_RAW, &ts) < 0) {
-		return 0;
-	} else {
-		return ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
+		abort(); // clock_gettime cannot fail under normal circumstances
 	}
+
+	return ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
 #elif defined _WIN32
 	// https://docs.microsoft.com/de-de/windows/win32/sysinfo/acquiring-high-resolution-time-stamps
 	static bool initialized = false;
@@ -557,19 +557,18 @@ uint64_t microtime(void) {
 	}
 
 	return (mach_absolute_time() / 1000) * mtibd.numer / mtibd.denom;
-#else
-	struct timeval tv;
+#else // POSIX
+	struct timespec ts;
 
-	// FIXME: gettimeofday is not a monotonic clock
-	if (gettimeofday(&tv, NULL) < 0) {
-		return 0;
+	if (clock_gettime(CLOCK_MONOTONIC, &ts) < 0) {
+		abort(); // clock_gettime cannot fail under normal circumstances
 	}
 
-	return (uint64_t)tv.tv_sec * 1000000 + tv.tv_usec;
+	return ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
 #endif
 }
 
-uint64_t millitime(void) {
+uint64_t millitime(void) { // monotonic
 	return microtime() / 1000;
 }
 
