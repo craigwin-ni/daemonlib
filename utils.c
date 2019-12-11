@@ -528,7 +528,11 @@ uint64_t microtime(void) { // monotonic
 #ifdef __linux__
 	struct timespec ts;
 
+	#ifdef CLOCK_MONOTONIC_RAW
 	if (clock_gettime(CLOCK_MONOTONIC_RAW, &ts) < 0) {
+	#else
+	if (clock_gettime(CLOCK_MONOTONIC, &ts) < 0) {
+	#endif
 		abort(); // clock_gettime cannot fail under normal circumstances
 	}
 
