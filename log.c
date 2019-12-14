@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012, 2014, 2016-2017 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012, 2014, 2016-2017, 2019 Matthias Bolte <matthias@tinkerforge.com>
  * Copyright (C) 2014 Olaf Lüke <olaf@tinkerforge.com>
  *
  * log.c: Logging specific functions
@@ -181,7 +181,7 @@ static void log_write(struct timeval *timestamp, LogLevel level, LogSource *sour
 	}
 
 	log_format(buffer, sizeof(buffer), timestamp, level, source, debug_group,
-	           function, line, format, arguments);
+	           function, line, NULL, format, arguments);
 
 	log_apply_color_platform(level, true);
 	io_write(_output, buffer, strlen(buffer));
@@ -349,8 +349,8 @@ void log_message(LogLevel level, LogSource *source, LogDebugGroup debug_group,
 
 void log_format(char *buffer, int length, struct timeval *timestamp,
                 LogLevel level, LogSource *source, LogDebugGroup debug_group,
-                const char *function, int line, const char *format,
-                va_list arguments) {
+                const char *function, int line, const char *message,
+                const char *format, va_list arguments) {
 	time_t unix_seconds;
 	struct tm localized_timestamp;
 	char formatted_timestamp[64] = "<unknown>";
@@ -398,13 +398,15 @@ void log_format(char *buffer, int length, struct timeval *timestamp,
 	         formatted_timestamp, (int)timestamp->tv_usec, level_char,
 	         debug_group_name, source->name, line >= 0 ? line_str : function);
 
-	offset = strlen(buffer); // FIXME: avoid strlen call
+	// append/format message
+	if (message != NULL) {
+		string_append(buffer, length, message);
+	} else {
+		offset = strlen(buffer); // FIXME: avoid strlen call
 
-	// format message
-	vsnprintf(buffer + offset, MAX(length - offset, 0), format, arguments);
+		vsnprintf(buffer + offset, MAX(length - offset, 0), format, arguments);
+	}
 
-	offset = strlen(buffer); // FIXME: avoid strlen call
-
-	// format newline
-	snprintf(buffer + offset, MAX(length - offset, 0), LOG_NEWLINE);
+	// append newline
+	string_append(buffer, length, LOG_NEWLINE);
 }

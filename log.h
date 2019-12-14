@@ -143,7 +143,7 @@ void log_message(LogLevel level, LogSource *source, LogDebugGroup debug_group,
 
 void log_format(char *buffer, int length, struct timeval *timestamp,
                 LogLevel level, LogSource *source, LogDebugGroup debug_group,
-                const char *function, int line, const char *format,
-                va_list arguments);
+                const char *function, int line, const char *message,
+                const char *format, va_list arguments);
 
 #endif // DAEMONLIB_LOG_H
