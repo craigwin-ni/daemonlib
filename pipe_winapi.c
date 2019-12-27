@@ -48,7 +48,7 @@ int pipe_create(Pipe *pipe, uint32_t flags) {
 		return -1;
 	}
 
-	listener = socket(AF_INET, SOCK_STREAM, 0);
+	listener = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
 	if (listener == IO_HANDLE_INVALID) {
 		goto error;
@@ -76,7 +76,7 @@ int pipe_create(Pipe *pipe, uint32_t flags) {
 		goto error;
 	}
 
-	pipe->base.read_handle = socket(AF_INET, SOCK_STREAM, 0);
+	pipe->base.read_handle = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
 	if (pipe->base.read_handle == IO_HANDLE_INVALID) {
 		goto error;
