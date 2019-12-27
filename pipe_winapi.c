@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2014, 2017 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2014, 2017, 2019 Matthias Bolte <matthias@tinkerforge.com>
  *
  * pipe_winapi.c: WinAPI based pipe implementation
  *
@@ -82,11 +82,6 @@ int pipe_create(Pipe *pipe, uint32_t flags) {
 		goto error;
 	}
 
-	if ((flags & PIPE_FLAG_NON_BLOCKING_READ) != 0 &&
-	    ioctlsocket(pipe->base.read_handle, FIONBIO, &flag) == SOCKET_ERROR) {
-		goto error;
-	}
-
 	rc = connect(pipe->base.read_handle, (const struct sockaddr *)&address, length);
 
 	if (rc == SOCKET_ERROR) {
@@ -96,6 +91,11 @@ int pipe_create(Pipe *pipe, uint32_t flags) {
 	pipe->base.write_handle = accept(listener, NULL, NULL);
 
 	if (pipe->base.write_handle == IO_HANDLE_INVALID) {
+		goto error;
+	}
+
+	if ((flags & PIPE_FLAG_NON_BLOCKING_READ) != 0 &&
+	    ioctlsocket(pipe->base.read_handle, FIONBIO, &flag) == SOCKET_ERROR) {
 		goto error;
 	}
 
