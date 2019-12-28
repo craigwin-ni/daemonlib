@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2014, 2016-2018 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2014, 2016-2019 Matthias Bolte <matthias@tinkerforge.com>
  *
  * file.c: File based I/O device
  *
@@ -91,6 +91,6 @@ int file_write(File *file, const void *buffer, int length) {
 }
 
 // sets errno on error
-int file_seek(File *file, off_t offset, int origin) { // takes lseek origin
+off_t file_seek(File *file, off_t offset, int origin) { // takes lseek origin
 	return lseek(file->handle, offset, origin);
 }

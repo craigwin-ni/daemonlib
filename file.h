@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2014, 2016-2017 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2014, 2016-2017, 2019 Matthias Bolte <matthias@tinkerforge.com>
  *
  * file.h: File based I/O device
  *
@@ -35,6 +35,6 @@ void file_destroy(File *file);
 
 int file_read(File *file, void *buffer, int length);
 int file_write(File *file, const void *buffer, int length);
-int file_seek(File *file, off_t offset, int origin); // takes lseek origin
+off_t file_seek(File *file, off_t offset, int origin); // takes lseek origin
 
 #endif // DAEMONLIB_FILE_H
