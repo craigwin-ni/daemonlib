@@ -1,7 +1,7 @@
 /*
  * daemonlib
  * Copyright (C) 2014 Olaf Lüke <olaf@tinkerforge.com>
- * Copyright (C) 2014-2016, 2018 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2014-2016, 2018-2019 Matthias Bolte <matthias@tinkerforge.com>
  * Copyright (C) 2017 Ishraq Ibne Ashraf <ishraq@tinkerforge.com>
  *
  * red_led.c: LED functions for RED Brick
@@ -107,7 +107,7 @@ REDLEDTrigger red_led_get_trigger(REDLED led) {
 		log_error("Unknown LED: %d (must be in [%d, %d])",
 		          led, RED_LED_GREEN, RED_LED_RED);
 
-		return -1;
+		return RED_LED_TRIGGER_UNKNOWN;
 	}
 
 	fp = fopen(led_path[led], "rb");
