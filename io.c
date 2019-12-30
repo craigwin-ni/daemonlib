@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2014, 2016-2017 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2014, 2016-2017, 2019 Matthias Bolte <matthias@tinkerforge.com>
  *
  * io.c: Base for all I/O devices
  *
@@ -27,7 +27,7 @@
  * clients. finally, on top of the plain socket sits the WebSocket for browser
  * clients.
  *
- * all I/O operations have to be don't non-blocking and have to be intergrated
+ * all I/O operations have to be don't non-blocking and have to be integrated
  * with the poll based event loop.
  */
 

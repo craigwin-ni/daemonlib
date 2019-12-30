@@ -3,7 +3,7 @@
  * Copyright (C) 2012-2014, 2018-2019 Matthias Bolte <matthias@tinkerforge.com>
  * Copyright (C) 2014, 2018 Olaf Lüke <olaf@tinkerforge.com>
  *
- * packet.h: Packet definiton for protocol version 2
+ * packet.h: Packet definition for protocol version 2
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2014, 2017-2018 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2014, 2017-2019 Matthias Bolte <matthias@tinkerforge.com>
  *
  * timer_linux.c: timerfd based timer implementation for Linux
  *
@@ -95,7 +95,7 @@ int timer_configure(Timer *timer, uint64_t delay, uint64_t interval) { // micros
 	itimerspec.it_interval.tv_sec = interval / 1000000;
 	itimerspec.it_interval.tv_nsec = (interval % 1000000) * 1000;
 
-	// timerfd_settime stops the timer if it_value is zero, indepentent of
+	// timerfd_settime stops the timer if it_value is zero, independent of
 	// it_interval. this doesn't allow for a repeated timer without initial
 	// delay. detect this case and make it_value non-zero to workaround this
 	if (delay == 0 && interval > 0) {

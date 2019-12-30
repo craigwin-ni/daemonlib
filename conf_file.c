@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2014-2015, 2017-2018 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2014-2015, 2017-2019 Matthias Bolte <matthias@tinkerforge.com>
  *
  * conf_file.c: Reads and writes .conf formatted files
  *
@@ -124,7 +124,7 @@ static int conf_file_write_escaped(FILE *fp, const char *string, bool name) {
 
 	for (p = string; *p != '\0'; ++p) {
 		// check if printable ASCII character has to be encoded
-		printable = *p >= ' ' && *p <= '~' && *p != '\\'; // is printable ASCII character (excluding bashslash)?
+		printable = *p >= ' ' && *p <= '~' && *p != '\\'; // is printable ASCII character (excluding backslash)?
 		comment = *p == '#' && p == string; // is comment start?
 		whitespace = *p == ' ' && (p == string || *(p + 1) == '\0'); // has leading/trailing whitespace?
 
