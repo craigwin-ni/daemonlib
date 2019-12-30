@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2015, 2018 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2015, 2018-2019 Matthias Bolte <matthias@tinkerforge.com>
  * Copyright (C) 2014 Olaf Lüke <olaf@tinkerforge.com>
  *
  * event.c: Event specific functions
@@ -80,7 +80,7 @@ int event_init(void) {
 	phase = 2;
 
 	// create stop pipe
-	if (pipe_create(&_stop_pipe, 0) < 0) {
+	if (pipe_create(&_stop_pipe, PIPE_FLAG_NON_BLOCKING_READ) < 0) {
 		log_error("Could not create stop pipe: %s (%d)",
 		          get_errno_name(errno), errno);
 

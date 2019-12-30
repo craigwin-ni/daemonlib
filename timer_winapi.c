@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2014, 2016-2018 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2014, 2016-2019 Matthias Bolte <matthias@tinkerforge.com>
  *
  * timer_winapi.c: WinAPI based timer implementation
  *
@@ -149,7 +149,7 @@ int timer_create_(Timer *timer, TimerFunction function, void *opaque) {
 	int rc;
 
 	// create notification pipe
-	if (pipe_create(&timer->notification_pipe, 0) < 0) {
+	if (pipe_create(&timer->notification_pipe, PIPE_FLAG_NON_BLOCKING_READ) < 0) {
 		log_error("Could not create notification pipe: %s (%d)",
 		          get_errno_name(errno), errno);
 

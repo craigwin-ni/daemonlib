@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2014, 2017-2018 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2014, 2017-2019 Matthias Bolte <matthias@tinkerforge.com>
  *
  * signal.c: Signal specific functions
  *
@@ -84,7 +84,7 @@ int signal_init(SIGHUPFunction sighup, SIGUSR1Function sigusr1) {
 	_handle_sigusr1 = sigusr1;
 
 	// create signal pipe
-	if (pipe_create(&_signal_pipe, 0) < 0) {
+	if (pipe_create(&_signal_pipe, PIPE_FLAG_NON_BLOCKING_READ) < 0) {
 		log_error("Could not create signal pipe: %s (%d)",
 		          get_errno_name(errno), errno);
 
