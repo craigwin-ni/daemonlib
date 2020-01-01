@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2014, 2016-2018 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2014, 2016-2019 Matthias Bolte <matthias@tinkerforge.com>
  *
  * daemon.c: Daemon implementation
  *
@@ -43,6 +43,7 @@ int daemon_start(const char *log_filename, File *log_file,
 	uint8_t success = 0;
 	bool log_file_created = false;
 	IO *previous_log_output = NULL;
+	LogRotateFunction previous_log_rotate = NULL;
 	int stdin_fd = -1;
 	int stdout_fd = -1;
 
@@ -150,9 +151,9 @@ int daemon_start(const char *log_filename, File *log_file,
 	}
 
 	log_file_created = true;
-	previous_log_output = log_get_output();
 
-	log_set_output(&log_file->base);
+	log_get_output(&previous_log_output, &previous_log_rotate);
+	log_set_output(&log_file->base, NULL);
 
 	// redirect standard file descriptors
 	stdin_fd = open("/dev/null", O_RDONLY);
@@ -203,7 +204,7 @@ cleanup:
 
 	if (success == 0) {
 		if (log_file_created) {
-			log_set_output(previous_log_output);
+			log_set_output(previous_log_output, previous_log_rotate);
 			file_destroy(log_file);
 		}
 

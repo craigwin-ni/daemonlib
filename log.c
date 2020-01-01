@@ -37,9 +37,15 @@ typedef struct {
 	uint32_t groups;
 } LogDebugFilter;
 
-static Mutex _mutex; // protects writing to _output
+#define MAX_OUTPUT_SIZE (5 * 1024 * 1024) // bytes
+#define ROTATE_COUNTDOWN 50
+
+static Mutex _mutex; // protects writing to _output, _output_size, _rotate and _rotate_countdown
 static LogLevel _level = LOG_LEVEL_INFO;
 static IO *_output = NULL;
+static int64_t _output_size = -1; // tracks size if output is rotatable
+static LogRotateFunction _rotate = NULL;
+static int _rotate_countdown = 0;
 static bool _debug_override = false;
 static int _debug_filter_version = 0;
 static LogDebugFilter _debug_filters[64];
@@ -171,21 +177,44 @@ static void log_set_debug_filter(const char *filter) {
 }
 
 // NOTE: assumes that _mutex is locked
-static void log_write(struct timeval *timestamp, LogLevel level, LogSource *source,
-                      LogDebugGroup debug_group, const char *function, int line,
-                      const char *format, va_list arguments) {
+static void log_set_output_unlocked(IO *output, LogRotateFunction rotate) {
+	IOStatus status;
+
+	_output = output;
+	_output_size = -1;
+	_rotate = rotate;
+	_rotate_countdown = ROTATE_COUNTDOWN;
+
+	if (_output != NULL && _rotate != NULL) {
+		if (io_status(_output, &status) >= 0) {
+			_output_size = status.size;
+		}
+	}
+
+	log_set_output_platform(_output);
+}
+
+// NOTE: assumes that _mutex is locked
+static int log_write(struct timeval *timestamp, LogLevel level, LogSource *source,
+                     LogDebugGroup debug_group, const char *function, int line,
+                     const char *format, va_list arguments) {
 	char buffer[1024] = "<unknown>";
+	int length;
 
 	if (_output == NULL) {
-		return;
+		return 0;
 	}
 
 	log_format(buffer, sizeof(buffer), timestamp, level, source, debug_group,
 	           function, line, NULL, format, arguments);
 
 	log_apply_color_platform(level, true);
-	io_write(_output, buffer, strlen(buffer));
+
+	length = io_write(_output, buffer, strlen(buffer));
+
 	log_apply_color_platform(level, false);
+
+	return length;
 }
 
 void log_init(void) {
@@ -198,6 +227,7 @@ void log_init(void) {
 	stderr_create(&log_stderr_output);
 
 	_output = &log_stderr_output;
+	_output_size = -1;
 
 	log_init_platform(_output);
 
@@ -232,18 +262,21 @@ LogLevel log_get_effective_level(void) {
 	return _debug_override ? LOG_LEVEL_DEBUG : _level;
 }
 
-void log_set_output(IO *output) {
+// if a ROTATE function is given, then the given OUTPUT has to support io_status
+void log_set_output(IO *output, LogRotateFunction rotate) {
 	log_lock();
-
-	_output = output;
-
-	log_set_output_platform(_output);
-
+	log_set_output_unlocked(output, rotate);
 	log_unlock();
 }
 
-IO *log_get_output(void) {
-	return _output;
+void log_get_output(IO **output, LogRotateFunction *rotate) {
+	if (output != NULL) {
+		*output = _output;
+	}
+
+	if (rotate != NULL) {
+		*rotate = _rotate;
+	}
 }
 
 bool log_is_included(LogLevel level, LogSource *source, LogDebugGroup debug_group) {
@@ -310,9 +343,12 @@ bool log_is_included(LogLevel level, LogSource *source, LogDebugGroup debug_grou
 }
 
 void log_message(LogLevel level, LogSource *source, LogDebugGroup debug_group,
-                 const char *function, int line, const char *format, ...) {
+                 bool rotate_allowed, const char *function, int line, const char *format, ...) {
 	struct timeval timestamp;
 	va_list arguments;
+	int length;
+	LogLevel rotate_level = LOG_LEVEL_DUMMY;
+	char rotate_message[1024] = "<unknown>";
 
 	if (level == LOG_LEVEL_DUMMY) {
 		return; // should never be reachable
@@ -325,16 +361,22 @@ void log_message(LogLevel level, LogSource *source, LogDebugGroup debug_group,
 		timestamp.tv_usec = 0;
 	}
 
-	// call log handlers
+	// call log writers
 	log_lock();
 
 	if ((level <= _level || _debug_override) &&
 	    (level != LOG_LEVEL_DEBUG ||
 	     (source->included_debug_groups & debug_group) != 0)) {
 		va_start(arguments, format);
-		log_write(&timestamp, level, source, debug_group, function, line,
-		          format, arguments);
+
+		length = log_write(&timestamp, level, source, debug_group, function,
+		                   line, format, arguments);
+
 		va_end(arguments);
+
+		if (_output_size >= 0 && length >= 0) {
+			_output_size += length;
+		}
 	}
 
 	if (log_is_included_platform(level, source, debug_group)) {
@@ -344,7 +386,29 @@ void log_message(LogLevel level, LogSource *source, LogDebugGroup debug_group,
 		va_end(arguments);
 	}
 
+	// rotate output
+	if (_rotate_countdown > 0) {
+		--_rotate_countdown;
+	}
+
+	if (rotate_allowed && _output_size >= MAX_OUTPUT_SIZE && _rotate_countdown <= 0) {
+		if (_rotate(_output, &rotate_level, rotate_message, sizeof(rotate_message)) < 0) {
+			log_set_output_unlocked(NULL, NULL);
+		} else {
+			log_set_output_unlocked(_output, _rotate);
+		}
+	}
+
 	log_unlock();
+
+	if (rotate_level != LOG_LEVEL_DUMMY) {
+		log_message_checked(rotate_level,
+		                    rotate_level == LOG_LEVEL_DEBUG
+		                    ? LOG_DEBUG_GROUP_COMMON
+		                    : LOG_DEBUG_GROUP_NONE,
+		                    false,
+		                    rotate_message);
+	}
 }
 
 void log_format(char *buffer, int length, struct timeval *timestamp,
