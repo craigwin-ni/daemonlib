@@ -28,7 +28,7 @@
  * clients.
  *
  * all I/O operations have to be don't non-blocking and have to be integrated
- * with the poll based event loop.
+ * with the (e)poll/select based event loop.
  */
 
 #include <errno.h>
