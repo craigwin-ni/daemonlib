@@ -35,6 +35,7 @@ void file_destroy(File *file);
 
 int file_read(File *file, void *buffer, int length);
 int file_write(File *file, const void *buffer, int length);
+int file_status(File *file, IOStatus *status);
 off_t file_seek(File *file, off_t offset, int origin); // takes lseek origin
 
 #endif // DAEMONLIB_FILE_H

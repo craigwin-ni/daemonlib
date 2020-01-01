@@ -71,7 +71,7 @@ static int stderr_write(IO *io, const void *buffer, int length) {
 }
 
 static int stderr_create(IO *io) {
-	if (io_create(io, "stderr", NULL, NULL, stderr_write) < 0) {
+	if (io_create(io, "stderr", NULL, NULL, stderr_write, NULL) < 0) {
 		return -1;
 	}
 

@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2014, 2016-2017 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2014, 2016-2017, 2019 Matthias Bolte <matthias@tinkerforge.com>
  *
  * io.h: Base for all I/O devices
  *
@@ -22,6 +22,7 @@
 #ifndef DAEMONLIB_IO_H
 #define DAEMONLIB_IO_H
 
+#include <stdint.h>
 #ifdef _WIN32
 	#include <winsock2.h>
 #endif
@@ -42,9 +43,14 @@ typedef int IOHandle;
 
 typedef struct _IO IO;
 
+typedef struct {
+	int64_t size; // bytes, -1 = unknown
+} IOStatus;
+
 typedef void (*IODestroyFunction)(IO *io);
 typedef int (*IOReadFunction)(IO *io, void *buffer, int length);
 typedef int (*IOWriteFunction)(IO *io, const void *buffer, int length);
+typedef int (*IOStatusFunction)(IO *io, IOStatus *status);
 
 struct _IO {
 	IOHandle read_handle;
@@ -53,15 +59,18 @@ struct _IO {
 	IODestroyFunction destroy;
 	IOReadFunction read;
 	IOWriteFunction write;
+	IOStatusFunction status;
 };
 
 int io_create(IO *io, const char *type,
               IODestroyFunction destroy,
               IOReadFunction read,
-              IOWriteFunction write);
+              IOWriteFunction write,
+              IOStatusFunction status);
 void io_destroy(IO *io);
 
 int io_read(IO *io, void *buffer, int length);
 int io_write(IO *io, const void *buffer, int length);
+int io_status(IO *io, IOStatus *status);
 
 #endif // DAEMONLIB_IO_H

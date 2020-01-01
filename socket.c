@@ -58,7 +58,8 @@ int socket_create(Socket *socket) {
 	if (io_create(&socket->base, "plain-socket",
 	              (IODestroyFunction)socket_destroy,
 	              (IOReadFunction)socket_receive,
-	              (IOWriteFunction)socket_send) < 0) {
+	              (IOWriteFunction)socket_send,
+	              NULL) < 0) {
 		return -1;
 	}
 

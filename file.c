@@ -41,7 +41,8 @@ int file_create(File *file, const char *name, int flags, int mode) { // takes op
 	if (io_create(&file->base, "file",
 	              (IODestroyFunction)file_destroy,
 	              (IOReadFunction)file_read,
-	              (IOWriteFunction)file_write) < 0) {
+	              (IOWriteFunction)file_write,
+	              (IOStatusFunction)file_status) < 0) {
 		return -1;
 	}
 
@@ -88,6 +89,25 @@ int file_read(File *file, void *buffer, int length) {
 // sets errno on error
 int file_write(File *file, const void *buffer, int length) {
 	return robust_write(file->handle, buffer, length);
+}
+
+// sets errno on error
+int file_status(File *file, IOStatus *status) {
+#ifdef _WIN32
+	struct _stat64 stat;
+	int rc = _fstat64(file->handle, &stat);
+#else
+	struct stat stat;
+	int rc = fstat(file->handle, &stat);
+#endif
+
+	if (rc < 0) {
+		return -1;
+	}
+
+	status->size = stat.st_size;
+
+	return 0;
 }
 
 // sets errno on error

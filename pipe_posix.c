@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2014, 2017-2018 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2014, 2017-2019 Matthias Bolte <matthias@tinkerforge.com>
  *
  * pipe_posix.c: POSIX based pipe implementation
  *
@@ -40,7 +40,8 @@ int pipe_create(Pipe *pipe_, uint32_t flags) {
 	if (io_create(&pipe_->base, "pipe",
 	              (IODestroyFunction)pipe_destroy,
 	              (IOReadFunction)pipe_read,
-	              (IOWriteFunction)pipe_write) < 0) {
+	              (IOWriteFunction)pipe_write,
+	              NULL) < 0) {
 		return -1;
 	}
 

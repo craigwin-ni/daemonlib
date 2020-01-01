@@ -44,7 +44,8 @@ int pipe_create(Pipe *pipe, uint32_t flags) {
 	if (io_create(&pipe->base, "pipe",
 	              (IODestroyFunction)pipe_destroy,
 	              (IOReadFunction)pipe_read,
-	              (IOWriteFunction)pipe_write) < 0) {
+	              (IOWriteFunction)pipe_write,
+	              NULL) < 0) {
 		return -1;
 	}
 
