@@ -141,7 +141,7 @@ bool log_is_included(LogLevel level, LogSource *source, LogDebugGroup debug_grou
 
 void log_message(LogLevel level, LogSource *source, LogDebugGroup debug_group,
                  bool rotate_allowed, const char *function, int line, const char *format, ...)
-                 ATTRIBUTE_FMT_PRINTF(6, 7);
+                 ATTRIBUTE_FMT_PRINTF(7, 8);
 
 void log_format(char *buffer, int length, struct timeval *timestamp,
                 LogLevel level, LogSource *source, LogDebugGroup debug_group,
