@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2014, 2016-2017, 2019 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2014, 2016-2017, 2019-2020 Matthias Bolte <matthias@tinkerforge.com>
  *
  * io.c: Base for all I/O devices
  *
