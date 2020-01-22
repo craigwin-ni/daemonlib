@@ -391,7 +391,8 @@ void log_message(LogLevel level, LogSource *source, LogDebugGroup debug_group,
 		--_rotate_countdown;
 	}
 
-	if (rotate_allowed && _output_size >= MAX_OUTPUT_SIZE && _rotate_countdown <= 0) {
+	if (_rotate != NULL && rotate_allowed &&
+	    _output_size >= MAX_OUTPUT_SIZE && _rotate_countdown <= 0) {
 		if (_rotate(_output, &rotate_level, rotate_message, sizeof(rotate_message)) < 0) {
 			log_set_output_unlocked(NULL, NULL);
 		} else {
