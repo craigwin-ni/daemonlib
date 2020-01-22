@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2019 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2020 Matthias Bolte <matthias@tinkerforge.com>
  * Copyright (C) 2014 Olaf Lüke <olaf@tinkerforge.com>
  * Copyright (C) 2017 Ishraq Ibne Ashraf <ishraq@tinkerforge.com>
  *
@@ -576,7 +576,7 @@ uint64_t millitime(void) { // monotonic
 	return microtime() / 1000;
 }
 
-#if !defined _GNU_SOURCE && !defined __APPLE__ && !__ANDROID__
+#if !defined _GNU_SOURCE && !defined __APPLE__ && !defined __ANDROID__
 
 #include <ctype.h>
 
