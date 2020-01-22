@@ -668,7 +668,7 @@ int red_brick_uid(uint32_t *uid /* always little endian */) {
 	// Brick UIDs should have the 31th bit always set. avoid collisions with
 	// Bricklet UIDs by setting the 30th bit to get a high UID, as Bricklets
 	// have a low UID
-	*uid = (*uid & ~(1 << 31)) | (1 << 30);
+	*uid = (*uid & ~(1u << 31)) | (1u << 30);
 #endif
 
 	*uid = uint32_to_le(*uid);
