@@ -42,7 +42,7 @@ typedef enum {
 	LOG_LEVEL_DEBUG
 } LogLevel;
 
-typedef int(*LogRotateFunction)(IO *output, LogLevel *level, char *message, int message_length);
+typedef int (*LogRotateFunction)(IO *output, LogLevel *level, char *message, int message_length);
 
 typedef enum { // bitmask
 	LOG_DEBUG_GROUP_NONE   = 0x0000, // special value
