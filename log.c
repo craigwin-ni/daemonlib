@@ -407,6 +407,7 @@ void log_message(LogLevel level, LogSource *source, LogDebugGroup debug_group,
 		                    ? LOG_DEBUG_GROUP_COMMON
 		                    : LOG_DEBUG_GROUP_NONE,
 		                    false,
+		                    "%s",
 		                    rotate_message);
 	}
 }
