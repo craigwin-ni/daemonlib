@@ -546,11 +546,12 @@ uint64_t microtime(void) { // monotonic
 	if (!initialized) {
 		initialized = true;
 
-		QueryPerformanceFrequency(&frequency); // cannot fail since Windows XP, stable across cores
+		QueryPerformanceFrequency(&frequency); // cannot fail since Windows XP
 	}
 
 	QueryPerformanceCounter(&counter); // cannot fail since Windows XP
 
+	// stable across cores since Windows Vista
 	return (uint64_t)counter.QuadPart * 1000000 / frequency.QuadPart;
 #elif defined __APPLE__
 	// https://developer.apple.com/library/archive/qa/qa1398/_index.html
