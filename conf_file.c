@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2014-2015, 2017-2019 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2014-2015, 2017-2020 Matthias Bolte <matthias@tinkerforge.com>
  *
  * conf_file.c: Reads and writes .conf formatted files
  *
@@ -35,17 +35,21 @@
 	#define END_OF_LINE "\n"
 #endif
 
-// sets errno on error, abuses ERANGE to indicate escape sequence errors
-static int conf_file_unescape_string(char *string) {
+static int conf_file_unescape_string(int number, char *string, ConfFileReadWarningFunction warning, void *opaque) {
 	char *p = string;
 	char *d = string;
+	char *s;
 	char x[3];
 	int tmp;
 
 	while (*p != '\0') {
 		if (*p < ' ' || *p > '~') {
 			// reject any non-printable ASCII character
-			goto error;
+			if (warning != NULL) {
+				warning(CONF_FILE_READ_WARNING_NON_PRINTABLE_ASCII_CHARACTER, number, p, opaque);
+			}
+
+			return -1;
 		}
 
 		// check for escape sequence start
@@ -55,11 +59,17 @@ static int conf_file_unescape_string(char *string) {
 			continue;
 		}
 
+		s = p;
+
 		++p; // skip backslash
 
 		if (*p == '\0') {
 			// end-of-line in the middle of an escape sequence
-			goto error;
+			if (warning != NULL) {
+				warning(CONF_FILE_READ_WARNING_INCOMPLETE_ESCAPE_SEQUENCE, number, s, opaque);
+			}
+
+			return -1;
 		}
 
 		// check for common escape sequences
@@ -75,12 +85,22 @@ static int conf_file_unescape_string(char *string) {
 		case '\'': *d++ = '\''; continue;
 		case '"':  *d++ = '"';  continue;
 		case 'x':               break;
-		default:                goto error; // invalid escape sequence
+		default:
+			// invalid escape sequence
+			if (warning != NULL) {
+				warning(CONF_FILE_READ_WARNING_INVALID_ESCAPE_SEQUENCE, number, s, opaque);
+			}
+
+			return -1;
 		}
 
 		if (*p == '\0' || *(p + 1) == '\0') {
 			// end-of-line in the middle of an \x escape sequence
-			goto error;
+			if (warning != NULL) {
+				warning(CONF_FILE_READ_WARNING_INCOMPLETE_ESCAPE_SEQUENCE, number, s, opaque);
+			}
+
+			return -1;
 		}
 
 		// unescape \x escape sequence. accept [\x01..\xFF] but explicitly
@@ -92,12 +112,20 @@ static int conf_file_unescape_string(char *string) {
 
 		if (parse_int(x, NULL, 16, &tmp) < 0) {
 			// invalid number in \x escape sequence
+			if (warning != NULL) {
+				warning(CONF_FILE_READ_WARNING_INVALID_ESCAPE_SEQUENCE, number, s, opaque);
+			}
+
 			return -1;
 		}
 
 		if (tmp < 1 || tmp > 255) {
 			// invalid number in \x escape sequence
-			goto error;
+			if (warning != NULL) {
+				warning(CONF_FILE_READ_WARNING_INVALID_ESCAPE_SEQUENCE, number, s, opaque);
+			}
+
+			return -1;
 		}
 
 		*d++ = (char)tmp;
@@ -106,11 +134,6 @@ static int conf_file_unescape_string(char *string) {
 	*d = '\0';
 
 	return 0;
-
-error:
-	errno = ERANGE;
-
-	return -1;
 }
 
 static int conf_file_write_escaped(FILE *fp, const char *string, bool name) {
@@ -200,6 +223,7 @@ static int conf_file_parse_line(ConfFile *conf_file, int number, char *buffer,
 	char *value_end;
 	char *tmp1 = NULL;
 	char *tmp2 = NULL;
+	int rc;
 	ConfFileLine *line;
 	int saved_errno;
 
@@ -217,13 +241,15 @@ static int conf_file_parse_line(ConfFile *conf_file, int number, char *buffer,
 	name = buffer + strspn(buffer, " \t\r");
 
 	// check for empty and comment lines
-	if (*name == '\0' || *name == '#') {
-		name = NULL;
-	} else {
+	if (*name != '\0' && *name != '#') {
 		// split name and value
 		value = strchr(name, '=');
 
-		if (value != NULL) {
+		if (value == NULL) {
+			if (warning != NULL) {
+				warning(CONF_FILE_READ_WARNING_EQUAL_SIGN_MISSING, number, raw, opaque);
+			}
+		} else {
 			name_end = value;
 			*value++ = '\0';
 
@@ -233,9 +259,6 @@ static int conf_file_parse_line(ConfFile *conf_file, int number, char *buffer,
 			}
 
 			if (*name == '\0') {
-				name = NULL;
-				value = NULL;
-
 				if (warning != NULL) {
 					warning(CONF_FILE_READ_WARNING_NAME_MISSING, number, raw, opaque);
 				}
@@ -247,31 +270,31 @@ static int conf_file_parse_line(ConfFile *conf_file, int number, char *buffer,
 				while (value_end > value && strspn(value_end - 1, " \t\r") > 0) {
 					*--value_end = '\0';
 				}
-			}
 
-			// duplicate name/value and unescape them
-			tmp1 = strdup(name);
-			tmp2 = strdup(value);
+				// duplicate name/value and unescape them
+				tmp1 = strdup(name);
+				tmp2 = strdup(value);
 
-			if (tmp1 == NULL || tmp2 == NULL) {
-				errno = ENOMEM;
+				if (tmp1 == NULL || tmp2 == NULL) {
+					errno = ENOMEM;
 
-				goto error;
-			}
+					goto error;
+				}
 
-			if (conf_file_unescape_string(tmp1) < 0 ||
-			    conf_file_unescape_string(tmp2) < 0) {
-				goto error;
-			}
+				rc = conf_file_unescape_string(number, tmp1, warning, opaque);
 
-			// free raw
-			free(raw);
-			raw = NULL;
-		} else {
-			name = NULL;
+				if (rc >= 0) {
+					rc = conf_file_unescape_string(number, tmp2, warning, opaque);
 
-			if (warning != NULL) {
-				warning(CONF_FILE_READ_WARNING_EQUAL_SIGN_MISSING, number, raw, opaque);
+					if (rc >= 0) {
+						name = tmp1;
+						value = tmp2;
+
+						// free raw
+						free(raw);
+						raw = NULL;
+					}
+				}
 			}
 		}
 	}
@@ -284,8 +307,14 @@ static int conf_file_parse_line(ConfFile *conf_file, int number, char *buffer,
 	}
 
 	line->raw = raw;
-	line->name = tmp1;
-	line->value = tmp2;
+
+	if (raw == NULL) {
+		line->name = name;
+		line->value = value;
+	} else {
+		line->name = NULL;
+		line->value = NULL;
+	}
 
 	return 0;
 

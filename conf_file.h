@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2014 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2014, 2020 Matthias Bolte <matthias@tinkerforge.com>
  *
  * conf_file.h: Reads and writes .conf formatted files
  *
@@ -27,7 +27,10 @@
 typedef enum {
 	CONF_FILE_READ_WARNING_LINE_TOO_LONG = 0,
 	CONF_FILE_READ_WARNING_NAME_MISSING,
-	CONF_FILE_READ_WARNING_EQUAL_SIGN_MISSING
+	CONF_FILE_READ_WARNING_EQUAL_SIGN_MISSING,
+	CONF_FILE_READ_WARNING_NON_PRINTABLE_ASCII_CHARACTER,
+	CONF_FILE_READ_WARNING_INCOMPLETE_ESCAPE_SEQUENCE,
+	CONF_FILE_READ_WARNING_INVALID_ESCAPE_SEQUENCE
 } ConfFileReadWarning;
 
 typedef void (*ConfFileReadWarningFunction)(ConfFileReadWarning warning,

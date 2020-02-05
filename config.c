@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2018 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2018, 2020 Matthias Bolte <matthias@tinkerforge.com>
  * Copyright (C) 2014 Olaf Lüke <olaf@tinkerforge.com>
  *
  * config.c: Config file subsystem
@@ -109,12 +109,27 @@ static void config_report_read_warning(ConfFileReadWarning warning, int number,
 		break;
 
 	case CONF_FILE_READ_WARNING_NAME_MISSING:
-		config_warn("Line %d has no option name: %s", number, buffer);
+		config_warn("Line %d contains no option name: %s", number, buffer);
 
 		break;
 
 	case CONF_FILE_READ_WARNING_EQUAL_SIGN_MISSING:
-		config_warn("Line %d has no '=' sign: %s", number, buffer);
+		config_warn("Line %d contains no '=' sign: %s", number, buffer);
+
+		break;
+
+	case CONF_FILE_READ_WARNING_NON_PRINTABLE_ASCII_CHARACTER:
+		config_warn("Line %d contains non-printable ASCII character: 0x%02X", number, *buffer);
+
+		break;
+
+	case CONF_FILE_READ_WARNING_INCOMPLETE_ESCAPE_SEQUENCE:
+		config_warn("Line %d contains incomplete escape sequence: %s", number, buffer);
+
+		break;
+
+	case CONF_FILE_READ_WARNING_INVALID_ESCAPE_SEQUENCE:
+		config_warn("Line %d contains invalid escape sequence: %s", number, buffer);
 
 		break;
 
