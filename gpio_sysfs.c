@@ -45,7 +45,7 @@ static LogSource _log_source = LOG_SOURCE_INITIALIZER;
 
 static const char * const gpio_sysfs_interrupt[GPIO_SYSFS_INTERRUPT_NUM] = {"none", "rising", "falling", "both"};
 static const char * const gpio_sysfs_direction[GPIO_SYSFS_DIRECTION_NUM] = {"in", "out"};
-static const char * const gpio_sysfs_value[GPIO_SYSFS_DIRECTION_NUM] = {"0", "1"};
+static const char * const gpio_sysfs_value[GPIO_SYSFS_VALUE_NUM] = {"0", "1"};
 
 int gpio_sysfs_export(GPIOSYSFS *gpio) {
 	int fd;
