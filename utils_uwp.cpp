@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2017-2018 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2017-2018, 2020 Matthias Bolte <matthias@tinkerforge.com>
  *
  * utils_uwp.c: Utility functions for Universal Windows Platform
  *
@@ -30,8 +30,8 @@ extern "C" {
 extern "C" char *string_convert_ascii(Platform::String ^string) {
 	int length = string->Length();
 	const wchar_t *data = string->Data();
+	char *ascii = (char *)calloc(length + 1, sizeof(char));
 	int i;
-	char *ascii = (char *)calloc(length + 1, 1);
 
 	if (ascii == nullptr) {
 		errno = ENOMEM;
@@ -48,4 +48,29 @@ extern "C" char *string_convert_ascii(Platform::String ^string) {
 	}
 
 	return ascii;
+}
+
+// FIXME: move to libusb_uwp.cpp?
+// sets errno on error
+extern "C" Platform::String ^ascii_convert_string(const char *ascii) {
+	int length = strlen(ascii);
+	wchar_t *data = (wchar_t *)calloc(length + 1, sizeof(wchar_t));
+	int i;
+	Platform::String ^string;
+
+	if (data == nullptr) {
+		errno = ENOMEM;
+
+		return nullptr;
+	}
+
+	for (i = 0; i < length; ++i) {
+		data[i] = ascii[i];
+	}
+
+	string = ref new Platform::String(data);
+
+	free(data);
+
+	return string;
 }

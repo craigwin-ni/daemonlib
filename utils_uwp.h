@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2017 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2017, 2020 Matthias Bolte <matthias@tinkerforge.com>
  *
  * utils_uwp.h: Utility functions for Universal Windows Platform
  *
@@ -23,5 +23,7 @@
 #define DAEMONLIB_UTILS_UWP_H
 
 char *string_convert_ascii(Platform::String ^string);
+
+Platform::String ^ascii_convert_string(const char *ascii);
 
 #endif // DAEMONLIB_UTILS_UWP_H
