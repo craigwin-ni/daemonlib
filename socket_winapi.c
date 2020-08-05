@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2017 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2017, 2020 Matthias Bolte <matthias@tinkerforge.com>
  * Copyright (C) 2014 Olaf Lüke <olaf@tinkerforge.com>
  *
  * socket_winapi.c: WinAPI based socket implementation
@@ -238,6 +238,10 @@ struct addrinfo *socket_hostname_to_address(const char *hostname, uint16_t port)
 	}
 
 	return resolved;
+}
+
+void socket_free_address(struct addrinfo *address) {
+	freeaddrinfo(address);
 }
 
 // sets errno on error

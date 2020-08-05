@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2018 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2018, 2020 Matthias Bolte <matthias@tinkerforge.com>
  * Copyright (C) 2014 Olaf Lüke <olaf@tinkerforge.com>
  *
  * socket_posix.c: POSIX based socket implementation
@@ -21,6 +21,7 @@
  */
 
 #include <errno.h>
+#include <stdlib.h>
 #include <fcntl.h>
 #include <netdb.h>
 #include <netinet/tcp.h>
@@ -28,6 +29,7 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <arpa/inet.h>
 
 #include "socket.h"
 
@@ -159,6 +161,100 @@ int socket_set_dual_stack(Socket *socket, bool dual_stack) {
 
 // sets errno on error
 struct addrinfo *socket_hostname_to_address(const char *hostname, uint16_t port) {
+#ifdef DAEMONLIB_WITH_STATIC
+	struct addrinfo *address;
+	struct sockaddr_in *ipv4_addr;
+	struct sockaddr_in6 *ipv6_addr;
+	int rc;
+	int saved_errno;
+
+	address = calloc(1, sizeof(struct addrinfo));
+
+	if (address == NULL) {
+		errno = ENOMEM;
+
+		return NULL;
+	}
+
+	address->ai_flags = AI_PASSIVE;
+	address->ai_socktype = SOCK_STREAM;
+	address->ai_protocol = IPPROTO_TCP;
+
+	// IPv4
+	address->ai_family = AF_INET;
+	ipv4_addr = calloc(1, sizeof(struct sockaddr_in));
+
+	if (ipv4_addr == NULL) {
+		free(address);
+
+		errno = ENOMEM;
+
+		return NULL;
+	}
+
+	rc = inet_pton(address->ai_family, hostname, &ipv4_addr->sin_addr);
+
+	if (rc < 0) {
+		saved_errno = errno;
+
+		free(ipv4_addr);
+		free(address);
+
+		errno = saved_errno;
+
+		return NULL;
+	} else if (rc > 0) {
+		ipv4_addr->sin_family = address->ai_family;
+		ipv4_addr->sin_port = htons(port);
+
+		address->ai_addrlen = sizeof(struct sockaddr_in);
+		address->ai_addr = (struct sockaddr *)ipv4_addr;
+
+		return address;
+	}
+
+	free(ipv4_addr);
+
+	// IPv6
+	address->ai_family = AF_INET6;
+	ipv6_addr = calloc(1, sizeof(struct sockaddr_in6));
+
+	if (ipv6_addr == NULL) {
+		free(address);
+
+		errno = ENOMEM;
+
+		return NULL;
+	}
+
+	rc = inet_pton(address->ai_family, hostname, &ipv6_addr->sin6_addr);
+
+	if (rc < 0) {
+		saved_errno = errno;
+
+		free(ipv6_addr);
+		free(address);
+
+		errno = saved_errno;
+
+		return NULL;
+	} else if (rc > 0) {
+		ipv6_addr->sin6_family = address->ai_family;
+		ipv6_addr->sin6_port = htons(port);
+		ipv6_addr->sin6_flowinfo = 0;
+		ipv6_addr->sin6_scope_id = 0;
+
+		address->ai_addrlen = sizeof(struct sockaddr_in6);
+		address->ai_addr = (struct sockaddr *)ipv6_addr;
+
+		return address;
+	}
+
+	// error
+	errno = EINVAL;
+
+	return NULL;
+#else
 	char service[32];
 	struct addrinfo hints;
 	struct addrinfo *resolved = NULL;
@@ -187,6 +283,21 @@ struct addrinfo *socket_hostname_to_address(const char *hostname, uint16_t port)
 	}
 
 	return resolved;
+#endif
+}
+
+void socket_free_address(struct addrinfo *address) {
+#ifdef DAEMONLIB_WITH_STATIC
+	if (address == NULL) {
+		return;
+	}
+
+	socket_free_address(address->ai_next);
+	free(address->ai_addr);
+	free(address);
+#else
+	freeaddrinfo(address);
+#endif
 }
 
 // sets errno on error

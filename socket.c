@@ -264,5 +264,5 @@ void socket_open_server(Array *sockets, const char *address, uint16_t port, bool
 		          address, port);
 	}
 
-	freeaddrinfo(resolved_address_first);
+	socket_free_address(resolved_address_first);
 }

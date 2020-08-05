@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2017, 2019 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2017, 2019-2020 Matthias Bolte <matthias@tinkerforge.com>
  * Copyright (C) 2014 Olaf Lüke <olaf@tinkerforge.com>
  *
  * socket.h: Socket specific functions
@@ -73,6 +73,7 @@ int socket_set_address_reuse(Socket *socket, bool address_reuse);
 int socket_set_dual_stack(Socket *socket, bool dual_stack);
 
 struct addrinfo *socket_hostname_to_address(const char *hostname, uint16_t port);
+void socket_free_address(struct addrinfo *address);
 int socket_address_to_hostname(struct sockaddr *address, socklen_t address_length,
                                char *hostname, int hostname_length,
                                char *port, int port_length);
