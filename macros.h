@@ -25,7 +25,7 @@
 #include <stddef.h>
 
 #ifdef __clang__
-	#if __has_feature(c_static_assert)
+	#if __has_feature(c_static_assert) || __has_extension(c_static_assert)
 		#define STATIC_ASSERT(condition, message) _Static_assert(condition, message);
 	#else
 		#define STATIC_ASSERT(condition, message) // FIXME
