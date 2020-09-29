@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2016, 2018-2019 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2016, 2018-2020 Matthias Bolte <matthias@tinkerforge.com>
  * Copyright (C) 2014 Olaf Lüke <olaf@tinkerforge.com>
  *
  * packet.c: Packet definition for protocol version 2
@@ -42,14 +42,14 @@ static LogSource _log_source = LOG_SOURCE_INITIALIZER;
 
 #endif
 
-STATIC_ASSERT(sizeof(PacketHeader) == 8, "PacketHeader has invalid size");
-STATIC_ASSERT(sizeof(Packet) == 80, "Packet has invalid size");
-STATIC_ASSERT(sizeof(EnumerateCallback) == 34, "EnumerateCallback has invalid size");
-STATIC_ASSERT(sizeof(GetAuthenticationNonceRequest) == 8, "GetAuthenticationNonceRequest has invalid size");
-STATIC_ASSERT(sizeof(GetAuthenticationNonceResponse) == 12, "GetAuthenticationNonceResponse has invalid size");
-STATIC_ASSERT(sizeof(AuthenticateRequest) == 32, "AuthenticateRequest has invalid size");
-STATIC_ASSERT(sizeof(StackEnumerateRequest) == 8, "StackEnumerateRequest has invalid size");
-STATIC_ASSERT(sizeof(StackEnumerateResponse) == 72, "StackEnumerateResponse has invalid size");
+STATIC_ASSERT(sizeof(PacketHeader) == 8, "PacketHeader has invalid size")
+STATIC_ASSERT(sizeof(Packet) == 80, "Packet has invalid size")
+STATIC_ASSERT(sizeof(EnumerateCallback) == 34, "EnumerateCallback has invalid size")
+STATIC_ASSERT(sizeof(GetAuthenticationNonceRequest) == 8, "GetAuthenticationNonceRequest has invalid size")
+STATIC_ASSERT(sizeof(GetAuthenticationNonceResponse) == 12, "GetAuthenticationNonceResponse has invalid size")
+STATIC_ASSERT(sizeof(AuthenticateRequest) == 32, "AuthenticateRequest has invalid size")
+STATIC_ASSERT(sizeof(StackEnumerateRequest) == 8, "StackEnumerateRequest has invalid size")
+STATIC_ASSERT(sizeof(StackEnumerateResponse) == 72, "StackEnumerateResponse has invalid size")
 
 #ifdef DAEMONLIB_WITH_PACKET_TRACE
 

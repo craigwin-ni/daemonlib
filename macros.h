@@ -26,7 +26,7 @@
 
 #ifdef __clang__
 	#if __has_feature(c_static_assert)
-		#define STATIC_ASSERT(condition, message) _Static_assert(condition, message)
+		#define STATIC_ASSERT(condition, message) _Static_assert(condition, message);
 	#else
 		#define STATIC_ASSERT(condition, message) // FIXME
 	#endif
@@ -41,7 +41,7 @@
 		#define ATTRIBUTE_FMT_PRINTF(fmtpos, argpos) __attribute__((__format__(__printf__, fmtpos, argpos)))
 	#endif
 	#if __GNUC_PREREQ(4, 6)
-		#define STATIC_ASSERT(condition, message) _Static_assert(condition, message)
+		#define STATIC_ASSERT(condition, message) _Static_assert(condition, message);
 	#else
 		#define STATIC_ASSERT(condition, message) // FIXME
 	#endif
