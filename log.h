@@ -102,9 +102,9 @@ typedef struct {
 	#ifdef _MSC_VER
 		#define log_message_checked(level, debug_group, rotate_allowed, ...) \
 			do { \
-				uint32_t inclusion = log_check_inclusion(level, &_log_source, debug_group, __LINE__); \
-				if (inclusion != LOG_INCLUSION_NONE) { \
-					log_message(level, &_log_source, debug_group, rotate_allowed, inclusion, __FUNCTION__, __LINE__, __VA_ARGS__); \
+				uint32_t _inclusion_ = log_check_inclusion(level, &_log_source, debug_group, __LINE__); \
+				if (_inclusion_ != LOG_INCLUSION_NONE) { \
+					log_message(level, &_log_source, debug_group, rotate_allowed, _inclusion_, __FUNCTION__, __LINE__, __VA_ARGS__); \
 				} \
 			__pragma(warning(push)) \
 			__pragma(warning(disable:4127)) \
@@ -113,9 +113,9 @@ typedef struct {
 	#else
 		#define log_message_checked(level, debug_group, rotate_allowed, ...) \
 			do { \
-				uint32_t inclusion = log_check_inclusion(level, &_log_source, debug_group, __LINE__); \
-				if (inclusion != LOG_INCLUSION_NONE) { \
-					log_message(level, &_log_source, debug_group, rotate_allowed, inclusion, __FUNCTION__, __LINE__, __VA_ARGS__); \
+				uint32_t _inclusion_ = log_check_inclusion(level, &_log_source, debug_group, __LINE__); \
+				if (_inclusion_ != LOG_INCLUSION_NONE) { \
+					log_message(level, &_log_source, debug_group, rotate_allowed, _inclusion_, __FUNCTION__, __LINE__, __VA_ARGS__); \
 				} \
 			} while (0)
 	#endif
