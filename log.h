@@ -59,11 +59,26 @@ typedef enum { // bitmask
                              LOG_DEBUG_GROUP_OBJECT | \
                              LOG_DEBUG_GROUP_LIBUSB)
 
+typedef enum { // bitmask
+	LOG_INCLUSION_NONE      = 0x0000, // special value
+	LOG_INCLUSION_PRIMARY   = 0x0001,
+	LOG_INCLUSION_SECONDARY = 0x0002
+} LogInclusion;
+
+#define LOG_MAX_SOURCE_LINES 16
+
+typedef struct {
+	int number;
+	uint32_t included_debug_groups;
+} LogSourceLine;
+
 typedef struct {
 	const char *file; // __FILE__
 	const char *name; // last part of __FILE__
 	int debug_filter_version;
 	uint32_t included_debug_groups;
+	LogSourceLine lines[LOG_MAX_SOURCE_LINES];
+	int lines_used;
 	bool libusb;
 } LogSource;
 
@@ -72,6 +87,8 @@ typedef struct {
 		NULL, \
 		-1, \
 		LOG_DEBUG_GROUP_ALL, \
+		{{0}}, \
+		0, \
 		false \
 	}
 
@@ -85,8 +102,9 @@ typedef struct {
 	#ifdef _MSC_VER
 		#define log_message_checked(level, debug_group, rotate_allowed, ...) \
 			do { \
-				if (log_is_included(level, &_log_source, debug_group)) { \
-					log_message(level, &_log_source, debug_group, rotate_allowed, __FUNCTION__, __LINE__, __VA_ARGS__); \
+				uint32_t inclusion = log_check_inclusion(level, &_log_source, debug_group, __LINE__); \
+				if (inclusion != LOG_INCLUSION_NONE) { \
+					log_message(level, &_log_source, debug_group, rotate_allowed, inclusion, __FUNCTION__, __LINE__, __VA_ARGS__); \
 				} \
 			__pragma(warning(push)) \
 			__pragma(warning(disable:4127)) \
@@ -95,8 +113,9 @@ typedef struct {
 	#else
 		#define log_message_checked(level, debug_group, rotate_allowed, ...) \
 			do { \
-				if (log_is_included(level, &_log_source, debug_group)) { \
-					log_message(level, &_log_source, debug_group, rotate_allowed, __FUNCTION__, __LINE__, __VA_ARGS__); \
+				uint32_t inclusion = log_check_inclusion(level, &_log_source, debug_group, __LINE__); \
+				if (inclusion != LOG_INCLUSION_NONE) { \
+					log_message(level, &_log_source, debug_group, rotate_allowed, inclusion, __FUNCTION__, __LINE__, __VA_ARGS__); \
 				} \
 			} while (0)
 	#endif
@@ -137,11 +156,12 @@ LogLevel log_get_effective_level(void);
 void log_set_output(IO *output, LogRotateFunction rotate);
 void log_get_output(IO **output, LogRotateFunction *rotate);
 
-bool log_is_included(LogLevel level, LogSource *source, LogDebugGroup debug_group);
+uint32_t log_check_inclusion(LogLevel level, LogSource *source,
+                             LogDebugGroup debug_group, int line);
 
 void log_message(LogLevel level, LogSource *source, LogDebugGroup debug_group,
-                 bool rotate_allowed, const char *function, int line, const char *format, ...)
-                 ATTRIBUTE_FMT_PRINTF(7, 8);
+                 bool rotate_allowed, uint32_t inclusion, const char *function,
+                 int line, const char *format, ...) ATTRIBUTE_FMT_PRINTF(8, 9);
 
 void log_format(char *buffer, int length, struct timeval *timestamp,
                 LogLevel level, LogSource *source, LogDebugGroup debug_group,

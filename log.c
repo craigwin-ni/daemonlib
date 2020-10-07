@@ -31,14 +31,17 @@
 
 static LogSource _log_source = LOG_SOURCE_INITIALIZER;
 
-typedef struct {
-	bool included;
-	char source_name[64];
-	uint32_t groups;
-} LogDebugFilter;
-
+#define MAX_DEBUG_FILTERS 64
+#define MAX_SOURCE_NAME_SIZE 64 // bytes
 #define MAX_OUTPUT_SIZE (5 * 1024 * 1024) // bytes
 #define ROTATE_COUNTDOWN 50
+
+typedef struct {
+	bool included;
+	char source_name[MAX_SOURCE_NAME_SIZE + 1]; // +1 for NUL-terminator
+	int line;
+	uint32_t groups;
+} LogDebugFilter;
 
 static Mutex _mutex; // protects writing to _output, _output_size, _rotate and _rotate_countdown
 static LogLevel _level = LOG_LEVEL_INFO;
@@ -48,7 +51,7 @@ static LogRotateFunction _rotate = NULL;
 static int _rotate_countdown = 0;
 static bool _debug_override = false;
 static int _debug_filter_version = 0;
-static LogDebugFilter _debug_filters[64];
+static LogDebugFilter _debug_filters[MAX_DEBUG_FILTERS];
 static int _debug_filter_count = 0;
 
 IO log_stderr_output;
@@ -57,8 +60,8 @@ extern void log_init_platform(IO *output);
 extern void log_exit_platform(void);
 extern void log_set_output_platform(IO *output);
 extern void log_apply_color_platform(LogLevel level, bool begin);
-extern bool log_is_included_platform(LogLevel level, LogSource *source,
-                                     LogDebugGroup debug_group);
+extern uint32_t log_check_inclusion_platform(LogLevel level, LogSource *source,
+                                             LogDebugGroup debug_group, int line);
 extern void log_write_platform(struct timeval *timestamp, LogLevel level,
                                LogSource *source, LogDebugGroup debug_group,
                                const char *function, int line,
@@ -86,21 +89,23 @@ static int stderr_create(IO *io) {
 	return 0;
 }
 
-static void log_set_debug_filter(const char *filter) {
+static bool log_set_debug_filter(const char *filter) {
 	const char *p = filter;
 	int i = 0;
-	const char *tmp;
+	int k;
+	int line;
 
 	++_debug_filter_version;
 	_debug_filter_count = 0;
 
 	while (*p != '\0') {
-		if (i >= (int)sizeof(_debug_filters) / (int)sizeof(_debug_filters[0])) {
+		if (i >= MAX_DEBUG_FILTERS) {
 			log_warn("Too many source names in debug filter '%s'", filter);
 
-			return;
+			return false;
 		}
 
+		// parse +/-
 		if (*p == '+') {
 			_debug_filters[i].included = true;
 		} else if (*p == '-') {
@@ -109,64 +114,110 @@ static void log_set_debug_filter(const char *filter) {
 			log_warn("Unexpected char '%c' in debug filter '%s' at index %d",
 			         *p, filter, (int)(p - filter));
 
-			return;
+			return false;
 		}
 
-		++p;
-		tmp = strchr(p, ',');
+		++p; // skip +/-
 
-		if (tmp == NULL) {
-			tmp = p + strlen(p);
+		// parse source name and line
+		k = 0;
+		line = -1;
+
+		while (*p != '\0' && *p != ',') {
+			if (*p == ':') {
+				if (k == 0) {
+					log_warn("Empty source name in debug filter '%s' at index %d",
+					         filter, (int)(p - filter));
+
+					return false;
+				}
+
+				++p; // skip colon
+				line = 0;
+
+				while (*p != '\0' && *p != ',') {
+					if (*p >= '0' && *p <= '9') {
+						if (line > 100000) {
+							log_warn("Invalid line number in debug filter '%s' at index %d",
+							         filter, (int)(p - filter));
+
+							return false;
+						}
+
+						line = (line * 10) + (*p - '0');
+					} else {
+						log_warn("Unexpected char '%c' in debug filter '%s' at index %d",
+						         *p, filter, (int)(p - filter));
+
+						return false;
+					}
+
+					++p; // skip digit
+				}
+
+				if (line == 0) {
+					log_warn("Invalid line number in debug filter '%s' at index %d",
+					         filter, (int)(p - filter));
+
+					return false;
+				}
+
+				break;
+			} else {
+				if (k >= MAX_SOURCE_NAME_SIZE) {
+					log_warn("Source name '%s' is too long in debug filter '%s' at index %d",
+					         p, filter, (int)(p - filter));
+
+					return false;
+				}
+
+				_debug_filters[i].source_name[k++] = *p++;
+			}
 		}
 
-		if (tmp - p == 0) {
+		if (k == 0) {
 			log_warn("Empty source name in debug filter '%s' at index %d",
 			         filter, (int)(p - filter));
 
-			return;
+			return false;
 		}
 
-		if (tmp - p >= (int)sizeof(_debug_filters[i].source_name)) {
-			log_warn("Source name '%s' is too long in debug filter '%s' at index %d",
-			         p, filter, (int)(p - filter));
-
-			return;
-		}
-
-		strncpy(_debug_filters[i].source_name, p, tmp - p);
-		_debug_filters[i].source_name[tmp - p] = '\0';
+		_debug_filters[i].source_name[k] = '\0';
+		_debug_filters[i].line = line;
 
 		if (strcasecmp(_debug_filters[i].source_name, "common") == 0) {
-			_debug_filters[i].source_name[0] = '\0';
 			_debug_filters[i].groups = LOG_DEBUG_GROUP_COMMON;
 		} else if (strcasecmp(_debug_filters[i].source_name, "event") == 0) {
-			_debug_filters[i].source_name[0] = '\0';
 			_debug_filters[i].groups = LOG_DEBUG_GROUP_EVENT;
 		} else if (strcasecmp(_debug_filters[i].source_name, "packet") == 0) {
-			_debug_filters[i].source_name[0] = '\0';
 			_debug_filters[i].groups = LOG_DEBUG_GROUP_PACKET;
 		} else if (strcasecmp(_debug_filters[i].source_name, "object") == 0) {
-			_debug_filters[i].source_name[0] = '\0';
 			_debug_filters[i].groups = LOG_DEBUG_GROUP_OBJECT;
 		} else if (strcasecmp(_debug_filters[i].source_name, "libusb") == 0) {
-			_debug_filters[i].source_name[0] = '\0';
 			_debug_filters[i].groups = LOG_DEBUG_GROUP_LIBUSB;
 		} else if (strcasecmp(_debug_filters[i].source_name, "all") == 0) {
-			_debug_filters[i].source_name[0] = '\0';
 			_debug_filters[i].groups = LOG_DEBUG_GROUP_ALL;
 		} else {
-			_debug_filters[i].groups = LOG_DEBUG_GROUP_ALL;
+			_debug_filters[i].groups = LOG_DEBUG_GROUP_NONE;
 		}
 
-		p = tmp;
+		if (_debug_filters[i].groups != LOG_DEBUG_GROUP_NONE) {
+			if (line >= 0) {
+				log_warn("Ignoring line number for source name '%s' in debug filter '%s' at index %d",
+				         _debug_filters[i].source_name, filter, (int)(p - filter));
+			}
+
+			_debug_filters[i].source_name[0] = '\0';
+			_debug_filters[i].line = -1;
+		}
 
 		if (*p == ',') {
-			++p;
+			++p; // skip comma
 
 			if (*p == '\0') {
 				log_warn("Debug filter '%s' ends with a trailing comma", filter);
 
-				return;
+				return false;
 			}
 		}
 
@@ -174,6 +225,8 @@ static void log_set_debug_filter(const char *filter) {
 	}
 
 	_debug_filter_count = i;
+
+	return true;
 }
 
 // NOTE: assumes that _mutex is locked
@@ -253,9 +306,7 @@ void log_unlock(void) {
 }
 
 void log_enable_debug_override(const char *filter) {
-	_debug_override = true;
-
-	log_set_debug_filter(filter);
+	_debug_override = log_set_debug_filter(filter);
 }
 
 LogLevel log_get_effective_level(void) {
@@ -279,9 +330,13 @@ void log_get_output(IO **output, LogRotateFunction *rotate) {
 	}
 }
 
-bool log_is_included(LogLevel level, LogSource *source, LogDebugGroup debug_group) {
+uint32_t log_check_inclusion(LogLevel level, LogSource *source,
+                             LogDebugGroup debug_group, int line) {
+	uint32_t result;
 	const char *p;
 	int i;
+	int k;
+	LogSourceLine *source_line;
 
 	// if the source name is not set yet use the last part of its __FILE__
 	if (source->name == NULL) {
@@ -299,13 +354,15 @@ bool log_is_included(LogLevel level, LogSource *source, LogDebugGroup debug_grou
 		}
 	}
 
+	result = log_check_inclusion_platform(level, source, debug_group, line);
+
 	if (!_debug_override && level > _level) {
-		// primary output excluded by level, check secondary output
-		return log_is_included_platform(level, source, debug_group);
+		// primary output excluded by level
+		return result;
 	}
 
 	if (level != LOG_LEVEL_DEBUG) {
-		return true;
+		return result | LOG_INCLUSION_PRIMARY;
 	}
 
 	// check if source's debug-groups are outdated, if yes try to update them
@@ -317,14 +374,57 @@ bool log_is_included(LogLevel level, LogSource *source, LogDebugGroup debug_grou
 		if (source->debug_filter_version < _debug_filter_version) {
 			source->debug_filter_version = _debug_filter_version;
 			source->included_debug_groups = LOG_DEBUG_GROUP_ALL;
+			source->lines_used = 0;
 
 			for (i = 0; i < _debug_filter_count; ++i) {
-				if (_debug_filters[i].source_name[0] == '\0' ||
-				    strcasecmp(source->name, _debug_filters[i].source_name) == 0) {
+				if (strcasecmp(_debug_filters[i].source_name, source->name) == 0) {
+					if (_debug_filters[i].line < 0) {
+						if (_debug_filters[i].included) {
+							source->included_debug_groups = LOG_DEBUG_GROUP_ALL;
+						} else {
+							source->included_debug_groups = LOG_DEBUG_GROUP_NONE;
+						}
+					} else {
+						source_line = NULL;
+
+						for (k = 0; k < source->lines_used; ++k) {
+							if (source->lines[k].number == _debug_filters[i].line) {
+								source_line = &source->lines[k];
+								break;
+							}
+						}
+
+						if (source_line == NULL) {
+							if (source->lines_used >= LOG_MAX_SOURCE_LINES) {
+								// to many lines for this source
+								continue; // FIXME: how to report this to the user?
+							}
+
+							source_line = &source->lines[source->lines_used++];
+							source_line->number = _debug_filters[i].line;
+						}
+
+						if (_debug_filters[i].included) {
+							source_line->included_debug_groups = LOG_DEBUG_GROUP_ALL;
+						} else {
+							source_line->included_debug_groups = LOG_DEBUG_GROUP_NONE;
+						}
+					}
+				} else {
 					if (_debug_filters[i].included) {
 						source->included_debug_groups |= _debug_filters[i].groups;
 					} else {
 						source->included_debug_groups &= ~_debug_filters[i].groups;
+					}
+
+					for (k = 0; k < source->lines_used; ++k) {
+						source_line = &source->lines[k];
+
+						if (_debug_filters[i].included) {
+							source_line->included_debug_groups |= _debug_filters[i].groups;
+						} else {
+							source_line->included_debug_groups &= ~_debug_filters[i].groups;
+						}
 					}
 				}
 			}
@@ -334,23 +434,37 @@ bool log_is_included(LogLevel level, LogSource *source, LogDebugGroup debug_grou
 	}
 
 	// now the debug-groups are guaranteed to be up to date
-	if ((source->included_debug_groups & debug_group) != 0) {
-		return true;
+	if (line > 0) {
+		for (k = 0; k < source->lines_used; ++k) {
+			if (source->lines[k].number == line) {
+				if ((source->lines[k].included_debug_groups & debug_group) != 0) {
+					return result | LOG_INCLUSION_PRIMARY;
+				}
+
+				// primary output excluded by debug-groups
+				return result;
+			}
+		}
 	}
 
-	// primary output excluded by debug-groups, check secondary output
-	return log_is_included_platform(level, source, debug_group);
+	if ((source->included_debug_groups & debug_group) != 0) {
+		return result | LOG_INCLUSION_PRIMARY;
+	}
+
+	// primary output excluded by debug-groups
+	return result;
 }
 
 void log_message(LogLevel level, LogSource *source, LogDebugGroup debug_group,
-                 bool rotate_allowed, const char *function, int line, const char *format, ...) {
+                 bool rotate_allowed, uint32_t inclusion, const char *function,
+                 int line, const char *format, ...) {
 	struct timeval timestamp;
 	va_list arguments;
 	int length;
 	LogLevel rotate_level = LOG_LEVEL_DUMMY;
 	char rotate_message[1024] = "<unknown>";
 
-	if (level == LOG_LEVEL_DUMMY) {
+	if (level == LOG_LEVEL_DUMMY || inclusion == LOG_INCLUSION_NONE) {
 		return; // should never be reachable
 	}
 
@@ -364,9 +478,7 @@ void log_message(LogLevel level, LogSource *source, LogDebugGroup debug_group,
 	// call log writers
 	log_lock();
 
-	if ((level <= _level || _debug_override) &&
-	    (level != LOG_LEVEL_DEBUG ||
-	     (source->included_debug_groups & debug_group) != 0)) {
+	if ((inclusion & LOG_INCLUSION_PRIMARY) != 0) {
 		va_start(arguments, format);
 
 		length = log_write(&timestamp, level, source, debug_group, function,
@@ -379,7 +491,7 @@ void log_message(LogLevel level, LogSource *source, LogDebugGroup debug_group,
 		}
 	}
 
-	if (log_is_included_platform(level, source, debug_group)) {
+	if ((inclusion & LOG_INCLUSION_SECONDARY) != 0) {
 		va_start(arguments, format);
 		log_write_platform(&timestamp, level, source, debug_group, function,
 		                   line, format, arguments);

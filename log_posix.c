@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012, 2014, 2016-2017, 2019 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012, 2014, 2016-2017, 2019-2020 Matthias Bolte <matthias@tinkerforge.com>
  *
  * log_posix.c: POSIX specific log handling
  *
@@ -92,13 +92,14 @@ void log_apply_color_platform(LogLevel level, bool begin) {
 	io_write(_output, color, strlen(color));
 }
 
-bool log_is_included_platform(LogLevel level, LogSource *source,
-                              LogDebugGroup debug_group) {
+uint32_t log_check_inclusion_platform(LogLevel level, LogSource *source,
+                                      LogDebugGroup debug_group, int line) {
 	(void)level;
 	(void)source;
 	(void)debug_group;
+	(void)line;
 
-	return false;
+	return LOG_INCLUSION_NONE;
 }
 
 // NOTE: assumes that _mutex (in log.c) is locked
