@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2014, 2017 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2014, 2017, 2021 Matthias Bolte <matthias@tinkerforge.com>
  *
  * writer.h: Buffered packet writer for I/O devices
  *
@@ -48,6 +48,7 @@ typedef struct {
 	WriterRecipientDisconnectFunction recipient_disconnect;
 	void *opaque;
 	uint32_t dropped_packets;
+	uint64_t last_dropped_packets_warning;
 	Queue backlog;
 } Writer;
 
