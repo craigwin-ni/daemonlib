@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012, 2014 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012, 2014, 2021 Matthias Bolte <matthias@tinkerforge.com>
  *
  * threads_posix.h: PThread based thread and locking implementation
  *
@@ -30,6 +30,10 @@ typedef void (*ThreadFunction)(void *opaque);
 typedef struct {
 	pthread_mutex_t handle;
 } Mutex;
+
+typedef struct {
+	pthread_cond_t handle;
+} Condition;
 
 typedef struct {
 	sem_t object;

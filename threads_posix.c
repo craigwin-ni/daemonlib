@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2014, 2018 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2014, 2018, 2021 Matthias Bolte <matthias@tinkerforge.com>
  *
  * threads_posix.c: PThread based thread and locking implementation
  *
@@ -46,6 +46,30 @@ void mutex_lock(Mutex *mutex) {
 
 void mutex_unlock(Mutex *mutex) {
 	pthread_mutex_unlock(&mutex->handle);
+
+	// FIXME: error handling
+}
+
+void condition_create(Condition *condition) {
+	pthread_cond_init(&condition->handle, NULL);
+
+	// FIXME: error handling
+}
+
+void condition_destroy(Condition *condition) {
+	pthread_cond_destroy(&condition->handle);
+
+	// FIXME: error handling
+}
+
+void condition_wait(Condition *condition, Mutex *mutex) {
+	pthread_cond_wait(&condition->handle, &mutex->handle);
+
+	// FIXME: error handling
+}
+
+void condition_broadcast(Condition *condition) {
+	pthread_cond_broadcast(&condition->handle);
 
 	// FIXME: error handling
 }

@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2014 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2014, 2021 Matthias Bolte <matthias@tinkerforge.com>
  *
  * threads_winapi.c: WinAPI based thread and locking implementation
  *
@@ -45,6 +45,24 @@ void mutex_unlock(Mutex *mutex) {
 	LeaveCriticalSection(&mutex->handle);
 }
 
+void condition_create(Condition *condition) {
+	InitializeConditionVariable(&condition->handle);
+}
+
+void condition_destroy(Condition *condition) {
+	(void)condition;
+}
+
+void condition_wait(Condition *condition, Mutex *mutex) {
+	SleepConditionVariableCS(&condition->handle, &mutex->handle, INFINITE);
+
+	// FIXME: error handling
+}
+
+void condition_broadcast(Condition *condition) {
+	WakeAllConditionVariable(&condition->handle);
+}
+
 // sets errno on error
 int semaphore_create(Semaphore *semaphore) {
 	semaphore->handle = CreateSemaphore(NULL, 0, INT32_MAX, NULL);
@@ -60,8 +78,6 @@ int semaphore_create(Semaphore *semaphore) {
 
 void semaphore_destroy(Semaphore *semaphore) {
 	CloseHandle(semaphore->handle);
-
-	// FIXME: error handling
 }
 
 void semaphore_acquire(Semaphore *semaphore) {

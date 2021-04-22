@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012, 2014 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012, 2014, 2021 Matthias Bolte <matthias@tinkerforge.com>
  *
  * threads_winapi.h: WinAPI based thread and locking implementation
  *
@@ -29,6 +29,10 @@ typedef void (*ThreadFunction)(void *opaque);
 typedef struct {
 	CRITICAL_SECTION handle;
 } Mutex;
+
+typedef struct {
+	CONDITION_VARIABLE handle;
+} Condition;
 
 typedef struct {
 	HANDLE handle;

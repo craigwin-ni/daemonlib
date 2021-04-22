@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012, 2014 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012, 2014, 2021 Matthias Bolte <matthias@tinkerforge.com>
  *
  * threads.h: Thread and locking specific functions
  *
@@ -32,6 +32,11 @@ void mutex_create(Mutex *mutex);
 void mutex_destroy(Mutex *mutex);
 void mutex_lock(Mutex *mutex);
 void mutex_unlock(Mutex *mutex);
+
+void condition_create(Condition *condition);
+void condition_destroy(Condition *condition);
+void condition_wait(Condition *condition, Mutex *mutex);
+void condition_broadcast(Condition *condition);
 
 int semaphore_create(Semaphore *semaphore);
 void semaphore_destroy(Semaphore *semaphore);
