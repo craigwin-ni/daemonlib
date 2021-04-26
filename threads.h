@@ -38,7 +38,7 @@ void condition_destroy(Condition *condition);
 void condition_wait(Condition *condition, Mutex *mutex);
 void condition_broadcast(Condition *condition);
 
-int semaphore_create(Semaphore *semaphore);
+void semaphore_create(Semaphore *semaphore);
 void semaphore_destroy(Semaphore *semaphore);
 void semaphore_acquire(Semaphore *semaphore);
 void semaphore_release(Semaphore *semaphore);

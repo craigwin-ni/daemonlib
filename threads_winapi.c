@@ -19,15 +19,10 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include <errno.h>
+#include <stdlib.h>
 #include <stdint.h>
 
 #include "threads_winapi.h"
-
-#include "log.h"
-#include "utils.h"
-
-static LogSource _log_source = LOG_SOURCE_INITIALIZER;
 
 void mutex_create(Mutex *mutex) {
 	InitializeCriticalSection(&mutex->handle);
@@ -54,42 +49,39 @@ void condition_destroy(Condition *condition) {
 }
 
 void condition_wait(Condition *condition, Mutex *mutex) {
-	SleepConditionVariableCS(&condition->handle, &mutex->handle, INFINITE);
-
-	// FIXME: error handling
+	if (!SleepConditionVariableCS(&condition->handle, &mutex->handle, INFINITE)) {
+		abort();
+	}
 }
 
 void condition_broadcast(Condition *condition) {
 	WakeAllConditionVariable(&condition->handle);
 }
 
-// sets errno on error
-int semaphore_create(Semaphore *semaphore) {
+void semaphore_create(Semaphore *semaphore) {
 	semaphore->handle = CreateSemaphore(NULL, 0, INT32_MAX, NULL);
 
 	if (semaphore->handle == NULL) {
-		errno = ERRNO_WINAPI_OFFSET + GetLastError();
-
-		return -1;
+		abort();
 	}
-
-	return 0;
 }
 
 void semaphore_destroy(Semaphore *semaphore) {
-	CloseHandle(semaphore->handle);
+	if (!CloseHandle(semaphore->handle)) {
+		abort();
+	}
 }
 
 void semaphore_acquire(Semaphore *semaphore) {
-	WaitForSingleObject(semaphore->handle, INFINITE);
-
-	// FIXME: error handling
+	if (WaitForSingleObject(semaphore->handle, INFINITE) != WAIT_OBJECT_0) {
+		abort();
+	}
 }
 
 void semaphore_release(Semaphore *semaphore) {
-	ReleaseSemaphore(semaphore->handle, 1, NULL);
-
-	// FIXME: error handling
+	if (!ReleaseSemaphore(semaphore->handle, 1, NULL)) {
+		abort();
+	}
 }
 
 static DWORD WINAPI thread_wrapper(void *opaque) {
@@ -106,19 +98,23 @@ void thread_create(Thread *thread, ThreadFunction function, void *opaque) {
 
 	thread->handle = CreateThread(NULL, 0, thread_wrapper, thread, 0, &thread->id);
 
-	// FIXME: error handling
+	if (thread->handle == NULL) {
+		abort();
+	}
 }
 
 void thread_destroy(Thread *thread) {
-	CloseHandle(thread->handle);
+	if (!CloseHandle(thread->handle)) {
+		abort();
+	}
 }
 
 void thread_join(Thread *thread) {
 	if (thread->id == GetCurrentThreadId()) {
-		log_error("Thread with ID %u is joining itself", (uint32_t)thread->id);
+		abort();
 	}
 
-	WaitForSingleObject(thread->handle, INFINITE);
-
-	// FIXME: error handling
+	if (WaitForSingleObject(thread->handle, INFINITE) != WAIT_OBJECT_0) {
+		abort();
+	}
 }

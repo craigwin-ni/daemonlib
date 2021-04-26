@@ -19,63 +19,59 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include <stdlib.h>
+
 #include "threads_posix.h"
 
-#include "log.h"
-#include "utils.h"
-
-static LogSource _log_source = LOG_SOURCE_INITIALIZER;
-
 void mutex_create(Mutex *mutex) {
-	pthread_mutex_init(&mutex->handle, NULL);
-
-	// FIXME: error handling
+	if (pthread_mutex_init(&mutex->handle, NULL) != 0) {
+		abort();
+	}
 }
 
 void mutex_destroy(Mutex *mutex) {
-	pthread_mutex_destroy(&mutex->handle);
-
-	// FIXME: error handling
+	if (pthread_mutex_destroy(&mutex->handle) != 0) {
+		abort();
+	}
 }
 
 void mutex_lock(Mutex *mutex) {
-	pthread_mutex_lock(&mutex->handle);
-
-	// FIXME: error handling
+	if (pthread_mutex_lock(&mutex->handle) != 0) {
+		abort();
+	}
 }
 
 void mutex_unlock(Mutex *mutex) {
-	pthread_mutex_unlock(&mutex->handle);
-
-	// FIXME: error handling
+	if (pthread_mutex_unlock(&mutex->handle) != 0) {
+		abort();
+	}
 }
 
 void condition_create(Condition *condition) {
-	pthread_cond_init(&condition->handle, NULL);
-
-	// FIXME: error handling
+	if (pthread_cond_init(&condition->handle, NULL) != 0) {
+		abort();
+	}
 }
 
 void condition_destroy(Condition *condition) {
-	pthread_cond_destroy(&condition->handle);
-
-	// FIXME: error handling
+	if (pthread_cond_destroy(&condition->handle) != 0) {
+		abort();
+	}
 }
 
 void condition_wait(Condition *condition, Mutex *mutex) {
-	pthread_cond_wait(&condition->handle, &mutex->handle);
-
-	// FIXME: error handling
+	if (pthread_cond_wait(&condition->handle, &mutex->handle) != 0) {
+		abort();
+	}
 }
 
 void condition_broadcast(Condition *condition) {
-	pthread_cond_broadcast(&condition->handle);
-
-	// FIXME: error handling
+	if (pthread_cond_broadcast(&condition->handle) != 0) {
+		abort();
+	}
 }
 
-// sets errno on error
-int semaphore_create(Semaphore *semaphore) {
+void semaphore_create(Semaphore *semaphore) {
 #ifdef __APPLE__
 	// macOS does not support unnamed semaphores, so we fake them. unlink
 	// first to ensure that there is no existing semaphore with that name.
@@ -90,39 +86,39 @@ int semaphore_create(Semaphore *semaphore) {
 	sem_unlink(name);
 
 	if (semaphore->pointer == SEM_FAILED) {
-		return -1;
+		abort();
 	}
 #else
 	semaphore->pointer = &semaphore->object;
 
 	if (sem_init(semaphore->pointer, 0, 0) < 0) {
-		return -1;
+		abort();
 	}
 #endif
-
-	return 0;
 }
 
 void semaphore_destroy(Semaphore *semaphore) {
 #ifdef __APPLE__
-	sem_close(semaphore->pointer);
+	if (sem_close(semaphore->pointer) < 0) {
+		abort();
+	}
 #else
-	sem_destroy(semaphore->pointer);
+	if (sem_destroy(semaphore->pointer) < 0) {
+		abort();
+	}
 #endif
-
-	// FIXME: error handling
 }
 
 void semaphore_acquire(Semaphore *semaphore) {
-	sem_wait(semaphore->pointer);
-
-	// FIXME: error handling
+	if (sem_wait(semaphore->pointer) < 0) {
+		abort();
+	}
 }
 
 void semaphore_release(Semaphore *semaphore) {
-	sem_post(semaphore->pointer);
-
-	// FIXME: error handling
+	if (sem_post(semaphore->pointer) < 0) {
+		abort();
+	}
 }
 
 static void *thread_wrapper(void *opaque) {
@@ -137,23 +133,21 @@ void thread_create(Thread *thread, ThreadFunction function, void *opaque) {
 	thread->function = function;
 	thread->opaque = opaque;
 
-	pthread_create(&thread->handle, NULL, thread_wrapper, thread);
-
-	// FIXME: error handling
+	if (pthread_create(&thread->handle, NULL, thread_wrapper, thread) != 0) {
+		abort();
+	}
 }
 
 void thread_destroy(Thread *thread) {
-	// FIXME
 	(void)thread;
 }
 
 void thread_join(Thread *thread) {
 	if (pthread_equal(thread->handle, pthread_self())) {
-		log_error("Thread (function: %p, opaque: %p) is joining itself",
-		          thread->function, thread->opaque);
+		abort();
 	}
 
-	pthread_join(thread->handle, NULL);
-
-	// FIXME: error handling
+	if (pthread_join(thread->handle, NULL) != 0) {
+		abort();
+	}
 }
