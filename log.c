@@ -558,18 +558,25 @@ uint32_t log_check_inclusion(LogLevel level, LogSource *source,
 
 	// if the source name is not set yet use the last part of its __FILE__
 	if (source->name == NULL) {
-		source->name = source->file;
-		p = strrchr(source->name, '/');
+		mutex_lock(&_common_mutex);
 
-		if (p != NULL) {
-			source->name = p + 1;
+		// after gaining the mutex check that nobody else has set the name in the meantime
+		if (source->name == NULL) {
+			source->name = source->file;
+			p = strrchr(source->name, '/');
+
+			if (p != NULL) {
+				source->name = p + 1;
+			}
+
+			p = strrchr(source->name, '\\');
+
+			if (p != NULL) {
+				source->name = p + 1;
+			}
 		}
 
-		p = strrchr(source->name, '\\');
-
-		if (p != NULL) {
-			source->name = p + 1;
-		}
+		mutex_unlock(&_common_mutex);
 	}
 
 	result = log_check_inclusion_platform(level, source, debug_group, line);
