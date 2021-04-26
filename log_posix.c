@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012, 2014, 2016-2017, 2019-2020 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012, 2014, 2016-2017, 2019-2021 Matthias Bolte <matthias@tinkerforge.com>
  *
  * log_posix.c: POSIX specific log handling
  *
@@ -102,17 +102,15 @@ uint32_t log_check_inclusion_platform(LogLevel level, LogSource *source,
 	return LOG_INCLUSION_NONE;
 }
 
-// NOTE: assumes that _mutex (in log.c) is locked
-void log_write_platform(struct timeval *timestamp, LogLevel level,
-                        LogSource *source, LogDebugGroup debug_group,
-                        const char *function, int line,
-                        const char *format, va_list arguments) {
+// NOTE: assumes that _output_mutex (in log.c) is locked
+void log_output_platform(struct timeval *timestamp, LogLevel level,
+                         LogSource *source, LogDebugGroup debug_group,
+                         const char *function, int line, const char *message) {
 	(void)timestamp;
 	(void)level;
 	(void)source;
 	(void)debug_group;
 	(void)function;
 	(void)line;
-	(void)format;
-	(void)arguments;
+	(void)message;
 }

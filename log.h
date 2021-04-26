@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2014, 2016, 2019-2020 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2014, 2016, 2019-2021 Matthias Bolte <matthias@tinkerforge.com>
  * Copyright (C) 2014 Olaf Lüke <olaf@tinkerforge.com>
  *
  * log.h: Logging specific functions
@@ -35,7 +35,7 @@
 #include "macros.h"
 
 typedef enum {
-	LOG_LEVEL_DUMMY = -1, // force signed enum to avoid "unsigned expression >= 0 is always true" warnings
+	LOG_LEVEL_NONE = -1, // special value, force signed enum to avoid "unsigned expression >= 0 is always true" warnings
 	LOG_LEVEL_ERROR = 0,
 	LOG_LEVEL_WARN,
 	LOG_LEVEL_INFO,
@@ -92,45 +92,39 @@ typedef struct {
 		false \
 	}
 
-#ifdef _WIN32
-	#define LOG_NEWLINE "\r\n"
-#else
-	#define LOG_NEWLINE "\n"
-#endif
-
 #ifdef DAEMONLIB_WITH_LOGGING
 	#ifdef _MSC_VER
-		#define log_message_checked(level, debug_group, rotate_allowed, ...) \
+		#define log_message_checked(level, debug_group, ...) \
 			do { \
 				uint32_t _inclusion_ = log_check_inclusion(level, &_log_source, debug_group, __LINE__); \
 				if (_inclusion_ != LOG_INCLUSION_NONE) { \
-					log_message(level, &_log_source, debug_group, rotate_allowed, _inclusion_, __FUNCTION__, __LINE__, __VA_ARGS__); \
+					log_message(level, &_log_source, debug_group, _inclusion_, __func__, __LINE__, __VA_ARGS__); \
 				} \
 			__pragma(warning(push)) \
 			__pragma(warning(disable:4127)) \
 			} while (0) \
 			__pragma(warning(pop))
 	#else
-		#define log_message_checked(level, debug_group, rotate_allowed, ...) \
+		#define log_message_checked(level, debug_group, ...) \
 			do { \
 				uint32_t _inclusion_ = log_check_inclusion(level, &_log_source, debug_group, __LINE__); \
 				if (_inclusion_ != LOG_INCLUSION_NONE) { \
-					log_message(level, &_log_source, debug_group, rotate_allowed, _inclusion_, __FUNCTION__, __LINE__, __VA_ARGS__); \
+					log_message(level, &_log_source, debug_group, _inclusion_, __func__, __LINE__, __VA_ARGS__); \
 				} \
 			} while (0)
 	#endif
 
-	#define log_error(...) log_message_checked(LOG_LEVEL_ERROR, LOG_DEBUG_GROUP_NONE, true, __VA_ARGS__)
-	#define log_warn(...)  log_message_checked(LOG_LEVEL_WARN, LOG_DEBUG_GROUP_NONE, true, __VA_ARGS__)
-	#define log_info(...)  log_message_checked(LOG_LEVEL_INFO, LOG_DEBUG_GROUP_NONE, true, __VA_ARGS__)
-	#define log_debug(...) log_message_checked(LOG_LEVEL_DEBUG, LOG_DEBUG_GROUP_COMMON, true, __VA_ARGS__)
+	#define log_error(...) log_message_checked(LOG_LEVEL_ERROR, LOG_DEBUG_GROUP_NONE, __VA_ARGS__)
+	#define log_warn(...)  log_message_checked(LOG_LEVEL_WARN, LOG_DEBUG_GROUP_NONE, __VA_ARGS__)
+	#define log_info(...)  log_message_checked(LOG_LEVEL_INFO, LOG_DEBUG_GROUP_NONE, __VA_ARGS__)
+	#define log_debug(...) log_message_checked(LOG_LEVEL_DEBUG, LOG_DEBUG_GROUP_COMMON, __VA_ARGS__)
 
 	// special debug logging for high traffic debug messages from event, packet
 	// and object related functions. the visibility of these messages can be
 	// controlled with the event, packet and object debug filters
-	#define log_event_debug(...)  log_message_checked(LOG_LEVEL_DEBUG, LOG_DEBUG_GROUP_EVENT, true, __VA_ARGS__)
-	#define log_packet_debug(...) log_message_checked(LOG_LEVEL_DEBUG, LOG_DEBUG_GROUP_PACKET, true, __VA_ARGS__)
-	#define log_object_debug(...) log_message_checked(LOG_LEVEL_DEBUG, LOG_DEBUG_GROUP_OBJECT, true, __VA_ARGS__)
+	#define log_event_debug(...)  log_message_checked(LOG_LEVEL_DEBUG, LOG_DEBUG_GROUP_EVENT, __VA_ARGS__)
+	#define log_packet_debug(...) log_message_checked(LOG_LEVEL_DEBUG, LOG_DEBUG_GROUP_PACKET, __VA_ARGS__)
+	#define log_object_debug(...) log_message_checked(LOG_LEVEL_DEBUG, LOG_DEBUG_GROUP_OBJECT, __VA_ARGS__)
 #else
 	#define log_error(...)        ((void)0)
 	#define log_warn(...)         ((void)0)
@@ -146,9 +140,6 @@ extern IO log_stderr_output;
 void log_init(void);
 void log_exit(void);
 
-void log_lock(void);
-void log_unlock(void);
-
 void log_enable_debug_override(const char *filter);
 
 LogLevel log_get_effective_level(void);
@@ -160,12 +151,11 @@ uint32_t log_check_inclusion(LogLevel level, LogSource *source,
                              LogDebugGroup debug_group, int line);
 
 void log_message(LogLevel level, LogSource *source, LogDebugGroup debug_group,
-                 bool rotate_allowed, uint32_t inclusion, const char *function,
-                 int line, const char *format, ...) ATTRIBUTE_FMT_PRINTF(8, 9);
+                 uint32_t inclusion, const char *function, int line,
+                 const char *format, ...) ATTRIBUTE_FMT_PRINTF(7, 8);
 
-void log_format(char *buffer, int length, struct timeval *timestamp,
-                LogLevel level, LogSource *source, LogDebugGroup debug_group,
-                const char *function, int line, const char *message,
-                const char *format, va_list arguments);
+int log_format(char *buffer, int length, struct timeval *timestamp,
+               LogLevel level, LogSource *source, LogDebugGroup debug_group,
+               const char *function, int line, const char *message);
 
 #endif // DAEMONLIB_LOG_H
