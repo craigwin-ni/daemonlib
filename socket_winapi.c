@@ -187,27 +187,8 @@ int socket_set_address_reuse(Socket *socket, bool address_reuse) {
 // sets errno on error
 int socket_set_dual_stack(Socket *socket, bool dual_stack) {
 	DWORD on = dual_stack ? 0 : 1;
-	int rc;
-
-#ifndef DAEMONLIB_UWP_BUILD // UWP implies Windows 10
-	if ((DWORD)(LOBYTE(LOWORD(GetVersion()))) < 6) {
-		// the IPV6_V6ONLY option is only supported on Vista or later. on
-		// Windows XP dual-stack mode is not supported at all. so fail with
-		// expected error if dual-stack mode should be enabled and pretend
-		// that it got disabled otherwise as this is the case on Windows XP
-		// anyway
-		if (dual_stack) {
-			errno = ERRNO_WINAPI_OFFSET + WSAENOPROTOOPT;
-
-			return -1;
-		}
-
-		return 0;
-	}
-#endif
-
-	rc = setsockopt(socket->handle, IPPROTO_IPV6, IPV6_V6ONLY,
-	                (const char *)&on, sizeof(on));
+	int rc = setsockopt(socket->handle, IPPROTO_IPV6, IPV6_V6ONLY,
+	                    (const char *)&on, sizeof(on));
 
 	if (rc == SOCKET_ERROR) {
 		rc = -1;
