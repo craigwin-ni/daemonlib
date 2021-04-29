@@ -26,6 +26,7 @@
 #include "log.h"
 
 #include "config.h"
+#include "fifo.h"
 #include "threads.h"
 #include "utils.h"
 
@@ -35,7 +36,7 @@ static LogSource _log_source = LOG_SOURCE_INITIALIZER;
 #define MAX_SOURCE_NAME_SIZE 64 // bytes
 #define MAX_OUTPUT_SIZE (5 * 1024 * 1024) // bytes
 #define MAX_ROTATE_COUNTDOWN 50
-#define MAX_QUEUE_SIZE (256 * 1024) // bytes
+#define MAX_FIFO_BUFFER_SIZE (256 * 1024) // bytes
 
 typedef struct {
 	bool included;
@@ -45,7 +46,6 @@ typedef struct {
 } LogDebugFilter;
 
 typedef struct {
-	bool exit;
 	struct timeval timestamp;
 	LogLevel level;
 	LogSource *source;
@@ -62,12 +62,8 @@ static IO *_output;
 static int64_t _output_size; // tracks size if output is rotatable
 static LogRotateFunction _rotate;
 static int _rotate_countdown;
-static Mutex _queue_mutex; // protects writing to _queue_buffer, _queue_begin and _queue_end
-static Condition _queue_readable_condition;
-static Condition _queue_writable_condition;
-static uint8_t _queue_buffer[MAX_QUEUE_SIZE];
-static int _queue_begin; // inclusive
-static int _queue_end; // exclusive
+static uint8_t _fifo_buffer[MAX_FIFO_BUFFER_SIZE];
+static FIFO _fifo;
 static Thread _forward_thread;
 static bool _debug_override;
 static int _debug_filter_version;
@@ -112,82 +108,6 @@ static void log_timestamp(struct timeval *timestamp) {
 	if (gettimeofday(timestamp, NULL) < 0) {
 		timestamp->tv_sec = time(NULL);
 		timestamp->tv_usec = 0;
-	}
-}
-
-static int log_read_queue(void *buffer, int length) {
-	int readable;
-
-	if (length == 0) {
-		return 0;
-	}
-
-	mutex_lock(&_queue_mutex);
-
-	do {
-		if (_queue_begin <= _queue_end) {
-			readable = _queue_end - _queue_begin;
-		} else {
-			readable = MAX_QUEUE_SIZE - _queue_begin;
-		}
-
-		if (readable <= 0) {
-			condition_wait(&_queue_readable_condition, &_queue_mutex);
-		}
-	} while (readable <= 0);
-
-	if (readable > length) {
-		readable = length;
-	}
-
-	memcpy(buffer, _queue_buffer + _queue_begin, readable);
-	_queue_begin = (_queue_begin + readable) % MAX_QUEUE_SIZE;
-
-	condition_broadcast(&_queue_writable_condition);
-	mutex_unlock(&_queue_mutex);
-
-	return readable;
-}
-
-// NOTE: assumes that _common_mutex is locked
-static void log_write_queue(const void *buffer, int length) {
-	int writable;
-
-	while (length > 0) {
-		mutex_lock(&_queue_mutex);
-
-		do {
-			if (_queue_begin <= _queue_end) {
-				writable = MAX_QUEUE_SIZE - (_queue_end - _queue_begin) - 1;
-			} else {
-				writable = _queue_begin - _queue_end - 1;
-			}
-
-			if (writable <= 0) {
-				condition_wait(&_queue_writable_condition, &_queue_mutex);
-			}
-		} while (writable <= 0);
-
-		if (_queue_begin <= _queue_end) {
-			if (_queue_begin == 0) {
-				writable = MAX_QUEUE_SIZE - _queue_end - 1;
-			} else {
-				writable = MAX_QUEUE_SIZE - _queue_end;
-			}
-		}
-
-		if (writable > length) {
-			writable = length;
-		}
-
-		memcpy(_queue_buffer + _queue_end, buffer, writable);
-		_queue_end = (_queue_end + writable) % MAX_QUEUE_SIZE;
-
-		condition_broadcast(&_queue_readable_condition);
-		mutex_unlock(&_queue_mutex);
-
-		buffer = (const uint8_t *)buffer + writable;
-		length -= writable;
 	}
 }
 
@@ -382,6 +302,7 @@ static void log_forward(void *opaque) {
 		char buffer[8192];
 		LogEntry entry;
 	} u;
+	int length;
 	int buffer_used = 0;
 	int message_length;
 	LogLevel rotate_level;
@@ -393,16 +314,24 @@ static void log_forward(void *opaque) {
 
 	(void)opaque;
 
+	memset(u.buffer, 0, sizeof(u.buffer));
+
 	while (true) {
-		buffer_used += log_read_queue(u.buffer + buffer_used, sizeof(u.buffer) - buffer_used);
+		length = fifo_read(&_fifo, u.buffer + buffer_used, sizeof(u.buffer) - buffer_used, 0);
+
+		if (length < 0) {
+			break; // FIXME
+		}
+
+		if (length == 0) {
+			break;
+		}
+
+		buffer_used += length;
 
 		while (buffer_used > 0) {
 			if (buffer_used < (int)sizeof(u.entry)) {
 				break; // wait for complete LogEntry
-			}
-
-			if (u.entry.exit) {
-				return;
 			}
 
 			message_length = strnlen(u.buffer + sizeof(u.entry), buffer_used - sizeof(u.entry));
@@ -421,7 +350,7 @@ static void log_forward(void *opaque) {
 
 			rotate_level = LOG_LEVEL_NONE;
 
-			if (_rotate != NULL && _rotate_countdown <= 0 &&_output_size >= MAX_OUTPUT_SIZE) {
+			if (_rotate != NULL && _rotate_countdown <= 0 && _output_size >= MAX_OUTPUT_SIZE) {
 				string_copy(rotate_message, sizeof(rotate_message), "<unknown>", -1);
 
 				if (_rotate(_output, &rotate_level, rotate_message, sizeof(rotate_message)) < 0) {
@@ -445,8 +374,8 @@ static void log_forward(void *opaque) {
 				                                       rotate_debug_group, rotate_line);
 
 				if (rotate_inclusion != LOG_INCLUSION_NONE) {
-					rotate_entry.exit = false;
 					log_timestamp(&rotate_entry.timestamp);
+
 					rotate_entry.level = rotate_level;
 					rotate_entry.source = &_log_source;
 					rotate_entry.debug_group = rotate_debug_group;
@@ -471,9 +400,6 @@ void log_init(void) {
 
 	mutex_create(&_common_mutex);
 	mutex_create(&_output_mutex);
-	mutex_create(&_queue_mutex);
-	condition_create(&_queue_readable_condition);
-	condition_create(&_queue_writable_condition);
 
 	_level = config_get_option_value("log.level")->symbol;
 
@@ -484,8 +410,7 @@ void log_init(void) {
 	_rotate = NULL;
 	_rotate_countdown = 0;
 
-	_queue_begin = 0;
-	_queue_end = 0;
+	fifo_create(&_fifo, _fifo_buffer, sizeof(_fifo_buffer));
 
 	_debug_override = false;
 	_debug_filter_version = 0;
@@ -503,25 +428,15 @@ void log_init(void) {
 }
 
 void log_exit(void) {
-	LogEntry entry;
-
 	log_exit_platform();
 
-	entry.exit = true;
-
-	mutex_lock(&_common_mutex);
-
-	log_write_queue(&entry, sizeof(entry));
-	log_write_queue("\0", 1);
-
-	mutex_unlock(&_common_mutex);
+	fifo_shutdown(&_fifo);
 
 	thread_join(&_forward_thread);
 	thread_destroy(&_forward_thread);
 
-	condition_destroy(&_queue_writable_condition);
-	condition_destroy(&_queue_readable_condition);
-	mutex_destroy(&_queue_mutex);
+	fifo_destroy(&_fifo);
+
 	mutex_destroy(&_output_mutex);
 	mutex_destroy(&_common_mutex);
 }
@@ -702,9 +617,9 @@ void log_message(LogLevel level, LogSource *source, LogDebugGroup debug_group,
 	}
 
 	// record timestamp before locking the mutex. this results in more
-	// accurate timing of log message if the mutex is contended
-	entry.exit = false;
+	// accurate timing of log message if the common mutex is contended
 	log_timestamp(&entry.timestamp);
+
 	entry.level = level;
 	entry.source = source;
 	entry.debug_group = debug_group;
@@ -722,8 +637,8 @@ void log_message(LogLevel level, LogSource *source, LogDebugGroup debug_group,
 
 	mutex_lock(&_common_mutex);
 
-	log_write_queue(&entry, sizeof(entry));
-	log_write_queue(message, message_length + 1);
+	fifo_write(&_fifo, &entry, sizeof(entry), 0);
+	fifo_write(&_fifo, message, message_length + 1, 0);
 
 	mutex_unlock(&_common_mutex);
 }
