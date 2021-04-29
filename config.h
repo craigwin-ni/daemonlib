@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012, 2014 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012, 2014, 2021 Matthias Bolte <matthias@tinkerforge.com>
  * Copyright (C) 2014 Olaf Lüke <olaf@tinkerforge.com>
  *
  * config.h: Config file subsystem
@@ -142,7 +142,7 @@ const char *config_format_log_level(int level);
 
 int config_check(const char *filename);
 
-void config_init(const char *filename);
+void config_init(const char *filename, bool check_only);
 void config_exit(void);
 
 bool config_has_error(void);

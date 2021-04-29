@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2014, 2017-2019 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2014, 2017-2019, 2021 Matthias Bolte <matthias@tinkerforge.com>
  *
  * signal.c: Signal specific functions
  *
@@ -32,8 +32,8 @@
 static LogSource _log_source = LOG_SOURCE_INITIALIZER;
 
 static Pipe _signal_pipe;
-static SIGHUPFunction _handle_sighup = NULL;
-static SIGUSR1Function _handle_sigusr1 = NULL;
+static SIGHUPFunction _handle_sighup;
+static SIGUSR1Function _handle_sigusr1;
 
 static void signal_handle(void *opaque) {
 	int signal_number;

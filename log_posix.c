@@ -26,11 +26,13 @@
 
 #include "log.h"
 
-static IO *_output = NULL;
+static IO *_output;
 
 void log_set_output_platform(IO *output);
 
 void log_init_platform(IO *output) {
+	_output = NULL;
+
 	log_set_output_platform(output);
 }
 

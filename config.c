@@ -1,6 +1,6 @@
 /*
  * daemonlib
- * Copyright (C) 2012-2018, 2020 Matthias Bolte <matthias@tinkerforge.com>
+ * Copyright (C) 2012-2018, 2020-2021 Matthias Bolte <matthias@tinkerforge.com>
  * Copyright (C) 2014 Olaf Lüke <olaf@tinkerforge.com>
  *
  * config.c: Config file subsystem
@@ -32,10 +32,10 @@
 #include "enum.h"
 #include "utils.h"
 
-static bool _check_only = false;
-static bool _has_error = false;
-static bool _has_warning = false;
-static bool _using_default_values = true;
+static bool _check_only;
+static bool _has_error;
+static bool _has_warning;
+static bool _using_default_values;
 static ConfigOption _invalid = CONFIG_OPTION_STRING_INITIALIZER("<invalid>", 0, -1, "<invalid>");
 
 static EnumValueName _log_level_enum_value_names[] = {
@@ -154,9 +154,7 @@ int config_check(const char *filename) {
 	int maximum_length = 0;
 	int k;
 
-	_check_only = true;
-
-	config_init(filename);
+	config_init(filename, true);
 
 	if (_has_error) {
 		fprintf(stderr, "Error(s) occurred while reading config file '%s'\n", filename);
@@ -229,12 +227,16 @@ int config_check(const char *filename) {
 	return _has_warning ? -1 : 0;
 }
 
-void config_init(const char *filename) {
+void config_init(const char *filename, bool check_only) {
 	ConfFile conf_file;
 	int i;
 	const char *value;
 	int length;
 	int integer;
+
+	_check_only = check_only;
+	_has_error = false;
+	_has_warning = false;
 
 	config_reset();
 

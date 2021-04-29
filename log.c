@@ -56,23 +56,23 @@ typedef struct {
 } LogEntry;
 
 static Mutex _common_mutex;
-static LogLevel _level = LOG_LEVEL_INFO;
+static LogLevel _level;
 static Mutex _output_mutex; // protects writing to _output, _output_size, _rotate and _rotate_countdown
-static IO *_output = NULL;
-static int64_t _output_size = -1; // tracks size if output is rotatable
-static LogRotateFunction _rotate = NULL;
-static int _rotate_countdown = 0;
+static IO *_output;
+static int64_t _output_size; // tracks size if output is rotatable
+static LogRotateFunction _rotate;
+static int _rotate_countdown;
 static Mutex _queue_mutex; // protects writing to _queue_buffer, _queue_begin and _queue_end
 static Condition _queue_readable_condition;
 static Condition _queue_writable_condition;
 static uint8_t _queue_buffer[MAX_QUEUE_SIZE];
-static int _queue_begin = 0; // inclusive
-static int _queue_end = 0; // exclusive
+static int _queue_begin; // inclusive
+static int _queue_end; // exclusive
 static Thread _forward_thread;
-static bool _debug_override = false;
-static int _debug_filter_version = 0;
+static bool _debug_override;
+static int _debug_filter_version;
 static LogDebugFilter _debug_filters[MAX_DEBUG_FILTERS];
-static int _debug_filter_count = 0;
+static int _debug_filter_count;
 
 IO log_stderr_output;
 
@@ -481,6 +481,15 @@ void log_init(void) {
 
 	_output = &log_stderr_output;
 	_output_size = -1;
+	_rotate = NULL;
+	_rotate_countdown = 0;
+
+	_queue_begin = 0;
+	_queue_end = 0;
+
+	_debug_override = false;
+	_debug_filter_version = 0;
+	_debug_filter_count = 0;
 
 	thread_create(&_forward_thread, log_forward, NULL);
 
