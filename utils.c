@@ -677,6 +677,14 @@ int red_brick_uid(uint32_t *uid /* always little endian */) {
 	return 0;
 }
 
+uint32_t dedicated_uid() {
+    // Returns a dummy UID when running on a dedicated (eg Pi) precessor.
+    uint32_t uid;
+    base58_decode(&uid, "DED");
+    uid = uint32_to_le(uid);
+    return uid;
+}
+
 // calls close while preserving errno
 int robust_close(int fd) {
 	int saved_errno = errno;

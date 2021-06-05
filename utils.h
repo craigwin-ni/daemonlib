@@ -63,6 +63,7 @@ char *strcasestr(char *haystack, char *needle);
 #endif
 
 int red_brick_uid(uint32_t *uid /* always little endian */);
+uint32_t dedicated_uid();
 
 int robust_close(int fd);
 int robust_read(int fd, void *buffer, int length);
